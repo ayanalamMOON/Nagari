@@ -1,0 +1,30 @@
+# Core built-in functions and types for Nagari
+# These are implemented at the VM level
+
+def len(x: any) -> int:
+    """Return the length of an object."""
+    builtin
+
+def type(x: any) -> str:
+    """Return the type of an object."""
+    builtin
+
+def str(x: any) -> str:
+    """Convert an object to a string."""
+    builtin
+
+def int(x: any) -> int:
+    """Convert an object to an integer."""
+    builtin
+
+def float(x: any) -> float:
+    """Convert an object to a float."""
+    builtin
+
+def bool(x: any) -> bool:
+    """Convert an object to a boolean."""
+    builtin
+
+def print(*args):
+    """Print objects to stdout."""
+    builtin

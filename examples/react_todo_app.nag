@@ -1,0 +1,201 @@
+# React Application Demo
+# This example demonstrates building a React app with hooks and components
+
+from "react" import React, { useState, useEffect, useCallback }
+from "console" import { log }
+
+def TodoItem(props):
+    """Individual todo item component"""
+    def handleToggle():
+        props.onToggle(props.todo.id)
+
+    def handleDelete():
+        props.onDelete(props.todo.id)
+
+    return <div className={f"todo-item {props.todo.completed ? 'completed' : ''}"}>
+        <input
+            type="checkbox"
+            checked={props.todo.completed}
+            onChange={handleToggle}
+        />
+        <span className="todo-text">{props.todo.text}</span>
+        <button onClick={handleDelete} className="delete-btn">
+            Delete
+        </button>
+    </div>
+
+def TodoForm(props):
+    """Form for adding new todos"""
+    text, setText = useState("")
+
+    def handleSubmit(event):
+        event.preventDefault()
+        if text.strip():
+            props.onAdd(text.strip())
+            setText("")
+
+    return <form onSubmit={handleSubmit} className="todo-form">
+        <input
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Enter a new todo..."
+            className="todo-input"
+        />
+        <button type="submit" className="add-btn">
+            Add Todo
+        </button>
+    </form>
+
+def TodoStats(props):
+    """Statistics component"""
+    total = len(props.todos)
+    completed = len([t for t in props.todos if t.completed])
+    remaining = total - completed
+
+    return <div className="todo-stats">
+        <div className="stat">
+            <span className="label">Total:</span>
+            <span className="value">{total}</span>
+        </div>
+        <div className="stat">
+            <span className="label">Completed:</span>
+            <span className="value">{completed}</span>
+        </div>
+        <div className="stat">
+            <span className="label">Remaining:</span>
+            <span className="value">{remaining}</span>
+        </div>
+    </div>
+
+def TodoApp():
+    """Main todo application component"""
+    todos, setTodos = useState([
+        {"id": 1, "text": "Learn Nagari", "completed": false},
+        {"id": 2, "text": "Build a React app", "completed": false},
+        {"id": 3, "text": "Deploy to production", "completed": false}
+    ])
+
+    filter, setFilter = useState("all")  # all, active, completed
+    nextId, setNextId = useState(4)
+
+    # Save to localStorage
+    useEffect(() => {
+        localStorage.setItem("todos", JSON.stringify(todos))
+    }, [todos])
+
+    # Load from localStorage on mount
+    useEffect(() => {
+        savedTodos = localStorage.getItem("todos")
+        if savedTodos:
+            try:
+                parsed = JSON.parse(savedTodos)
+                setTodos(parsed)
+                if len(parsed) > 0:
+                    maxId = max(t["id"] for t in parsed)
+                    setNextId(maxId + 1)
+            except Exception:
+                log("Failed to load saved todos")
+    }, [])
+
+    # Add new todo
+    addTodo = useCallback((text) => {
+        newTodo = {
+            "id": nextId,
+            "text": text,
+            "completed": false
+        }
+        setTodos([...todos, newTodo])
+        setNextId(nextId + 1)
+    }, [todos, nextId])
+
+    # Toggle todo completion
+    toggleTodo = useCallback((id) => {
+        setTodos(todos.map(todo =>
+            todo["id"] == id ? {**todo, "completed": not todo["completed"]} : todo
+        ))
+    }, [todos])
+
+    # Delete todo
+    deleteTodo = useCallback((id) => {
+        setTodos(todos.filter(todo => todo["id"] != id))
+    }, [todos])
+
+    # Clear completed todos
+    clearCompleted = useCallback(() => {
+        setTodos(todos.filter(todo => not todo["completed"]))
+    }, [todos])
+
+    # Filter todos based on current filter
+    filteredTodos = todos.filter(todo => {
+        if filter == "active":
+            return not todo["completed"]
+        elif filter == "completed":
+            return todo["completed"]
+        else:
+            return true
+    })
+
+    return <div className="todo-app">
+        <header className="app-header">
+            <h1>Nagari Todo App</h1>
+            <p>Built with React and Nagari!</p>
+        </header>
+
+        <main className="app-main">
+            <TodoForm onAdd={addTodo} />
+
+            <div className="filter-controls">
+                <button
+                    className={filter == "all" ? "active" : ""}
+                    onClick={() => setFilter("all")}
+                >
+                    All
+                </button>
+                <button
+                    className={filter == "active" ? "active" : ""}
+                    onClick={() => setFilter("active")}
+                >
+                    Active
+                </button>
+                <button
+                    className={filter == "completed" ? "active" : ""}
+                    onClick={() => setFilter("completed")}
+                >
+                    Completed
+                </button>
+            </div>
+
+            <div className="todo-list">
+                {len(filteredTodos) == 0 ?
+                    <div className="empty-state">
+                        {filter == "all" ? "No todos yet. Add one above!" :
+                         filter == "active" ? "No active todos!" :
+                         "No completed todos!"}
+                    </div>
+                    :
+                    filteredTodos.map(todo =>
+                        <TodoItem
+                            key={todo.id}
+                            todo={todo}
+                            onToggle={toggleTodo}
+                            onDelete={deleteTodo}
+                        />
+                    )
+                }
+            </div>
+
+            <TodoStats todos={todos} />
+
+            {len(todos.filter(t => t.completed)) > 0 ?
+                <button onClick={clearCompleted} className="clear-completed">
+                    Clear Completed
+                </button>
+                : None
+            }
+        </main>
+    </div>
+
+# Export components for testing and reuse
+export default TodoApp
+export { TodoItem, TodoForm, TodoStats }

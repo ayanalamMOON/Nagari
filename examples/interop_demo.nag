@@ -1,0 +1,82 @@
+# Nagari Interop Test Example
+# This file demonstrates Nagari <-> JavaScript interoperability
+
+# Import React components using interop
+from "react" import React, { useState, useEffect }
+from "express" import express
+
+# Math utilities through interop
+from "Math" import { max, min, floor, ceil }
+
+# Console through interop
+from "console" import { log, error }
+
+# Define a React component in Nagari syntax
+def Counter(props):
+    count, setCount = useState(0)
+
+    useEffect(() => {
+        log(f"Count changed to: {count}")
+    }, [count])
+
+    def handleClick():
+        setCount(count + 1)
+
+    return <div className={props.className}>
+        <h1>Count: {count}</h1>
+        <button onClick={handleClick}>Increment</button>
+    </div>
+
+# Express server using interop
+def createServer():
+    app = express()
+
+    def handleRoot(req, res):
+        res.writeHead(200, {"Content-Type": "text/html"})
+        res.end("<h1>Hello from Nagari!</h1>")
+
+    app.get("/", handleRoot)
+
+    return app
+
+# Math operations using JS Math through interop
+def calculateStats(numbers: list[float]) -> dict:
+    if not numbers:
+        return {"min": 0, "max": 0, "avg": 0}
+
+    minimum = min(...numbers)
+    maximum = max(...numbers)
+    average = sum(numbers) / len(numbers)
+
+    return {
+        "min": minimum,
+        "max": maximum,
+        "avg": floor(average * 100) / 100  # Round to 2 decimal places
+    }
+
+# Async function using interop
+async def fetchUserData(userId: int) -> dict:
+    try:
+        response = await fetch(f"https://api.example.com/users/{userId}")
+        data = await response.json()
+        return data
+    except Exception as e:
+        error(f"Failed to fetch user data: {e}")
+        return {}
+
+# DOM manipulation through interop
+def setupUI():
+    # Get DOM elements
+    root = document.getElementById("root")
+    button = document.createElement("button")
+
+    button.textContent = "Click me!"
+    button.addEventListener("click", () => {
+        log("Button clicked!")
+    })
+
+    root.appendChild(button)
+
+# Export for use in JavaScript
+export default Counter
+export { createServer, calculateStats, fetchUserData, setupUI }

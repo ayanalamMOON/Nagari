@@ -1,0 +1,33 @@
+async def fetchUserData(userId: int):
+    response = await fetch(f"https://jsonplaceholder.typicode.com/users/{userId}")
+
+    if not response.ok:
+        throw new Error(f"Failed to fetch user {userId}")
+
+    return response.json()
+
+async def fetchMultipleUsers(userIds: list[int]):
+    # Fetch multiple users in parallel
+    promises = [fetchUserData(userId) for userId in userIds]
+    users = await Promise.all(promises)
+    return users
+
+async def main():
+    try:
+        # Fetch single user
+        user = await fetchUserData(1)
+        console.log("Single user:", user)
+
+        # Fetch multiple users
+        users = await fetchMultipleUsers([1, 2, 3, 4, 5])
+        console.log("Multiple users:", users)
+
+        # Process users
+        for user in users:
+            console.log(f"Processing {user.name} ({user.email})")
+
+    except error:
+        console.error("Error fetching users:", error)
+
+# Run the async main function
+main().catch(console.error)

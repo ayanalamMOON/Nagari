@@ -1,0 +1,37 @@
+# Nagari Language Project
+
+.DS_Store
+Thumbs.db
+
+# Rust
+target/
+Cargo.lock
+*.rs.bk
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Nagari compiled files
+*.nac
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Test output
+test-output/
+
+# Build artifacts
+dist/
+build/

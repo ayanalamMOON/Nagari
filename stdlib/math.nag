@@ -1,0 +1,78 @@
+# Mathematical functions and constants for Nagari
+
+# Constants
+PI: float = 3.141592653589793
+E: float = 2.718281828459045
+
+def abs(x: float) -> float:
+    """Return the absolute value of x."""
+    builtin
+
+def sqrt(x: float) -> float:
+    """Return the square root of x."""
+    builtin
+
+def pow(x: float, y: float) -> float:
+    """Return x raised to the power of y."""
+    builtin
+
+def floor(x: float) -> int:
+    """Return the floor of x."""
+    builtin
+
+def ceil(x: float) -> int:
+    """Return the ceiling of x."""
+    builtin
+
+def round(x: float, digits: int = 0) -> float:
+    """Round x to the given number of digits."""
+    builtin
+
+def sin(x: float) -> float:
+    """Return the sine of x (in radians)."""
+    builtin
+
+def cos(x: float) -> float:
+    """Return the cosine of x (in radians)."""
+    builtin
+
+def tan(x: float) -> float:
+    """Return the tangent of x (in radians)."""
+    builtin
+
+def log(x: float) -> float:
+    """Return the natural logarithm of x."""
+    builtin
+
+def log10(x: float) -> float:
+    """Return the base-10 logarithm of x."""
+    builtin
+
+def min(*args) -> any:
+    """Return the minimum of the arguments."""
+    if len(args) == 0:
+        return none
+
+    result = args[0]
+    for item in args[1:]:
+        if item < result:
+            result = item
+    return result
+
+def max(*args) -> any:
+    """Return the maximum of the arguments."""
+    if len(args) == 0:
+        return none
+
+    result = args[0]
+    for item in args[1:]:
+        if item > result:
+            result = item
+    return result
+
+def sum(iterable: list) -> any:
+    """Return the sum of all items in the iterable."""
+    result = 0
+    for item in iterable:
+        result = result + item
+    return result

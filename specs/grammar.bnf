@@ -1,0 +1,253 @@
+# Nagari Grammar (BNF)
+# Pythonic syntax that transpiles to JavaScript for full JS ecosystem compatibility
+
+```bnf
+<program> ::= { <statement> }
+
+<statement> ::= <function_def>
+              | <class_def>
+              | <assignment>
+              | <destructuring>
+              | <if_statement>
+              | <while_loop>
+              | <for_loop>
+              | <match_case>
+              | <try_statement>
+              | <expression>
+              | <import_statement>
+              | <export_statement>
+              | <async_def>
+              | <return_statement>
+              | <break_statement>
+              | <continue_statement>
+              | <jsx_element>
+              | <comment>
+
+<function_def> ::= "def" <identifier> "(" [ <params> ] ")" [ "->" <type> ] ":" <newline> <indent> { <statement> } <dedent>
+
+<async_def> ::= "async" <function_def>
+
+<params> ::= <param> { "," <param> }
+
+<param> ::= <identifier> [ ":" <type> ] [ "=" <expression> ]
+
+<if_statement> ::= "if" <expression> ":" <newline> <indent> { <statement> } <dedent>
+                 [ "elif" <expression> ":" <newline> <indent> { <statement> } <dedent> ]*
+                 [ "else" ":" <newline> <indent> { <statement> } <dedent> ]
+
+<for_loop> ::= "for" <identifier> "in" <expression> ":" <newline> <indent> { <statement> } <dedent>
+
+<while_loop> ::= "while" <expression> ":" <newline> <indent> { <statement> } <dedent>
+
+<match_case> ::= "match" <expression> ":" <newline> <indent> { <case_clause> } <dedent>
+
+<case_clause> ::= "case" <pattern> ":" <newline> <indent> { <statement> } <dedent>
+
+<pattern> ::= <literal> | <identifier> | "_"
+
+<import_statement> ::= "import" <identifier> [ "as" <identifier> ]
+                     | "import" "{" <import_list> "}" "from" <string>
+                     | "from" <string> "import" <identifier> [ "as" <identifier> ] { "," <identifier> [ "as" <identifier> ] }
+                     | "from" <string> "import" "*"
+
+<export_statement> ::= "export" <function_def>
+                     | "export" <assignment>
+                     | "export" "default" <expression>
+
+<import_list> ::= <identifier> [ "as" <identifier> ] { "," <identifier> [ "as" <identifier> ] }
+
+<assignment> ::= <identifier> [ ":" <type> ] "=" <expression>
+
+<return_statement> ::= "return" [ <expression> ]
+
+<break_statement> ::= "break"
+
+<continue_statement> ::= "continue"
+
+<expression> ::= <logical_or>
+
+<logical_or> ::= <logical_and> { "or" <logical_and> }
+
+<logical_and> ::= <equality> { "and" <equality> }
+
+<equality> ::= <comparison> { ( "==" | "!=" ) <comparison> }
+
+<comparison> ::= <term> { ( ">" | ">=" | "<" | "<=" ) <term> }
+
+<term> ::= <factor> { ( "+" | "-" ) <factor> }
+
+<factor> ::= <unary> { ( "*" | "/" | "%" ) <unary> }
+
+<unary> ::= ( "not" | "-" | "await" | "..." ) <unary> | <call>
+
+<call> ::= <primary> { "(" [ <arguments> ] ")" | "[" <expression> "]" | "." <identifier> }
+
+<primary> ::= <literal>
+            | <identifier>
+            | "(" <expression> ")"
+            | "[" [ <arguments> ] "]"
+            | "{" [ <dict_items> ] "}"
+            | <jsx_element>
+            | <jsx_fragment>
+            | <arrow_function>
+            | <js_interop>
+
+<arguments> ::= <expression> { "," <expression> }
+
+<dict_items> ::= <dict_item> { "," <dict_item> }
+
+<dict_item> ::= <expression> ":" <expression>
+
+<literal> ::= <number> | <string> | <template_literal> | <boolean> | "none" | "null" | "undefined"
+
+<type> ::= "int" | "float" | "str" | "bool" | "list" | "dict" | "any" | "none"
+         | "Promise" "[" <type> "]"
+         | "list" "[" <type> "]"
+         | "dict" "[" <type> "," <type> "]"
+         | "Element" | "Node" | "HTMLElement"
+         | "Function" | "object" | "unknown"
+
+# JSX Elements for React compatibility
+<jsx_element> ::= "<" <jsx_tag_name> [ <jsx_attributes> ] ">"
+                  [ <jsx_children> ]
+                  "</" <jsx_tag_name> ">"
+                | "<" <jsx_tag_name> [ <jsx_attributes> ] "/>"
+
+<jsx_fragment> ::= "<>" <jsx_children> "</>"
+
+<jsx_tag_name> ::= <identifier> [ "." <identifier> ]*
+
+<jsx_attributes> ::= { <jsx_attribute> }
+
+<jsx_attribute> ::= <identifier> "=" <jsx_attr_value>
+                  | <identifier>
+                  | "{" "..." <expression> "}"
+
+<jsx_attr_value> ::= <string>
+                   | "{" <expression> "}"
+
+<jsx_children> ::= { <jsx_child> }
+
+<jsx_child> ::= <jsx_element>
+              | <jsx_fragment>
+              | <string>
+              | "{" <expression> "}"
+
+# Arrow functions for JS compatibility
+<arrow_function> ::= "(" [ <params> ] ")" "=>" <expression>
+                   | <identifier> "=>" <expression>
+                   | "async" "(" [ <params> ] ")" "=>" <expression>
+                   | "async" <identifier> "=>" <expression>
+
+# JavaScript interop
+<js_interop> ::= "js" "(" <string> ")"
+               | "js" "{" <js_code> "}"
+
+<js_code> ::= .*  # Raw JavaScript code
+
+# Extended features for JavaScript compatibility
+<promise_syntax> ::= "Promise" "." ( "resolve" | "reject" | "all" | "race" ) "(" [ <arguments> ] ")"
+
+<async_call> ::= "await" <expression>
+
+<spread_syntax> ::= "..." <expression>
+
+<destructuring> ::= "[" <destructure_list> "]" "=" <expression>
+                  | "{" <destructure_dict> "}" "=" <expression>
+
+<destructure_list> ::= <identifier> { "," <identifier> } [ "," "..." <identifier> ]
+
+<destructure_dict> ::= <identifier> [ ":" <identifier> ] { "," <identifier> [ ":" <identifier> ] } [ "," "..." <identifier> ]
+
+# Template literals (f-strings that transpile to template literals)
+<template_literal> ::= "f\"" <template_content> "\""
+
+<template_content> ::= { <template_char> | <template_expr> }
+
+<template_expr> ::= "{" <expression> "}"
+
+<template_char> ::= [^"{}] | "\\" .
+
+# DOM/Web API bindings
+<dom_query> ::= "document" "." ( "getElementById" | "querySelector" | "querySelectorAll" ) "(" <string> ")"
+              | "window" "." <identifier> { "." <identifier> }
+
+# Event handling
+<event_listener> ::= <expression> "." "addEventListener" "(" <string> "," <expression> [ "," <expression> ] ")"
+
+# Promises and async patterns
+<promise_chain> ::= <expression> "." "then" "(" <expression> ")" [ "." "catch" "(" <expression> ")" ]
+
+# Module system enhancements
+<dynamic_import> ::= "import" "(" <string> ")"
+
+# Class definitions (for compatibility with JS classes)
+<class_def> ::= "class" <identifier> [ "(" <identifier> ")" ] ":" <newline> <indent> { <class_member> } <dedent>
+
+<class_member> ::= <method_def> | <property_def>
+
+<method_def> ::= [ "static" ] <function_def>
+               | [ "static" ] <async_def>
+
+<property_def> ::= <identifier> [ ":" <type> ] "=" <expression>
+
+# Try/catch for error handling
+<try_statement> ::= "try" ":" <newline> <indent> { <statement> } <dedent>
+                    [ "except" [ <identifier> [ "as" <identifier> ] ] ":" <newline> <indent> { <statement> } <dedent> ]*
+                    [ "finally" ":" <newline> <indent> { <statement> } <dedent> ]
+
+# Example Nagari code patterns that transpile to JavaScript:
+
+# React component:
+# def MyComponent(props):
+#     return <div className={props.className}>Hello {props.name}</div>
+#
+# Transpiles to:
+# function MyComponent(props) {
+#     return React.createElement("div", { className: props.className }, "Hello ", props.name);
+# }
+
+# Async/await:
+# async def fetchData(url: str) -> Promise[dict]:
+#     response = await fetch(url)
+#     return await response.json()
+#
+# Transpiles to:
+# async function fetchData(url) {
+#     const response = await fetch(url);
+#     return await response.json();
+# }
+
+# Import statements:
+# from "react" import React, { useState }
+# import express from "express"
+#
+# Transpiles to:
+# import React, { useState } from "react";
+# import express from "express";
+
+# JSX with event handlers:
+# button = <button onClick={handleClick}>Click me</button>
+#
+# Transpiles to:
+# const button = React.createElement("button", { onClick: handleClick }, "Click me");
+
+# Class definition:
+# class User:
+#     def __init__(self, name: str):
+#         self.name = name
+#
+#     def greet(self) -> str:
+#         return f"Hello, {self.name}!"
+#
+# Transpiles to:
+# class User {
+#     constructor(name) {
+#         this.name = name;
+#     }
+#
+#     greet() {
+#         return `Hello, ${this.name}!`;
+#     }
+# }
+````

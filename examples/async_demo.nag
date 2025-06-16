@@ -1,0 +1,33 @@
+import http
+import json
+
+async def fetch_user_data(user_id: int) -> dict:
+    url = f"https://jsonplaceholder.typicode.com/users/{user_id}"
+    response = await http.get(url)
+    return response
+
+async def create_post(title: str, body: str, user_id: int) -> dict:
+    url = "https://jsonplaceholder.typicode.com/posts"
+    data = {
+        "title": title,
+        "body": body,
+        "userId": user_id
+    }
+    response = await http.post(url, data)
+    return response
+
+async def main():
+    print("Fetching user data...")
+    user = await fetch_user_data(1)
+    print("User:", user.get("name", "Unknown"))
+
+    print("\nCreating a new post...")
+    post = await create_post(
+        "My First Nagari Post",
+        "This post was created using the Nagari programming language!",
+        1
+    )
+    print("Created post with ID:", post.get("id", "unknown"))
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,31 @@
+{
+    "name": "nagari-runtime",
+    "version": "0.1.0",
+    "description": "Runtime utilities and polyfills for Nagari language",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "test": "jest",
+        "prepublish": "npm run build"
+    },
+    "keywords": [
+        "nagari",
+        "runtime",
+        "transpiler",
+        "javascript"
+    ],
+    "author": "Nagari Team",
+    "license": "MIT",
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0",
+        "jest": "^29.0.0",
+        "@types/jest": "^29.0.0"
+    },
+    "files": [
+        "dist",
+        "README.md"
+    ]
+}

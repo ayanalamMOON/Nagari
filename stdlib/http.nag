@@ -1,0 +1,37 @@
+# HTTP utilities for Nagari
+# Async-first HTTP client and server functionality
+
+async def get(url: str, headers: dict = none) -> dict:
+    """Send an HTTP GET request."""
+    builtin
+
+async def post(url: str, data: any = none, headers: dict = none) -> dict:
+    """Send an HTTP POST request."""
+    builtin
+
+async def put(url: str, data: any = none, headers: dict = none) -> dict:
+    """Send an HTTP PUT request."""
+    builtin
+
+async def delete(url: str, headers: dict = none) -> dict:
+    """Send an HTTP DELETE request."""
+    builtin
+
+def parse_url(url: str) -> dict:
+    """Parse a URL into components."""
+    builtin
+
+class Response:
+    def __init__(self, status: int, body: str, headers: dict):
+        self.status = status
+        self.body = body
+        self.headers = headers
+
+    def json(self) -> dict:
+        """Parse response body as JSON."""
+        import json
+        return json.loads(self.body)
+
+    def text(self) -> str:
+        """Get response body as text."""
+        return self.body

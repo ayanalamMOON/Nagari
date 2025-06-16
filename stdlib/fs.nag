@@ -1,0 +1,61 @@
+# File system operations for Nagari
+
+def read_file(path: str) -> str:
+    """Read the contents of a file as a string."""
+    builtin
+
+def write_file(path: str, content: str):
+    """Write content to a file."""
+    builtin
+
+def read_bytes(path: str) -> list[int]:
+    """Read the contents of a file as bytes."""
+    builtin
+
+def write_bytes(path: str, data: list[int]):
+    """Write bytes to a file."""
+    builtin
+
+def exists(path: str) -> bool:
+    """Check if a file or directory exists."""
+    builtin
+
+def is_file(path: str) -> bool:
+    """Check if path is a file."""
+    builtin
+
+def is_dir(path: str) -> bool:
+    """Check if path is a directory."""
+    builtin
+
+def list_dir(path: str) -> list[str]:
+    """List contents of a directory."""
+    builtin
+
+def create_dir(path: str):
+    """Create a directory."""
+    builtin
+
+def remove_file(path: str):
+    """Remove a file."""
+    builtin
+
+def remove_dir(path: str):
+    """Remove a directory."""
+    builtin
+
+def join_path(*parts: str) -> str:
+    """Join path components."""
+    builtin
+
+def basename(path: str) -> str:
+    """Get the basename of a path."""
+    builtin
+
+def dirname(path: str) -> str:
+    """Get the directory name of a path."""
+    builtin
+
+def get_size(path: str) -> int:
+    """Get the size of a file in bytes."""
+    builtin

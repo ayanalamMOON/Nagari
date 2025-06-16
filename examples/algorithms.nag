@@ -1,0 +1,55 @@
+def factorial(n: int) -> int:
+    if n <= 1:
+        return 1
+    else:
+        return n * factorial(n - 1)
+
+def fibonacci(n: int) -> int:
+    if n <= 1:
+        return n
+    else:
+        return fibonacci(n - 1) + fibonacci(n - 2)
+
+def is_prime(n: int) -> bool:
+    if n < 2:
+        return false
+
+    for i in range(2, int(math.sqrt(n)) + 1):
+        if n % i == 0:
+            return false
+
+    return true
+
+def gcd(a: int, b: int) -> int:
+    while b != 0:
+        temp = b
+        b = a % b
+        a = temp
+    return a
+
+def main():
+    print("Factorial of 5:", factorial(5))
+    print("Fibonacci of 10:", fibonacci(10))
+    print("Is 17 prime?", is_prime(17))
+    print("GCD of 48 and 18:", gcd(48, 18))
+
+    # Pattern matching example
+    def check_number(n: int):
+        match n:
+            case 0:
+                print("Zero")
+            case 1:
+                print("One")
+            case _:
+                if n > 0:
+                    print("Positive number")
+                else:
+                    print("Negative number")
+
+    check_number(0)
+    check_number(1)
+    check_number(42)
+    check_number(-5)
+
+if __name__ == "__main__":
+    main()
