@@ -1,6 +1,5 @@
 #[derive(Debug, Clone, PartialEq)]
-pub enum Token {
-    // Keywords
+pub enum Token {    // Keywords
     Def,
     Return,
     If,
@@ -16,6 +15,24 @@ pub enum Token {
     Await,
     Break,
     Continue,
+    Class,
+    Try,
+    Except,
+    Finally,
+    Raise,
+    With,
+    As,
+    Lambda,
+    Yield,
+    In,
+    Is,
+    And,
+    Or,
+    Not,
+    Type,
+    Property,
+    Export,
+    Default,
 
     // Literals
     Identifier(String),
@@ -23,14 +40,13 @@ pub enum Token {
     FloatLiteral(f64),
     StringLiteral(String),
     BoolLiteral(bool),
-    None,
-
-    // Operators
+    None,    // Operators
     Plus,
     Minus,
     Multiply,
     Divide,
     Modulo,
+    Power,          // **
     Equal,
     NotEqual,
     Less,
@@ -38,6 +54,14 @@ pub enum Token {
     LessEqual,
     GreaterEqual,
     Assign,
+    PlusAssign,     // +=
+    MinusAssign,    // -=
+    MultiplyAssign, // *=
+    DivideAssign,   // /=
+    Pipe,           // | (for union types)
+    Ellipsis,       // ...
+    Question,       // ? (for optional)
+    At,             // @ (for decorators)
 
     // Delimiters
     LeftParen,

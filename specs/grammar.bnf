@@ -145,6 +145,74 @@
 
 <js_code> ::= .*  # Raw JavaScript code
 
+# List and dictionary comprehensions
+<list_comprehension> ::= "[" <expression> "for" <identifier> "in" <expression> [ "if" <expression> ] "]"
+
+<dict_comprehension> ::= "{" <expression> ":" <expression> "for" <identifier> "in" <expression> [ "if" <expression> ] "}"
+
+# Lambda expressions
+<lambda_expression> ::= "lambda" [ <params> ] ":" <expression>
+
+# With statements for context management
+<with_statement> ::= "with" <expression> [ "as" <identifier> ] ":" <newline> <indent> { <statement> } <dedent>
+
+# Generator expressions and yield
+<generator_expression> ::= "(" <expression> "for" <identifier> "in" <expression> [ "if" <expression> ] ")"
+
+<yield_statement> ::= "yield" [ <expression> ]
+                   | "yield" "from" <expression>
+
+# Exception handling improvements
+<raise_statement> ::= "raise" [ <expression> [ "from" <expression> ] ]
+
+# Enhanced pattern matching with guards
+<case_clause> ::= "case" <pattern> [ "if" <expression> ] ":" <newline> <indent> { <statement> } <dedent>
+
+<pattern> ::= <literal>
+            | <identifier>
+            | "_"
+            | "[" [ <pattern_list> ] "]"
+            | "{" [ <pattern_dict> ] "}"
+            | <identifier> "(" [ <pattern_list> ] ")"
+
+<pattern_list> ::= <pattern> { "," <pattern> } [ "," "..." <identifier> ]
+
+<pattern_dict> ::= <identifier> ":" <pattern> { "," <identifier> ":" <pattern> } [ "," "..." <identifier> ]
+
+# Decorator syntax
+<decorator> ::= "@" <expression> <newline>
+
+<function_def> ::= { <decorator> } "def" <identifier> "(" [ <params> ] ")" [ "->" <type> ] ":" <newline> <indent> { <statement> } <dedent>
+
+# Property definitions with getters/setters
+<property_def> ::= "@property" <newline> <function_def>
+                 | "@" <identifier> ".setter" <newline> <function_def>
+
+# Type aliases and generic types
+<type_alias> ::= "type" <identifier> [ "[" <type_params> "]" ] "=" <type>
+
+<type_params> ::= <identifier> { "," <identifier> }
+
+# Enhanced type annotations
+<type> ::= <simple_type>
+         | <generic_type>
+         | <union_type>
+         | <callable_type>
+         | <tuple_type>
+
+<simple_type> ::= "int" | "float" | "str" | "bool" | "list" | "dict" | "any" | "none"
+                | "Promise" | "Element" | "Node" | "HTMLElement" | "Function" | "object" | "unknown"
+
+<generic_type> ::= <identifier> "[" <type_list> "]"
+
+<union_type> ::= <type> "|" <type> { "|" <type> }
+
+<callable_type> ::= "(" [ <type_list> ] ")" "->" <type>
+
+<tuple_type> ::= "(" <type> { "," <type> } ")"
+
+<type_list> ::= <type> { "," <type> }
+
 # Extended features for JavaScript compatibility
 <promise_syntax> ::= "Promise" "." ( "resolve" | "reject" | "all" | "race" ) "(" [ <arguments> ] ")"
 
