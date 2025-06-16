@@ -1,0 +1,697 @@
+# Nagari Browser APIs Example
+# Demonstrates working with DOM, fetch, localStorage, and other browser APIs
+# This example shows how to interact with web browser features from Nagari
+
+from js import document, window, localStorage, sessionStorage, fetch, navigator, location
+import { setTimeout, setInterval, clearTimeout, clearInterval } from js("global")
+
+# ===== DOM Manipulation =====
+class DOMHelper:
+    """Helper class for DOM operations"""
+
+    @staticmethod
+    def get_element(selector: str) -> Any:
+        """Get element by CSS selector"""
+        return document.querySelector(selector)
+
+    @staticmethod
+    def get_elements(selector: str) -> List:
+        """Get all elements matching CSS selector"""
+        elements = document.querySelectorAll(selector)
+        return [elements[i] for i in range(elements.length)]
+
+    @staticmethod
+    def create_element(tag: str, attributes: Dict = None, content: str = "") -> Any:
+        """Create new HTML element"""
+        element = document.createElement(tag)
+
+        if attributes:
+            for key, value in attributes.items():
+                element.setAttribute(key, str(value))
+
+        if content:
+            element.textContent = content
+
+        return element
+
+    @staticmethod
+    def add_event_listener(element: Any, event: str, handler: Callable) -> None:
+        """Add event listener to element"""
+        element.addEventListener(event, handler)
+
+    @staticmethod
+    def remove_element(element: Any) -> None:
+        """Remove element from DOM"""
+        if element and element.parentNode:
+            element.parentNode.removeChild(element)
+
+    @staticmethod
+    def animate_element(element: Any, keyframes: List[Dict], options: Dict) -> Any:
+        """Animate element using Web Animations API"""
+        return element.animate(keyframes, options)
+
+# Example DOM manipulation
+def demonstrate_dom():
+    """Demonstrate DOM manipulation features"""
+    print("=== DOM Manipulation Demo ===")
+
+    # Create a container div
+    container = DOMHelper.create_element("div", {
+        "id": "nagari-demo",
+        "class": "demo-container"
+    }, "Nagari DOM Demo")
+
+    # Add styles
+    container.style.cssText = """
+        padding: 20px;
+        margin: 10px;
+        border: 2px solid #007acc;
+        border-radius: 8px;
+        background-color: #f0f8ff;
+    """
+
+    # Add to body (if in browser)
+    try:
+        document.body.appendChild(container)
+        print("Created demo container")
+    except js_error:
+        print("Not in browser environment - DOM operations simulated")
+
+    # Create interactive elements
+    button = DOMHelper.create_element("button", {
+        "id": "demo-button",
+        "type": "button"
+    }, "Click Me!")
+
+    # Add click handler
+    def button_click_handler(event):
+        button.textContent = f"Clicked! Time: {js('Date.now()')}"
+        button.style.backgroundColor = "#28a745"
+
+    DOMHelper.add_event_listener(button, "click", button_click_handler)
+    container.appendChild(button)
+
+    # Create input field with validation
+    input_field = DOMHelper.create_element("input", {
+        "type": "text",
+        "placeholder": "Enter some text...",
+        "id": "demo-input"
+    })
+
+    def input_handler(event):
+        value = event.target.value
+        if len(value) > 5:
+            input_field.style.borderColor = "#28a745"
+        else:
+            input_field.style.borderColor = "#dc3545"
+
+    DOMHelper.add_event_listener(input_field, "input", input_handler)
+    container.appendChild(input_field)
+
+# ===== Local Storage Management =====
+class StorageManager:
+    """Manager for localStorage and sessionStorage"""
+
+    @staticmethod
+    def save_to_local(key: str, value: Any) -> bool:
+        """Save data to localStorage"""
+        try:
+            if isinstance(value, (dict, list)):
+                localStorage.setItem(key, js("JSON.stringify")(value))
+            else:
+                localStorage.setItem(key, str(value))
+            return true
+        except js_error as e:
+            print(f"Error saving to localStorage: {e}")
+            return false
+
+    @staticmethod
+    def load_from_local(key: str, default: Any = None) -> Any:
+        """Load data from localStorage"""
+        try:
+            value = localStorage.getItem(key)
+            if value is None:
+                return default
+
+            # Try to parse as JSON
+            try:
+                return js("JSON.parse")(value)
+            except:
+                return value
+        except js_error as e:
+            print(f"Error loading from localStorage: {e}")
+            return default
+
+    @staticmethod
+    def remove_from_local(key: str) -> bool:
+        """Remove item from localStorage"""
+        try:
+            localStorage.removeItem(key)
+            return true
+        except js_error as e:
+            print(f"Error removing from localStorage: {e}")
+            return false
+
+    @staticmethod
+    def clear_local_storage() -> bool:
+        """Clear all localStorage"""
+        try:
+            localStorage.clear()
+            return true
+        except js_error as e:
+            print(f"Error clearing localStorage: {e}")
+            return false
+
+    @staticmethod
+    def save_to_session(key: str, value: Any) -> bool:
+        """Save data to sessionStorage"""
+        try:
+            if isinstance(value, (dict, list)):
+                sessionStorage.setItem(key, js("JSON.stringify")(value))
+            else:
+                sessionStorage.setItem(key, str(value))
+            return true
+        except js_error as e:
+            print(f"Error saving to sessionStorage: {e}")
+            return false
+
+    @staticmethod
+    def load_from_session(key: str, default: Any = None) -> Any:
+        """Load data from sessionStorage"""
+        try:
+            value = sessionStorage.getItem(key)
+            if value is None:
+                return default
+
+            try:
+                return js("JSON.parse")(value)
+            except:
+                return value
+        except js_error as e:
+            print(f"Error loading from sessionStorage: {e}")
+            return default
+
+# Example storage usage
+def demonstrate_storage():
+    """Demonstrate localStorage and sessionStorage"""
+    print("=== Storage Management Demo ===")
+
+    # Save user preferences
+    user_prefs = {
+        "theme": "dark",
+        "language": "en",
+        "notifications": true,
+        "last_visit": js('Date.now()')
+    }
+
+    # Save to localStorage
+    if StorageManager.save_to_local("user_preferences", user_prefs):
+        print("User preferences saved to localStorage")
+
+    # Load and display
+    loaded_prefs = StorageManager.load_from_local("user_preferences", {})
+    print("Loaded preferences:", loaded_prefs)
+
+    # Save session data
+    session_data = {
+        "session_id": "sess_" + str(js('Math.random()')),
+        "start_time": js('Date.now()'),
+        "page_views": 1
+    }
+
+    StorageManager.save_to_session("session_data", session_data)
+    print("Session data saved")
+
+    # Demonstrate data persistence
+    visit_count = StorageManager.load_from_local("visit_count", 0)
+    visit_count += 1
+    StorageManager.save_to_local("visit_count", visit_count)
+    print(f"Visit count: {visit_count}")
+
+# ===== Fetch API Integration =====
+class FetchClient:
+    """Enhanced fetch API wrapper"""
+
+    def __init__(self, base_url: str = "", default_headers: Dict = None):
+        self.base_url = base_url
+        self.default_headers = default_headers or {}
+
+    async def _fetch(self, url: str, options: Dict = None) -> Dict:
+        """Internal fetch method"""
+        full_url = self.base_url + url if not url.startswith('http') else url
+
+        fetch_options = {
+            'headers': {**self.default_headers}
+        }
+
+        if options:
+            fetch_options.update(options)
+            if 'headers' in options:
+                fetch_options['headers'].update(options['headers'])
+
+        try:
+            response = await fetch(full_url, fetch_options)
+
+            # Get response data
+            content_type = response.headers.get('content-type', '')
+            if 'application/json' in content_type:
+                data = await response.json()
+            else:
+                data = await response.text()
+
+            return {
+                'ok': response.ok,
+                'status': response.status,
+                'statusText': response.statusText,
+                'headers': dict(response.headers),
+                'data': data,
+                'url': response.url
+            }
+        except js_error as e:
+            return {
+                'ok': false,
+                'status': 0,
+                'error': str(e)
+            }
+
+    async def get(self, url: str, params: Dict = None) -> Dict:
+        """GET request"""
+        query_string = ""
+        if params:
+            query_params = js("new URLSearchParams")(params)
+            query_string = "?" + query_params.toString()
+
+        return await self._fetch(url + query_string, {'method': 'GET'})
+
+    async def post(self, url: str, data: Any = None, json_data: Dict = None) -> Dict:
+        """POST request"""
+        options = {'method': 'POST'}
+
+        if json_data:
+            options['body'] = js("JSON.stringify")(json_data)
+            options['headers'] = {'Content-Type': 'application/json'}
+        elif data:
+            options['body'] = data
+
+        return await self._fetch(url, options)
+
+    async def put(self, url: str, data: Any = None, json_data: Dict = None) -> Dict:
+        """PUT request"""
+        options = {'method': 'PUT'}
+
+        if json_data:
+            options['body'] = js("JSON.stringify")(json_data)
+            options['headers'] = {'Content-Type': 'application/json'}
+        elif data:
+            options['body'] = data
+
+        return await self._fetch(url, options)
+
+    async def delete(self, url: str) -> Dict:
+        """DELETE request"""
+        return await self._fetch(url, {'method': 'DELETE'})
+
+    async def download_file(self, url: str, filename: str) -> bool:
+        """Download file and trigger browser download"""
+        try:
+            response = await fetch(url)
+            if response.ok:
+                blob = await response.blob()
+
+                # Create download link
+                link = document.createElement('a')
+                link.href = js("URL.createObjectURL")(blob)
+                link.download = filename
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+
+                # Clean up
+                js("URL.revokeObjectURL")(link.href)
+                return true
+            return false
+        except js_error:
+            return false
+
+# Example fetch usage
+async def demonstrate_fetch():
+    """Demonstrate fetch API usage"""
+    print("=== Fetch API Demo ===")
+
+    # Create fetch client
+    client = FetchClient("https://jsonplaceholder.typicode.com")
+
+    # GET request
+    users_response = await client.get("/users", {"_limit": 3})
+    if users_response['ok']:
+        print("Users fetched:", len(users_response['data']))
+        for user in users_response['data']:
+            print(f"  - {user['name']} ({user['email']})")
+
+    # POST request
+    new_post = {
+        "title": "Nagari Browser API Demo",
+        "body": "This post was created using Nagari's fetch wrapper!",
+        "userId": 1
+    }
+
+    post_response = await client.post("/posts", json_data=new_post)
+    if post_response['ok']:
+        print("New post created:", post_response['data']['title'])
+
+# ===== Browser Information and Navigation =====
+class BrowserInfo:
+    """Get browser and device information"""
+
+    @staticmethod
+    def get_user_agent() -> str:
+        """Get browser user agent"""
+        return navigator.userAgent
+
+    @staticmethod
+    def get_browser_info() -> Dict:
+        """Get comprehensive browser information"""
+        return {
+            'userAgent': navigator.userAgent,
+            'platform': navigator.platform,
+            'language': navigator.language,
+            'languages': list(navigator.languages) if hasattr(navigator, 'languages') else [],
+            'cookieEnabled': navigator.cookieEnabled,
+            'onLine': navigator.onLine,
+            'geolocation': hasattr(navigator, 'geolocation')
+        }
+
+    @staticmethod
+    def get_screen_info() -> Dict:
+        """Get screen information"""
+        return {
+            'width': window.screen.width,
+            'height': window.screen.height,
+            'availWidth': window.screen.availWidth,
+            'availHeight': window.screen.availHeight,
+            'colorDepth': window.screen.colorDepth,
+            'pixelDepth': window.screen.pixelDepth
+        }
+
+    @staticmethod
+    def get_window_info() -> Dict:
+        """Get window information"""
+        return {
+            'innerWidth': window.innerWidth,
+            'innerHeight': window.innerHeight,
+            'outerWidth': window.outerWidth,
+            'outerHeight': window.outerHeight,
+            'scrollX': window.scrollX,
+            'scrollY': window.scrollY
+        }
+
+    @staticmethod
+    def get_location_info() -> Dict:
+        """Get location information"""
+        return {
+            'href': location.href,
+            'protocol': location.protocol,
+            'host': location.host,
+            'hostname': location.hostname,
+            'port': location.port,
+            'pathname': location.pathname,
+            'search': location.search,
+            'hash': location.hash
+        }
+
+# Example browser info usage
+def demonstrate_browser_info():
+    """Demonstrate browser information gathering"""
+    print("=== Browser Information Demo ===")
+
+    # Browser details
+    browser_info = BrowserInfo.get_browser_info()
+    print("Browser Info:")
+    for key, value in browser_info.items():
+        print(f"  {key}: {value}")
+
+    # Screen info
+    screen_info = BrowserInfo.get_screen_info()
+    print("\nScreen Info:")
+    for key, value in screen_info.items():
+        print(f"  {key}: {value}")
+
+    # Window info
+    try:
+        window_info = BrowserInfo.get_window_info()
+        print("\nWindow Info:")
+        for key, value in window_info.items():
+            print(f"  {key}: {value}")
+    except js_error:
+        print("Window info not available (not in browser)")
+
+    # Location info
+    try:
+        location_info = BrowserInfo.get_location_info()
+        print("\nLocation Info:")
+        for key, value in location_info.items():
+            print(f"  {key}: {value}")
+    except js_error:
+        print("Location info not available")
+
+# ===== Timer and Animation APIs =====
+class TimerManager:
+    """Manager for timers and animations"""
+
+    def __init__(self):
+        self.active_timeouts = {}
+        self.active_intervals = {}
+
+    def set_timeout(self, callback: Callable, delay: int, timer_id: str = None) -> str:
+        """Set a timeout with optional ID"""
+        if not timer_id:
+            timer_id = f"timeout_{js('Math.random()')}"
+
+        timeout_id = setTimeout(callback, delay)
+        self.active_timeouts[timer_id] = timeout_id
+        return timer_id
+
+    def clear_timeout(self, timer_id: str) -> bool:
+        """Clear a timeout by ID"""
+        if timer_id in self.active_timeouts:
+            clearTimeout(self.active_timeouts[timer_id])
+            del self.active_timeouts[timer_id]
+            return true
+        return false
+
+    def set_interval(self, callback: Callable, interval: int, timer_id: str = None) -> str:
+        """Set an interval with optional ID"""
+        if not timer_id:
+            timer_id = f"interval_{js('Math.random()')}"
+
+        interval_id = setInterval(callback, interval)
+        self.active_intervals[timer_id] = interval_id
+        return timer_id
+
+    def clear_interval(self, timer_id: str) -> bool:
+        """Clear an interval by ID"""
+        if timer_id in self.active_intervals:
+            clearInterval(self.active_intervals[timer_id])
+            del self.active_intervals[timer_id]
+            return true
+        return false
+
+    def clear_all_timers(self):
+        """Clear all active timers"""
+        for timeout_id in self.active_timeouts.values():
+            clearTimeout(timeout_id)
+        for interval_id in self.active_intervals.values():
+            clearInterval(interval_id)
+
+        self.active_timeouts.clear()
+        self.active_intervals.clear()
+
+    def request_animation_frame(self, callback: Callable) -> int:
+        """Request animation frame"""
+        return window.requestAnimationFrame(callback)
+
+    def cancel_animation_frame(self, frame_id: int):
+        """Cancel animation frame"""
+        window.cancelAnimationFrame(frame_id)
+
+# Example timer usage
+def demonstrate_timers():
+    """Demonstrate timer and animation APIs"""
+    print("=== Timer and Animation Demo ===")
+
+    timer_manager = TimerManager()
+
+    # Timeout example
+    def timeout_callback():
+        print("Timeout executed after 2 seconds!")
+
+    timeout_id = timer_manager.set_timeout(timeout_callback, 2000, "demo_timeout")
+    print(f"Set timeout with ID: {timeout_id}")
+
+    # Interval example (would run continuously)
+    counter = 0
+    def interval_callback():
+        nonlocal counter
+        counter += 1
+        print(f"Interval tick: {counter}")
+        if counter >= 5:
+            timer_manager.clear_interval("demo_interval")
+            print("Interval cleared")
+
+    interval_id = timer_manager.set_interval(interval_callback, 1000, "demo_interval")
+    print(f"Set interval with ID: {interval_id}")
+
+# ===== Geolocation API =====
+class GeolocationManager:
+    """Manager for geolocation services"""
+
+    @staticmethod
+    def get_current_position() -> Dict:
+        """Get current position (returns Promise in actual browser)"""
+        def success_callback(position):
+            return {
+                'latitude': position.coords.latitude,
+                'longitude': position.coords.longitude,
+                'accuracy': position.coords.accuracy,
+                'altitude': position.coords.altitude,
+                'altitudeAccuracy': position.coords.altitudeAccuracy,
+                'heading': position.coords.heading,
+                'speed': position.coords.speed,
+                'timestamp': position.timestamp
+            }
+
+        def error_callback(error):
+            return {
+                'error': error.message,
+                'code': error.code
+            }
+
+        try:
+            # In actual browser, this would return a Promise
+            navigator.geolocation.getCurrentPosition(success_callback, error_callback)
+            return {'status': 'requested'}
+        except js_error:
+            return {'error': 'Geolocation not supported'}
+
+    @staticmethod
+    def watch_position(callback: Callable, options: Dict = None) -> int:
+        """Watch position changes"""
+        default_options = {
+            'enableHighAccuracy': true,
+            'timeout': 5000,
+            'maximumAge': 0
+        }
+
+        watch_options = {**default_options, **(options or {})}
+
+        try:
+            return navigator.geolocation.watchPosition(callback, None, watch_options)
+        except js_error:
+            return -1
+
+    @staticmethod
+    def clear_watch(watch_id: int):
+        """Clear position watch"""
+        try:
+            navigator.geolocation.clearWatch(watch_id)
+        except js_error:
+            pass
+
+# ===== Main Demo Function =====
+async def main():
+    """Main function demonstrating all browser APIs"""
+    print("=== Nagari Browser APIs Comprehensive Demo ===\n")
+
+    print("1. DOM Manipulation:")
+    demonstrate_dom()
+    print()
+
+    print("2. Storage Management:")
+    demonstrate_storage()
+    print()
+
+    print("3. Fetch API:")
+    await demonstrate_fetch()
+    print()
+
+    print("4. Browser Information:")
+    demonstrate_browser_info()
+    print()
+
+    print("5. Timers and Animation:")
+    demonstrate_timers()
+    print()
+
+    print("6. Geolocation:")
+    geo_result = GeolocationManager.get_current_position()
+    print("Geolocation request:", geo_result)
+    print()
+
+    print("=== Browser APIs Demo Complete ===")
+    print("\nNote: Some features require an actual browser environment to function fully.")
+
+# Additional utility functions for common browser tasks
+class BrowserUtils:
+    """Additional browser utility functions"""
+
+    @staticmethod
+    def copy_to_clipboard(text: str) -> bool:
+        """Copy text to clipboard"""
+        try:
+            navigator.clipboard.writeText(text)
+            return true
+        except js_error:
+            # Fallback method
+            try:
+                text_area = document.createElement('textarea')
+                text_area.value = text
+                document.body.appendChild(text_area)
+                text_area.select()
+                document.execCommand('copy')
+                document.body.removeChild(text_area)
+                return true
+            except:
+                return false
+
+    @staticmethod
+    async def read_from_clipboard() -> str:
+        """Read text from clipboard"""
+        try:
+            return await navigator.clipboard.readText()
+        except js_error:
+            return ""
+
+    @staticmethod
+    def open_new_tab(url: str):
+        """Open URL in new tab"""
+        window.open(url, '_blank')
+
+    @staticmethod
+    def reload_page():
+        """Reload current page"""
+        location.reload()
+
+    @staticmethod
+    def go_back():
+        """Go back in browser history"""
+        window.history.back()
+
+    @staticmethod
+    def go_forward():
+        """Go forward in browser history"""
+        window.history.forward()
+
+    @staticmethod
+    def scroll_to_top():
+        """Scroll to top of page"""
+        window.scrollTo(0, 0)
+
+    @staticmethod
+    def scroll_to_element(element: Any):
+        """Scroll to specific element"""
+        element.scrollIntoView({'behavior': 'smooth'})
+
+# Run the demo
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())

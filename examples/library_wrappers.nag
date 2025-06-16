@@ -1,0 +1,357 @@
+# Nagari Library Wrappers Example
+# Demonstrates how to wrap popular JavaScript libraries for use in Nagari
+# This example shows patterns for integrating with Lodash, Moment.js, Axios, and Chart.js
+
+# Import JavaScript libraries
+from js import lodash as _, moment, axios, Chart
+import { createCanvas } from js("canvas")
+
+# ===== Lodash Integration =====
+class LodashUtils:
+    """Wrapper for Lodash utility functions with Nagari typing"""
+
+    @staticmethod
+    def deep_clone(obj: Dict) -> Dict:
+        """Deep clone an object using Lodash"""
+        return _.cloneDeep(obj)
+
+    @staticmethod
+    def chunk_array(arr: List, size: int) -> List[List]:
+        """Split array into chunks of specified size"""
+        return _.chunk(arr, size)
+
+    @staticmethod
+    def debounce(func: Callable, wait: int) -> Callable:
+        """Create debounced version of function"""
+        return _.debounce(func, wait)
+
+    @staticmethod
+    def find_deep(obj: Dict, path: str) -> Any:
+        """Find value at deep path in object"""
+        return _.get(obj, path)
+
+# Example usage of Lodash wrapper
+def demonstrate_lodash():
+    data = {
+        "users": [
+            {"name": "Alice", "age": 25, "active": true},
+            {"name": "Bob", "age": 30, "active": false},
+            {"name": "Charlie", "age": 35, "active": true}
+        ]
+    }
+
+    # Deep clone
+    cloned_data = LodashUtils.deep_clone(data)
+    print("Cloned data:", cloned_data)
+
+    # Chunk array
+    numbers = list(range(10))
+    chunked = LodashUtils.chunk_array(numbers, 3)
+    print("Chunked numbers:", chunked)
+
+    # Find deep value
+    first_user_name = LodashUtils.find_deep(data, "users.0.name")
+    print("First user name:", first_user_name)
+
+# ===== Moment.js Integration =====
+class DateTimeUtils:
+    """Wrapper for Moment.js date/time operations"""
+
+    def __init__(self, date_str: str = None):
+        if date_str:
+            self.moment = moment(date_str)
+        else:
+            self.moment = moment()
+
+    def format(self, format_str: str) -> str:
+        """Format date using Moment.js patterns"""
+        return self.moment.format(format_str)
+
+    def add(self, amount: int, unit: str) -> 'DateTimeUtils':
+        """Add time to date"""
+        new_moment = self.moment.add(amount, unit)
+        result = DateTimeUtils()
+        result.moment = new_moment
+        return result
+
+    def diff(self, other: 'DateTimeUtils', unit: str = 'days') -> int:
+        """Calculate difference between dates"""
+        return self.moment.diff(other.moment, unit)
+
+    def is_valid(self) -> bool:
+        """Check if date is valid"""
+        return self.moment.isValid()
+
+    @staticmethod
+    def from_now(date_str: str) -> str:
+        """Get relative time from now"""
+        return moment(date_str).fromNow()
+
+# Example usage of Moment.js wrapper
+def demonstrate_datetime():
+    # Create dates
+    now = DateTimeUtils()
+    birthday = DateTimeUtils("1990-05-15")
+
+    print("Current time:", now.format("YYYY-MM-DD HH:mm:ss"))
+    print("Birthday:", birthday.format("MMMM Do, YYYY"))
+
+    # Calculate age
+    age_days = now.diff(birthday, 'days')
+    age_years = now.diff(birthday, 'years')
+    print(f"Age: {age_years} years ({age_days} days)")
+
+    # Relative time
+    print("Relative time:", DateTimeUtils.from_now("2023-01-01"))
+
+    # Add time
+    next_week = now.add(7, 'days')
+    print("Next week:", next_week.format("dddd, MMMM Do"))
+
+# ===== Axios HTTP Client Integration =====
+class HttpClient:
+    """Wrapper for Axios HTTP client with async/await support"""
+
+    def __init__(self, base_url: str = "", headers: Dict = None):
+        self.client = axios.create({
+            'baseURL': base_url,
+            'headers': headers or {},
+            'timeout': 10000
+        })
+
+    async def get(self, url: str, params: Dict = None) -> Dict:
+        """Perform GET request"""
+        try:
+            response = await self.client.get(url, {'params': params})
+            return {
+                'data': response.data,
+                'status': response.status,
+                'headers': response.headers
+            }
+        except js_error as e:
+            return {'error': str(e), 'status': 0}
+
+    async def post(self, url: str, data: Dict = None, json: Dict = None) -> Dict:
+        """Perform POST request"""
+        try:
+            payload = json if json else data
+            response = await self.client.post(url, payload)
+            return {
+                'data': response.data,
+                'status': response.status,
+                'headers': response.headers
+            }
+        except js_error as e:
+            return {'error': str(e), 'status': 0}
+
+    async def put(self, url: str, data: Dict) -> Dict:
+        """Perform PUT request"""
+        try:
+            response = await self.client.put(url, data)
+            return {
+                'data': response.data,
+                'status': response.status
+            }
+        except js_error as e:
+            return {'error': str(e), 'status': 0}
+
+    async def delete(self, url: str) -> Dict:
+        """Perform DELETE request"""
+        try:
+            response = await self.client.delete(url)
+            return {'status': response.status}
+        except js_error as e:
+            return {'error': str(e), 'status': 0}
+
+# Example usage of HTTP client wrapper
+async def demonstrate_http_client():
+    # Create client for JSONPlaceholder API
+    client = HttpClient("https://jsonplaceholder.typicode.com")
+
+    # Get posts
+    posts_response = await client.get("/posts", {"_limit": 5})
+    if 'error' not in posts_response:
+        print("First 5 posts:", posts_response['data'])
+
+    # Create new post
+    new_post = {
+        'title': 'Nagari HTTP Client Demo',
+        'body': 'This post was created using Nagari!',
+        'userId': 1
+    }
+
+    create_response = await client.post("/posts", json=new_post)
+    if 'error' not in create_response:
+        print("Created post:", create_response['data'])
+
+    # Update post
+    updated_post = {**new_post, 'id': 1, 'title': 'Updated Title'}
+    update_response = await client.put("/posts/1", updated_post)
+    if 'error' not in update_response:
+        print("Updated post:", update_response['data'])
+
+# ===== Chart.js Integration =====
+class ChartWrapper:
+    """Wrapper for Chart.js charting library"""
+
+    def __init__(self, canvas_id: str):
+        self.canvas = js(f"document.getElementById('{canvas_id}')")
+        self.ctx = self.canvas.getContext('2d')
+        self.chart = None
+
+    def create_line_chart(self, data: Dict, options: Dict = None) -> None:
+        """Create a line chart"""
+        config = {
+            'type': 'line',
+            'data': data,
+            'options': options or self._default_options()
+        }
+        self.chart = js("new Chart")(self.ctx, config)
+
+    def create_bar_chart(self, data: Dict, options: Dict = None) -> None:
+        """Create a bar chart"""
+        config = {
+            'type': 'bar',
+            'data': data,
+            'options': options or self._default_options()
+        }
+        self.chart = js("new Chart")(self.ctx, config)
+
+    def create_pie_chart(self, data: Dict, options: Dict = None) -> None:
+        """Create a pie chart"""
+        config = {
+            'type': 'pie',
+            'data': data,
+            'options': options or {}
+        }
+        self.chart = js("new Chart")(self.ctx, config)
+
+    def update_data(self, new_data: Dict) -> None:
+        """Update chart data"""
+        if self.chart:
+            self.chart.data = new_data
+            self.chart.update()
+
+    def destroy(self) -> None:
+        """Destroy chart instance"""
+        if self.chart:
+            self.chart.destroy()
+            self.chart = None
+
+    def _default_options(self) -> Dict:
+        """Default chart options"""
+        return {
+            'responsive': true,
+            'plugins': {
+                'legend': {
+                    'position': 'top'
+                },
+                'title': {
+                    'display': true,
+                    'text': 'Nagari Chart Demo'
+                }
+            }
+        }
+
+# Example usage of Chart.js wrapper
+def demonstrate_charts():
+    # Sample data for charts
+    monthly_sales = {
+        'labels': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        'datasets': [{
+            'label': 'Sales ($)',
+            'data': [12000, 19000, 15000, 25000, 22000, 30000],
+            'borderColor': 'rgb(75, 192, 192)',
+            'backgroundColor': 'rgba(75, 192, 192, 0.2)',
+            'tension': 0.1
+        }]
+    }
+
+    # Create line chart (assuming canvas element exists)
+    # line_chart = ChartWrapper('sales-chart')
+    # line_chart.create_line_chart(monthly_sales)
+
+    print("Chart data prepared:", monthly_sales)
+
+# ===== Library Integration Patterns =====
+class LibraryIntegration:
+    """Patterns for integrating any JavaScript library"""
+
+    @staticmethod
+    def create_wrapper_class(js_constructor: str, methods: List[str]) -> type:
+        """Dynamically create wrapper class for JS library"""
+
+        def __init__(self, *args, **kwargs):
+            self._js_instance = js(js_constructor)(*args, **kwargs)
+
+        def create_method(method_name):
+            def wrapper_method(self, *args, **kwargs):
+                return getattr(self._js_instance, method_name)(*args, **kwargs)
+            return wrapper_method
+
+        # Create class with methods
+        class_dict = {'__init__': __init__}
+        for method in methods:
+            class_dict[method] = create_method(method)
+
+        return type(f"{js_constructor}Wrapper", (), class_dict)
+
+    @staticmethod
+    def wrap_function(js_function_name: str) -> Callable:
+        """Wrap a standalone JavaScript function"""
+        def wrapper(*args, **kwargs):
+            js_func = js(js_function_name)
+            return js_func(*args, **kwargs)
+        return wrapper
+
+    @staticmethod
+    def create_typed_wrapper(js_object: str, type_map: Dict[str, type]) -> type:
+        """Create wrapper with type checking"""
+
+        def __init__(self, *args, **kwargs):
+            self._js_instance = js(js_object)(*args, **kwargs)
+
+        def create_typed_method(method_name, expected_type):
+            def wrapper_method(self, *args, **kwargs):
+                result = getattr(self._js_instance, method_name)(*args, **kwargs)
+                if not isinstance(result, expected_type):
+                    try:
+                        result = expected_type(result)
+                    except (ValueError, TypeError):
+                        print(f"Warning: {method_name} returned unexpected type")
+                return result
+            return wrapper_method
+
+        class_dict = {'__init__': __init__}
+        for method_name, return_type in type_map.items():
+            class_dict[method_name] = create_typed_method(method_name, return_type)
+
+        return type(f"{js_object}TypedWrapper", (), class_dict)
+
+# Main demonstration function
+async def main():
+    """Main function demonstrating all library wrappers"""
+    print("=== Nagari Library Wrappers Demo ===\n")
+
+    print("1. Lodash Integration:")
+    demonstrate_lodash()
+    print()
+
+    print("2. Moment.js Integration:")
+    demonstrate_datetime()
+    print()
+
+    print("3. Axios HTTP Client:")
+    await demonstrate_http_client()
+    print()
+
+    print("4. Chart.js Integration:")
+    demonstrate_charts()
+    print()
+
+    print("=== Demo Complete ===")
+
+# Run the demo
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())

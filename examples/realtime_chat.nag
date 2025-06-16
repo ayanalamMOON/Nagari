@@ -1,0 +1,401 @@
+# Real-time Chat Application
+# WebSocket-based chat with rooms, user management, and message history
+
+import express from "express"
+import { Server } from "socket.io"
+import http from "http"
+from fs import read_file, write_file, exists
+from json import parse, stringify
+from time import now, format_date
+from crypto import hash_password, verify_password, generate_token
+
+# Server setup
+app = express()
+server = http.createServer(app)
+io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+})
+
+app.use(express.static("public"))
+app.use(express.json())
+
+# In-memory storage (use database in production)
+rooms = {}
+users = {}
+message_history = {}
+
+class ChatRoom:
+    def __init__(self, name: str):
+        self.name = name
+        self.users = []
+        self.messages = []
+        self.created_at = now()
+
+    def add_user(self, user):
+        if user not in self.users:
+            self.users.append(user)
+
+    def remove_user(self, user):
+        if user in self.users:
+            self.users.remove(user)
+
+    def add_message(self, message):
+        self.messages.append(message)
+        if len(self.messages) > 100:  # Keep last 100 messages
+            self.messages = self.messages[-100:]
+
+class User:
+    def __init__(self, username: str, socket_id: str):
+        self.username = username
+        self.socket_id = socket_id
+        self.current_room = none
+        self.joined_at = now()
+
+# API Routes
+@app.route("/api/rooms", methods=["GET"])
+def get_rooms():
+    return {
+        "rooms": [
+            {
+                "name": room.name,
+                "users": len(room.users),
+                "messages": len(room.messages)
+            }
+            for room in rooms.values()
+        ]
+    }
+
+@app.route("/api/rooms", methods=["POST"])
+def create_room():
+    data = request.json
+    room_name = data.get("name", "").strip()
+
+    if not room_name:
+        return {"error": "Room name is required"}, 400
+
+    if room_name in rooms:
+        return {"error": "Room already exists"}, 409
+
+    rooms[room_name] = ChatRoom(room_name)
+    return {"message": f"Room '{room_name}' created successfully"}
+
+# Socket.IO event handlers
+@io.on("connection")
+def handle_connection(socket):
+    print(f"User connected: {socket.id}")
+
+    @socket.on("join_room")
+    def handle_join_room(data):
+        username = data.get("username", "").strip()
+        room_name = data.get("room", "").strip()
+
+        if not username or not room_name:
+            socket.emit("error", {"message": "Username and room are required"})
+            return
+
+        # Create room if it doesn't exist
+        if room_name not in rooms:
+            rooms[room_name] = ChatRoom(room_name)
+
+        room = rooms[room_name]
+        user = User(username, socket.id)
+        users[socket.id] = user
+        user.current_room = room_name
+
+        # Join socket room
+        socket.join(room_name)
+        room.add_user(user)
+
+        # Send room history
+        socket.emit("room_history", {
+            "messages": room.messages,
+            "users": [u.username for u in room.users]
+        })
+
+        # Notify others
+        socket.to(room_name).emit("user_joined", {
+            "username": username,
+            "message": f"{username} joined the room",
+            "timestamp": now()
+        })
+
+        print(f"{username} joined room: {room_name}")
+
+    @socket.on("send_message")
+    def handle_message(data):
+        user = users.get(socket.id)
+        if not user or not user.current_room:
+            socket.emit("error", {"message": "You must join a room first"})
+            return
+
+        message_text = data.get("message", "").strip()
+        if not message_text:
+            return
+
+        room = rooms[user.current_room]
+        message = {
+            "id": generate_token()[:8],
+            "username": user.username,
+            "message": message_text,
+            "timestamp": now(),
+            "room": user.current_room
+        }
+
+        room.add_message(message)
+
+        # Broadcast to all users in room
+        io.to(user.current_room).emit("new_message", message)
+
+        print(f"Message from {user.username} in {user.current_room}: {message_text}")
+
+    @socket.on("typing_start")
+    def handle_typing_start():
+        user = users.get(socket.id)
+        if user and user.current_room:
+            socket.to(user.current_room).emit("user_typing", {
+                "username": user.username,
+                "typing": true
+            })
+
+    @socket.on("typing_stop")
+    def handle_typing_stop():
+        user = users.get(socket.id)
+        if user and user.current_room:
+            socket.to(user.current_room).emit("user_typing", {
+                "username": user.username,
+                "typing": false
+            })
+
+    @socket.on("disconnect")
+    def handle_disconnect():
+        user = users.get(socket.id)
+        if user:
+            if user.current_room and user.current_room in rooms:
+                room = rooms[user.current_room]
+                room.remove_user(user)
+
+                # Notify others
+                socket.to(user.current_room).emit("user_left", {
+                    "username": user.username,
+                    "message": f"{user.username} left the room",
+                    "timestamp": now()
+                })
+
+                # Remove empty rooms
+                if len(room.users) == 0:
+                    del rooms[user.current_room]
+
+            del users[socket.id]
+            print(f"User disconnected: {user.username}")
+
+# Message filtering and moderation
+def filter_message(message: str) -> str:
+    """Basic content filtering"""
+    banned_words = ["spam", "badword1", "badword2"]
+    filtered = message
+
+    for word in banned_words:
+        filtered = filtered.replace(word, "*" * len(word))
+
+    return filtered
+
+# Admin commands
+@socket.on("admin_command")
+def handle_admin_command(data):
+    user = users.get(socket.id)
+    if not user:
+        return
+
+    command = data.get("command", "")
+    target = data.get("target", "")
+
+    # Simple admin check (use proper auth in production)
+    if not user.username.endswith("_admin"):
+        socket.emit("error", {"message": "Access denied"})
+        return
+
+    match command:
+        case "kick":
+            kick_user(target, user.current_room)
+        case "mute":
+            mute_user(target, user.current_room)
+        case "clear":
+            clear_room_history(user.current_room)
+
+def kick_user(username: str, room_name: str):
+    """Kick user from room"""
+    room = rooms.get(room_name)
+    if not room:
+        return
+
+    for user in room.users[:]:  # Copy list to avoid modification during iteration
+        if user.username == username:
+            socket = io.sockets.sockets.get(user.socket_id)
+            if socket:
+                socket.leave(room_name)
+                socket.emit("kicked", {"message": "You have been kicked from the room"})
+            room.remove_user(user)
+            break
+
+def clear_room_history(room_name: str):
+    """Clear room message history"""
+    room = rooms.get(room_name)
+    if room:
+        room.messages = []
+        io.to(room_name).emit("history_cleared", {"message": "Room history cleared"})
+
+# Serve the chat client
+@app.route("/")
+def serve_chat():
+    return """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nagari Chat</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #messages { height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; }
+        .message { margin: 5px 0; }
+        .system { color: #888; font-style: italic; }
+        .typing { color: #666; font-size: 12px; }
+        input[type="text"] { width: 70%; padding: 5px; }
+        button { padding: 5px 10px; }
+    </style>
+</head>
+<body>
+    <h1>Nagari Real-time Chat</h1>
+
+    <div id="login" style="display: block;">
+        <input type="text" id="username" placeholder="Enter username">
+        <input type="text" id="room" placeholder="Enter room name">
+        <button onclick="joinRoom()">Join Room</button>
+    </div>
+
+    <div id="chat" style="display: none;">
+        <div id="room-info"></div>
+        <div id="messages"></div>
+        <div id="typing"></div>
+        <input type="text" id="messageInput" placeholder="Type a message...">
+        <button onclick="sendMessage()">Send</button>
+        <button onclick="leaveRoom()">Leave Room</button>
+    </div>
+
+    <script>
+        const socket = io();
+        let currentRoom = '';
+        let currentUser = '';
+
+        function joinRoom() {
+            const username = document.getElementById('username').value.trim();
+            const room = document.getElementById('room').value.trim();
+
+            if (username && room) {
+                currentUser = username;
+                currentRoom = room;
+                socket.emit('join_room', { username, room });
+
+                document.getElementById('login').style.display = 'none';
+                document.getElementById('chat').style.display = 'block';
+                document.getElementById('room-info').innerHTML = `<h3>Room: ${room} | User: ${username}</h3>`;
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (message) {
+                socket.emit('send_message', { message });
+                input.value = '';
+            }
+        }
+
+        function leaveRoom() {
+            socket.disconnect();
+            location.reload();
+        }
+
+        // Socket event handlers
+        socket.on('room_history', (data) => {
+            const messages = document.getElementById('messages');
+            messages.innerHTML = '';
+            data.messages.forEach(msg => addMessage(msg));
+        });
+
+        socket.on('new_message', (message) => {
+            addMessage(message);
+        });
+
+        socket.on('user_joined', (data) => {
+            addSystemMessage(data.message);
+        });
+
+        socket.on('user_left', (data) => {
+            addSystemMessage(data.message);
+        });
+
+        socket.on('user_typing', (data) => {
+            const typing = document.getElementById('typing');
+            if (data.typing) {
+                typing.textContent = `${data.username} is typing...`;
+            } else {
+                typing.textContent = '';
+            }
+        });
+
+        function addMessage(message) {
+            const messages = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = 'message';
+            div.innerHTML = `<strong>${message.username}:</strong> ${message.message} <small>(${new Date(message.timestamp).toLocaleTimeString()})</small>`;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function addSystemMessage(text) {
+            const messages = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = 'message system';
+            div.textContent = text;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        // Handle typing indicators
+        const messageInput = document.getElementById('messageInput');
+        let typingTimer;
+
+        messageInput.addEventListener('input', () => {
+            socket.emit('typing_start');
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+                socket.emit('typing_stop');
+            }, 1000);
+        });
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
+    """
+
+if __name__ == "__main__":
+    port = 3000
+    server.listen(port, () => {
+        print(f"Chat server running on http://localhost:{port}")
+        print("Features:")
+        print("- Real-time messaging with Socket.IO")
+        print("- Multiple chat rooms")
+        print("- User presence indicators")
+        print("- Typing indicators")
+        print("- Message history")
+        print("- Admin commands (kick, mute, clear)")
+    })

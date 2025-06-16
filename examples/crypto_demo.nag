@@ -1,0 +1,361 @@
+# Cryptography Utilities Demo
+# Demonstration of encryption, hashing, digital signatures, and secure communication
+
+from crypto import (
+    hash_password, verify_password, generate_salt,
+    encrypt_aes, decrypt_aes, generate_key,
+    sign_message, verify_signature, generate_keypair,
+    hash_sha256, hash_sha512, hmac_sha256,
+    generate_random_bytes, secure_compare
+)
+from fs import read_file, write_file, exists
+from json import parse, stringify
+from time import now
+import base64
+
+# Example data
+sample_data = "This is a secret message that needs to be encrypted!"
+user_password = "my_secure_password_123"
+file_path = "secret_document.txt"
+
+def demonstrate_password_hashing():
+    """Password hashing and verification demo"""
+    print("=== Password Hashing Demo ===")
+
+    # Generate salt and hash password
+    salt = generate_salt()
+    password_hash = hash_password(user_password, salt)
+
+    print(f"Original password: {user_password}")
+    print(f"Salt: {base64.encode(salt)}")
+    print(f"Password hash: {base64.encode(password_hash)}")
+
+    # Verify password
+    is_valid = verify_password(user_password, password_hash, salt)
+    is_invalid = verify_password("wrong_password", password_hash, salt)
+
+    print(f"Password verification (correct): {is_valid}")
+    print(f"Password verification (wrong): {is_invalid}")
+    print()
+
+def demonstrate_symmetric_encryption():
+    """AES symmetric encryption demo"""
+    print("=== Symmetric Encryption (AES) Demo ===")
+
+    # Generate encryption key
+    key = generate_key(32)  # 256-bit key
+    print(f"Generated key: {base64.encode(key)}")
+
+    # Encrypt data
+    encrypted_data, iv = encrypt_aes(sample_data.encode(), key)
+    print(f"Original data: {sample_data}")
+    print(f"Encrypted data: {base64.encode(encrypted_data)}")
+    print(f"IV: {base64.encode(iv)}")
+
+    # Decrypt data
+    decrypted_data = decrypt_aes(encrypted_data, key, iv)
+    decrypted_text = decrypted_data.decode()
+
+    print(f"Decrypted data: {decrypted_text}")
+    print(f"Encryption successful: {decrypted_text == sample_data}")
+    print()
+
+def demonstrate_digital_signatures():
+    """Digital signature demo with RSA keys"""
+    print("=== Digital Signatures Demo ===")
+
+    # Generate key pair
+    private_key, public_key = generate_keypair(2048)
+    print("Generated RSA key pair (2048-bit)")
+
+    message = "This message is digitally signed for authenticity"
+
+    # Sign message
+    signature = sign_message(message.encode(), private_key)
+    print(f"Message: {message}")
+    print(f"Signature: {base64.encode(signature)}")
+
+    # Verify signature
+    is_valid = verify_signature(message.encode(), signature, public_key)
+    is_tampered = verify_signature("Tampered message".encode(), signature, public_key)
+
+    print(f"Signature verification (original): {is_valid}")
+    print(f"Signature verification (tampered): {is_tampered}")
+    print()
+
+def demonstrate_hashing():
+    """Various hashing algorithms demo"""
+    print("=== Hashing Algorithms Demo ===")
+
+    data = "Hello, Nagari Crypto!"
+
+    # Different hash algorithms
+    sha256_hash = hash_sha256(data.encode())
+    sha512_hash = hash_sha512(data.encode())
+
+    print(f"Original data: {data}")
+    print(f"SHA-256: {sha256_hash.hex()}")
+    print(f"SHA-512: {sha512_hash.hex()}")
+
+    # HMAC (Hash-based Message Authentication Code)
+    hmac_key = generate_random_bytes(32)
+    hmac_hash = hmac_sha256(data.encode(), hmac_key)
+
+    print(f"HMAC-SHA256: {hmac_hash.hex()}")
+    print(f"HMAC Key: {base64.encode(hmac_key)}")
+    print()
+
+def demonstrate_secure_file_storage():
+    """Secure file encryption and storage"""
+    print("=== Secure File Storage Demo ===")
+
+    # Create sample file
+    secret_content = {
+        "api_key": "sk-1234567890abcdef",
+        "database_url": "postgresql://user:pass@localhost/db",
+        "private_notes": ["Secret project Alpha", "Meeting with client X"]
+    }
+
+    # Encrypt and save
+    master_password = "file_encryption_password"
+    encrypted_file = encrypt_and_save_file(secret_content, "secure_data.enc", master_password)
+
+    print(f"Encrypted file saved: {encrypted_file}")
+
+    # Load and decrypt
+    decrypted_content = load_and_decrypt_file("secure_data.enc", master_password)
+
+    print("Decrypted content:")
+    print(stringify(decrypted_content, indent=2))
+    print()
+
+def encrypt_and_save_file(data: dict, filename: str, password: str) -> str:
+    """Encrypt data and save to file"""
+    # Convert data to JSON
+    json_data = stringify(data)
+
+    # Generate salt and derive key from password
+    salt = generate_salt()
+    key = hash_password(password.encode(), salt)[:32]  # Use first 32 bytes as AES key
+
+    # Encrypt data
+    encrypted_data, iv = encrypt_aes(json_data.encode(), key)
+
+    # Create file structure
+    file_data = {
+        "salt": base64.encode(salt),
+        "iv": base64.encode(iv),
+        "data": base64.encode(encrypted_data),
+        "created_at": now()
+    }
+
+    # Save to file
+    write_file(filename, stringify(file_data, indent=2))
+    return filename
+
+def load_and_decrypt_file(filename: str, password: str) -> dict:
+    """Load and decrypt file"""
+    if not exists(filename):
+        raise FileNotFoundError(f"File {filename} not found")
+
+    # Load file data
+    file_content = read_file(filename)
+    file_data = parse(file_content)
+
+    # Extract components
+    salt = base64.decode(file_data["salt"])
+    iv = base64.decode(file_data["iv"])
+    encrypted_data = base64.decode(file_data["data"])
+
+    # Derive key from password
+    key = hash_password(password.encode(), salt)[:32]
+
+    # Decrypt data
+    decrypted_data = decrypt_aes(encrypted_data, key, iv)
+    json_data = decrypted_data.decode()
+
+    return parse(json_data)
+
+def demonstrate_secure_communication():
+    """Secure communication protocol demo"""
+    print("=== Secure Communication Demo ===")
+
+    # Simulate Alice and Bob key exchange
+    alice_private, alice_public = generate_keypair(2048)
+    bob_private, bob_public = generate_keypair(2048)
+
+    print("Alice and Bob generate key pairs")
+
+    # Alice sends encrypted message to Bob
+    message_from_alice = "Hello Bob! This is a secret message."
+
+    # Alice encrypts with Bob's public key
+    session_key = generate_key(32)
+    encrypted_message, iv = encrypt_aes(message_from_alice.encode(), session_key)
+
+    # Alice signs the message
+    message_signature = sign_message(encrypted_message, alice_private)
+
+    print(f"Alice's message: {message_from_alice}")
+    print("Message encrypted and signed")
+
+    # Bob receives and verifies
+    signature_valid = verify_signature(encrypted_message, message_signature, alice_public)
+
+    if signature_valid:
+        decrypted_message = decrypt_aes(encrypted_message, session_key, iv)
+        bob_message = decrypted_message.decode()
+        print(f"Bob received: {bob_message}")
+        print("Signature verification: VALID")
+    else:
+        print("Signature verification: INVALID - Message rejected")
+
+    print()
+
+def demonstrate_timing_attack_protection():
+    """Timing attack protection demo"""
+    print("=== Timing Attack Protection Demo ===")
+
+    # Simulate password comparison
+    correct_password = "super_secret_password"
+    test_passwords = [
+        "super_secret_password",  # Correct
+        "super_secret_passwor",   # Almost correct
+        "wrong_password",         # Wrong
+        "s",                      # Very short
+    ]
+
+    # Hash the correct password
+    salt = generate_salt()
+    correct_hash = hash_password(correct_password, salt)
+
+    for test_pwd in test_passwords:
+        # Use secure comparison to prevent timing attacks
+        test_hash = hash_password(test_pwd, salt)
+        is_match = secure_compare(correct_hash, test_hash)
+
+        print(f"Testing '{test_pwd}': {'✓ MATCH' if is_match else '✗ NO MATCH'}")
+
+    print("Note: secure_compare() takes constant time regardless of input")
+    print()
+
+def demonstrate_key_derivation():
+    """Key derivation function demo"""
+    print("=== Key Derivation Demo ===")
+
+    # Master password
+    master_password = "my_master_password"
+
+    # Derive different keys for different purposes
+    encryption_key = derive_key(master_password, "encryption", 32)
+    signing_key = derive_key(master_password, "signing", 32)
+    auth_key = derive_key(master_password, "authentication", 16)
+
+    print(f"Master password: {master_password}")
+    print(f"Encryption key: {base64.encode(encryption_key)}")
+    print(f"Signing key: {base64.encode(signing_key)}")
+    print(f"Auth key: {base64.encode(auth_key)}")
+    print()
+
+def derive_key(password: str, purpose: str, length: int) -> bytes:
+    """Derive a key from password for specific purpose"""
+    # Use password + purpose as input for key derivation
+    input_data = f"{password}:{purpose}".encode()
+
+    # Generate salt based on purpose (deterministic)
+    purpose_salt = hash_sha256(purpose.encode())[:16]
+
+    # Derive key using PBKDF2-like approach
+    derived = hash_password(input_data, purpose_salt)
+
+    # Return requested length
+    return derived[:length]
+
+class SecureStorage:
+    """Secure storage class with encryption"""
+
+    def __init__(self, master_key: str):
+        self.master_key = master_key
+        self.salt = generate_salt()
+        self.encryption_key = hash_password(master_key.encode(), self.salt)[:32]
+
+    def store(self, key: str, value: str) -> str:
+        """Store encrypted value"""
+        # Encrypt the value
+        encrypted_data, iv = encrypt_aes(value.encode(), self.encryption_key)
+
+        # Create storage entry
+        entry = {
+            "key": key,
+            "data": base64.encode(encrypted_data),
+            "iv": base64.encode(iv),
+            "timestamp": now()
+        }
+
+        return stringify(entry)
+
+    def retrieve(self, entry_data: str) -> tuple[str, str]:
+        """Retrieve and decrypt value"""
+        entry = parse(entry_data)
+
+        # Decrypt the data
+        encrypted_data = base64.decode(entry["data"])
+        iv = base64.decode(entry["iv"])
+
+        decrypted_data = decrypt_aes(encrypted_data, self.encryption_key, iv)
+
+        return entry["key"], decrypted_data.decode()
+
+def demonstrate_secure_storage_class():
+    """Secure storage class demo"""
+    print("=== Secure Storage Class Demo ===")
+
+    # Create secure storage
+    storage = SecureStorage("my_storage_password")
+
+    # Store sensitive data
+    api_key_entry = storage.store("api_key", "sk-abcdef123456")
+    token_entry = storage.store("auth_token", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+
+    print("Stored encrypted entries:")
+    print(f"API Key entry: {api_key_entry[:50]}...")
+    print(f"Token entry: {token_entry[:50]}...")
+
+    # Retrieve data
+    key1, value1 = storage.retrieve(api_key_entry)
+    key2, value2 = storage.retrieve(token_entry)
+
+    print(f"\nRetrieved {key1}: {value1}")
+    print(f"Retrieved {key2}: {value2[:30]}...")
+    print()
+
+def main():
+    """Run all crypto demonstrations"""
+    print("🔐 Nagari Cryptography Utilities Demo")
+    print("=====================================\n")
+
+    try:
+        demonstrate_password_hashing()
+        demonstrate_symmetric_encryption()
+        demonstrate_digital_signatures()
+        demonstrate_hashing()
+        demonstrate_secure_file_storage()
+        demonstrate_secure_communication()
+        demonstrate_timing_attack_protection()
+        demonstrate_key_derivation()
+        demonstrate_secure_storage_class()
+
+        print("✅ All cryptography demonstrations completed successfully!")
+        print("\nSecurity Best Practices:")
+        print("1. Always use salt with password hashing")
+        print("2. Use strong, random keys for encryption")
+        print("3. Verify digital signatures before trusting data")
+        print("4. Use secure comparison for sensitive data")
+        print("5. Derive different keys for different purposes")
+        print("6. Keep private keys secure and never share them")
+
+    except Exception as e:
+        print(f"❌ Error during demonstration: {e}")
+
+if __name__ == "__main__":
+    main()

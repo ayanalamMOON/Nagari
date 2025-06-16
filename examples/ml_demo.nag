@@ -1,0 +1,609 @@
+# Machine Learning Demo
+# Neural networks, data science patterns, and ML algorithms in Nagari
+
+from math import exp, log, sqrt, abs, max, min
+from json import parse, stringify
+from fs import read_file, write_file
+import numpy as np
+import random
+
+# Simple neural network implementation
+class NeuralNetwork:
+    """Basic feedforward neural network"""
+
+    def __init__(self, input_size: int, hidden_size: int, output_size: int):
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.output_size = output_size
+
+        # Initialize weights randomly
+        self.weights_input_hidden = self.random_matrix(input_size, hidden_size)
+        self.weights_hidden_output = self.random_matrix(hidden_size, output_size)
+
+        # Initialize biases
+        self.bias_hidden = [0.0] * hidden_size
+        self.bias_output = [0.0] * output_size
+
+        # Learning rate
+        self.learning_rate = 0.1
+
+    def random_matrix(self, rows: int, cols: int) -> list[list[float]]:
+        """Generate random weight matrix"""
+        return [[random.uniform(-1, 1) for _ in range(cols)] for _ in range(rows)]
+
+    def sigmoid(self, x: float) -> float:
+        """Sigmoid activation function"""
+        return 1 / (1 + exp(-max(-500, min(500, x))))  # Clamp to prevent overflow
+
+    def sigmoid_derivative(self, x: float) -> float:
+        """Derivative of sigmoid function"""
+        s = self.sigmoid(x)
+        return s * (1 - s)
+
+    def forward(self, inputs: list[float]) -> tuple[list[float], list[float], list[float]]:
+        """Forward propagation"""
+        # Input to hidden layer
+        hidden_inputs = []
+        for j in range(self.hidden_size):
+            weighted_sum = sum(inputs[i] * self.weights_input_hidden[i][j] for i in range(self.input_size))
+            hidden_inputs.append(weighted_sum + self.bias_hidden[j])
+
+        hidden_outputs = [self.sigmoid(x) for x in hidden_inputs]
+
+        # Hidden to output layer
+        output_inputs = []
+        for k in range(self.output_size):
+            weighted_sum = sum(hidden_outputs[j] * self.weights_hidden_output[j][k] for j in range(self.hidden_size))
+            output_inputs.append(weighted_sum + self.bias_output[k])
+
+        outputs = [self.sigmoid(x) for x in output_inputs]
+
+        return hidden_outputs, output_inputs, outputs
+
+    def backward(self, inputs: list[float], hidden_outputs: list[float],
+                output_inputs: list[float], outputs: list[float], targets: list[float]):
+        """Backward propagation"""
+        # Calculate output layer errors
+        output_errors = []
+        for k in range(self.output_size):
+            error = targets[k] - outputs[k]
+            delta = error * self.sigmoid_derivative(output_inputs[k])
+            output_errors.append(delta)
+
+        # Calculate hidden layer errors
+        hidden_errors = []
+        for j in range(self.hidden_size):
+            error = sum(output_errors[k] * self.weights_hidden_output[j][k] for k in range(self.output_size))
+            delta = error * self.sigmoid_derivative(sum(inputs[i] * self.weights_input_hidden[i][j] for i in range(self.input_size)) + self.bias_hidden[j])
+            hidden_errors.append(delta)
+
+        # Update weights and biases
+        for j in range(self.hidden_size):
+            for k in range(self.output_size):
+                self.weights_hidden_output[j][k] += self.learning_rate * output_errors[k] * hidden_outputs[j]
+
+        for i in range(self.input_size):
+            for j in range(self.hidden_size):
+                self.weights_input_hidden[i][j] += self.learning_rate * hidden_errors[j] * inputs[i]
+
+        # Update biases
+        for k in range(self.output_size):
+            self.bias_output[k] += self.learning_rate * output_errors[k]
+
+        for j in range(self.hidden_size):
+            self.bias_hidden[j] += self.learning_rate * hidden_errors[j]
+
+    def train(self, training_data: list[tuple[list[float], list[float]]], epochs: int):
+        """Train the neural network"""
+        for epoch in range(epochs):
+            total_loss = 0.0
+
+            for inputs, targets in training_data:
+                hidden_outputs, output_inputs, outputs = self.forward(inputs)
+
+                # Calculate loss (mean squared error)
+                loss = sum((targets[i] - outputs[i]) ** 2 for i in range(len(targets))) / len(targets)
+                total_loss += loss
+
+                # Backward propagation
+                self.backward(inputs, hidden_outputs, output_inputs, outputs, targets)
+
+            if epoch % 100 == 0:
+                avg_loss = total_loss / len(training_data)
+                print(f"Epoch {epoch}, Average Loss: {avg_loss:.6f}")
+
+    def predict(self, inputs: list[float]) -> list[float]:
+        """Make prediction"""
+        _, _, outputs = self.forward(inputs)
+        return outputs
+
+class LinearRegression:
+    """Simple linear regression implementation"""
+
+    def __init__(self):
+        self.slope = 0.0
+        self.intercept = 0.0
+
+    def fit(self, x_data: list[float], y_data: list[float]):
+        """Fit linear regression model"""
+        n = len(x_data)
+        if n != len(y_data) or n == 0:
+            raise ValueError("Invalid input data")
+
+        # Calculate means
+        x_mean = sum(x_data) / n
+        y_mean = sum(y_data) / n
+
+        # Calculate slope and intercept
+        numerator = sum((x_data[i] - x_mean) * (y_data[i] - y_mean) for i in range(n))
+        denominator = sum((x_data[i] - x_mean) ** 2 for i in range(n))
+
+        if denominator == 0:
+            self.slope = 0
+        else:
+            self.slope = numerator / denominator
+
+        self.intercept = y_mean - self.slope * x_mean
+
+    def predict(self, x: float) -> float:
+        """Make prediction"""
+        return self.slope * x + self.intercept
+
+    def r_squared(self, x_data: list[float], y_data: list[float]) -> float:
+        """Calculate R-squared value"""
+        y_mean = sum(y_data) / len(y_data)
+
+        ss_tot = sum((y - y_mean) ** 2 for y in y_data)
+        ss_res = sum((y_data[i] - self.predict(x_data[i])) ** 2 for i in range(len(y_data)))
+
+        return 1 - (ss_res / ss_tot) if ss_tot != 0 else 0
+
+class KMeansClustering:
+    """K-means clustering implementation"""
+
+    def __init__(self, k: int, max_iterations: int = 100):
+        self.k = k
+        self.max_iterations = max_iterations
+        self.centroids = []
+        self.clusters = []
+
+    def euclidean_distance(self, point1: list[float], point2: list[float]) -> float:
+        """Calculate Euclidean distance between two points"""
+        return sqrt(sum((point1[i] - point2[i]) ** 2 for i in range(len(point1))))
+
+    def fit(self, data: list[list[float]]):
+        """Fit K-means clustering model"""
+        if len(data) < self.k:
+            raise ValueError("Number of data points must be >= k")
+
+        # Initialize centroids randomly
+        self.centroids = random.sample(data, self.k)
+
+        for iteration in range(self.max_iterations):
+            # Assign points to clusters
+            clusters = [[] for _ in range(self.k)]
+
+            for point in data:
+                distances = [self.euclidean_distance(point, centroid) for centroid in self.centroids]
+                closest_cluster = distances.index(min(distances))
+                clusters[closest_cluster].append(point)
+
+            # Update centroids
+            new_centroids = []
+            for i in range(self.k):
+                if clusters[i]:  # If cluster is not empty
+                    centroid = [sum(point[j] for point in clusters[i]) / len(clusters[i])
+                               for j in range(len(clusters[i][0]))]
+                    new_centroids.append(centroid)
+                else:
+                    new_centroids.append(self.centroids[i])  # Keep old centroid
+
+            # Check for convergence
+            converged = all(
+                self.euclidean_distance(self.centroids[i], new_centroids[i]) < 1e-6
+                for i in range(self.k)
+            )
+
+            self.centroids = new_centroids
+            self.clusters = clusters
+
+            if converged:
+                print(f"K-means converged after {iteration + 1} iterations")
+                break
+
+    def predict(self, point: list[float]) -> int:
+        """Predict cluster for a new point"""
+        distances = [self.euclidean_distance(point, centroid) for centroid in self.centroids]
+        return distances.index(min(distances))
+
+class DecisionTree:
+    """Simple decision tree for classification"""
+
+    def __init__(self, max_depth: int = 5):
+        self.max_depth = max_depth
+        self.tree = {}
+
+    def gini_impurity(self, labels: list[int]) -> float:
+        """Calculate Gini impurity"""
+        if not labels:
+            return 0
+
+        # Count occurrences of each label
+        label_counts = {}
+        for label in labels:
+            label_counts[label] = label_counts.get(label, 0) + 1
+
+        # Calculate Gini impurity
+        impurity = 1.0
+        total = len(labels)
+        for count in label_counts.values():
+            probability = count / total
+            impurity -= probability ** 2
+
+        return impurity
+
+    def information_gain(self, data: list[list[float]], labels: list[int],
+                        feature_index: int, threshold: float) -> float:
+        """Calculate information gain for a split"""
+        # Split data
+        left_data, left_labels = [], []
+        right_data, right_labels = [], []
+
+        for i, row in enumerate(data):
+            if row[feature_index] <= threshold:
+                left_data.append(row)
+                left_labels.append(labels[i])
+            else:
+                right_data.append(row)
+                right_labels.append(labels[i])
+
+        # Calculate weighted Gini impurity after split
+        total_samples = len(labels)
+        left_weight = len(left_labels) / total_samples
+        right_weight = len(right_labels) / total_samples
+
+        original_impurity = self.gini_impurity(labels)
+        weighted_impurity = (left_weight * self.gini_impurity(left_labels) +
+                           right_weight * self.gini_impurity(right_labels))
+
+        return original_impurity - weighted_impurity
+
+    def find_best_split(self, data: list[list[float]], labels: list[int]) -> tuple[int, float]:
+        """Find the best feature and threshold to split on"""
+        best_gain = 0
+        best_feature = 0
+        best_threshold = 0
+
+        num_features = len(data[0]) if data else 0
+
+        for feature_index in range(num_features):
+            # Get unique values for this feature
+            values = sorted(set(row[feature_index] for row in data))
+
+            # Try thresholds between unique values
+            for i in range(len(values) - 1):
+                threshold = (values[i] + values[i + 1]) / 2
+                gain = self.information_gain(data, labels, feature_index, threshold)
+
+                if gain > best_gain:
+                    best_gain = gain
+                    best_feature = feature_index
+                    best_threshold = threshold
+
+        return best_feature, best_threshold
+
+    def build_tree(self, data: list[list[float]], labels: list[int], depth: int = 0) -> dict:
+        """Recursively build decision tree"""
+        # Base cases
+        if depth >= self.max_depth or len(set(labels)) == 1 or len(data) == 0:
+            # Return most common label
+            if labels:
+                label_counts = {}
+                for label in labels:
+                    label_counts[label] = label_counts.get(label, 0) + 1
+                most_common = max(label_counts.items(), key=lambda x: x[1])[0]
+                return {"leaf": True, "prediction": most_common}
+            else:
+                return {"leaf": True, "prediction": 0}
+
+        # Find best split
+        feature, threshold = self.find_best_split(data, labels)
+
+        # Split data
+        left_data, left_labels = [], []
+        right_data, right_labels = [], []
+
+        for i, row in enumerate(data):
+            if row[feature] <= threshold:
+                left_data.append(row)
+                left_labels.append(labels[i])
+            else:
+                right_data.append(row)
+                right_labels.append(labels[i])
+
+        # Create tree node
+        return {
+            "leaf": False,
+            "feature": feature,
+            "threshold": threshold,
+            "left": self.build_tree(left_data, left_labels, depth + 1),
+            "right": self.build_tree(right_data, right_labels, depth + 1)
+        }
+
+    def fit(self, data: list[list[float]], labels: list[int]):
+        """Fit decision tree model"""
+        self.tree = self.build_tree(data, labels)
+
+    def predict_single(self, sample: list[float], tree: dict = none) -> int:
+        """Predict single sample"""
+        if tree is none:
+            tree = self.tree
+
+        if tree["leaf"]:
+            return tree["prediction"]
+
+        if sample[tree["feature"]] <= tree["threshold"]:
+            return self.predict_single(sample, tree["left"])
+        else:
+            return self.predict_single(sample, tree["right"])
+
+    def predict(self, data: list[list[float]]) -> list[int]:
+        """Predict multiple samples"""
+        return [self.predict_single(sample) for sample in data]
+
+def generate_sample_data():
+    """Generate sample datasets for testing"""
+
+    # XOR dataset for neural network
+    xor_data = [
+        ([0, 0], [0]),
+        ([0, 1], [1]),
+        ([1, 0], [1]),
+        ([1, 1], [0])
+    ]
+
+    # Linear regression dataset
+    x_values = [i for i in range(20)]
+    y_values = [2 * x + 1 + random.uniform(-2, 2) for x in x_values]  # y = 2x + 1 + noise
+
+    # Clustering dataset (2D points)
+    cluster_data = []
+    # Cluster 1: around (2, 2)
+    for _ in range(15):
+        cluster_data.append([2 + random.uniform(-1, 1), 2 + random.uniform(-1, 1)])
+    # Cluster 2: around (8, 8)
+    for _ in range(15):
+        cluster_data.append([8 + random.uniform(-1, 1), 8 + random.uniform(-1, 1)])
+    # Cluster 3: around (2, 8)
+    for _ in range(15):
+        cluster_data.append([2 + random.uniform(-1, 1), 8 + random.uniform(-1, 1)])
+
+    # Classification dataset
+    classification_data = []
+    classification_labels = []
+    for _ in range(50):
+        x1, x2 = random.uniform(0, 10), random.uniform(0, 10)
+        # Simple rule: if x1 + x2 > 10, class 1, else class 0
+        label = 1 if x1 + x2 > 10 else 0
+        classification_data.append([x1, x2])
+        classification_labels.append(label)
+
+    return xor_data, (x_values, y_values), cluster_data, (classification_data, classification_labels)
+
+def demonstrate_neural_network():
+    """Demonstrate neural network on XOR problem"""
+    print("=== Neural Network Demo (XOR Problem) ===")
+
+    # Create network
+    nn = NeuralNetwork(2, 4, 1)  # 2 inputs, 4 hidden neurons, 1 output
+
+    # Generate XOR training data
+    xor_data, _, _, _ = generate_sample_data()
+
+    print("Training neural network on XOR problem...")
+    nn.train(xor_data, epochs=1000)
+
+    print("\nTesting XOR predictions:")
+    for inputs, expected in xor_data:
+        prediction = nn.predict(inputs)[0]
+        print(f"Input: {inputs} -> Expected: {expected[0]}, Predicted: {prediction:.3f}")
+
+def demonstrate_linear_regression():
+    """Demonstrate linear regression"""
+    print("\n=== Linear Regression Demo ===")
+
+    # Generate sample data
+    _, (x_values, y_values), _, _ = generate_sample_data()
+
+    # Create and fit model
+    model = LinearRegression()
+    model.fit(x_values, y_values)
+
+    print(f"Learned equation: y = {model.slope:.2f}x + {model.intercept:.2f}")
+    print(f"R-squared: {model.r_squared(x_values, y_values):.3f}")
+
+    # Make predictions
+    test_values = [25, 30, 35]
+    print("\nPredictions:")
+    for x in test_values:
+        prediction = model.predict(x)
+        print(f"x = {x} -> y = {prediction:.2f}")
+
+def demonstrate_clustering():
+    """Demonstrate K-means clustering"""
+    print("\n=== K-Means Clustering Demo ===")
+
+    # Generate sample data
+    _, _, cluster_data, _ = generate_sample_data()
+
+    # Create and fit model
+    kmeans = KMeansClustering(k=3)
+    kmeans.fit(cluster_data)
+
+    print("Final centroids:")
+    for i, centroid in enumerate(kmeans.centroids):
+        print(f"Cluster {i}: ({centroid[0]:.2f}, {centroid[1]:.2f})")
+
+    print(f"\nCluster sizes: {[len(cluster) for cluster in kmeans.clusters]}")
+
+    # Test prediction
+    test_point = [7.5, 7.5]
+    predicted_cluster = kmeans.predict(test_point)
+    print(f"Point {test_point} belongs to cluster {predicted_cluster}")
+
+def demonstrate_decision_tree():
+    """Demonstrate decision tree classification"""
+    print("\n=== Decision Tree Demo ===")
+
+    # Generate sample data
+    _, _, _, (classification_data, classification_labels) = generate_sample_data()
+
+    # Split into train and test
+    train_size = int(0.7 * len(classification_data))
+    train_data = classification_data[:train_size]
+    train_labels = classification_labels[:train_size]
+    test_data = classification_data[train_size:]
+    test_labels = classification_labels[train_size:]
+
+    # Create and fit model
+    tree = DecisionTree(max_depth=3)
+    tree.fit(train_data, train_labels)
+
+    # Make predictions
+    predictions = tree.predict(test_data)
+
+    # Calculate accuracy
+    correct = sum(1 for i in range(len(test_labels)) if predictions[i] == test_labels[i])
+    accuracy = correct / len(test_labels)
+
+    print(f"Test accuracy: {accuracy:.3f} ({correct}/{len(test_labels)})")
+
+    # Show some predictions
+    print("\nSample predictions:")
+    for i in range(min(5, len(test_data))):
+        print(f"Input: {test_data[i]} -> Predicted: {predictions[i]}, Actual: {test_labels[i]}")
+
+def model_evaluation():
+    """Demonstrate model evaluation techniques"""
+    print("\n=== Model Evaluation Demo ===")
+
+    # Generate classification data
+    _, _, _, (data, labels) = generate_sample_data()
+
+    # Split data into train/validation/test
+    n = len(data)
+    train_end = int(0.6 * n)
+    val_end = int(0.8 * n)
+
+    train_data = data[:train_end]
+    train_labels = labels[:train_end]
+    val_data = data[train_end:val_end]
+    val_labels = labels[train_end:val_end]
+    test_data = data[val_end:]
+    test_labels = labels[val_end:]
+
+    # Train models with different hyperparameters
+    depths = [2, 3, 4, 5]
+    best_depth = 2
+    best_accuracy = 0
+
+    print("Hyperparameter tuning (max_depth):")
+    for depth in depths:
+        tree = DecisionTree(max_depth=depth)
+        tree.fit(train_data, train_labels)
+
+        val_predictions = tree.predict(val_data)
+        accuracy = sum(1 for i in range(len(val_labels)) if val_predictions[i] == val_labels[i]) / len(val_labels)
+
+        print(f"Depth {depth}: Validation accuracy = {accuracy:.3f}")
+
+        if accuracy > best_accuracy:
+            best_accuracy = accuracy
+            best_depth = depth
+
+    # Train final model with best hyperparameters
+    final_tree = DecisionTree(max_depth=best_depth)
+    final_tree.fit(train_data + val_data, train_labels + val_labels)
+
+    # Evaluate on test set
+    test_predictions = final_tree.predict(test_data)
+    test_accuracy = sum(1 for i in range(len(test_labels)) if test_predictions[i] == test_labels[i]) / len(test_labels)
+
+    print(f"\nBest model (depth {best_depth}): Test accuracy = {test_accuracy:.3f}")
+
+def save_model(model, filename: str):
+    """Save model to file (simplified serialization)"""
+    model_data = {
+        "type": type(model).__name__,
+        "data": {}
+    }
+
+    if isinstance(model, LinearRegression):
+        model_data["data"] = {
+            "slope": model.slope,
+            "intercept": model.intercept
+        }
+    elif isinstance(model, DecisionTree):
+        model_data["data"] = {
+            "tree": model.tree,
+            "max_depth": model.max_depth
+        }
+
+    write_file(filename, stringify(model_data, indent=2))
+    print(f"Model saved to {filename}")
+
+def load_model(filename: str):
+    """Load model from file"""
+    model_data = parse(read_file(filename))
+
+    if model_data["type"] == "LinearRegression":
+        model = LinearRegression()
+        model.slope = model_data["data"]["slope"]
+        model.intercept = model_data["data"]["intercept"]
+        return model
+    elif model_data["type"] == "DecisionTree":
+        model = DecisionTree()
+        model.tree = model_data["data"]["tree"]
+        model.max_depth = model_data["data"]["max_depth"]
+        return model
+
+    raise ValueError(f"Unknown model type: {model_data['type']}")
+
+def main():
+    """Run machine learning demonstrations"""
+    print("🧠 Nagari Machine Learning Demo")
+    print("=" * 40)
+
+    # Set random seed for reproducible results
+    random.seed(42)
+
+    # Run demonstrations
+    demonstrate_neural_network()
+    demonstrate_linear_regression()
+    demonstrate_clustering()
+    demonstrate_decision_tree()
+    model_evaluation()
+
+    # Model persistence demo
+    print("\n=== Model Persistence Demo ===")
+    _, (x_values, y_values), _, _ = generate_sample_data()
+    model = LinearRegression()
+    model.fit(x_values, y_values)
+
+    save_model(model, "linear_model.json")
+    loaded_model = load_model("linear_model.json")
+
+    print(f"Original model: y = {model.slope:.2f}x + {model.intercept:.2f}")
+    print(f"Loaded model: y = {loaded_model.slope:.2f}x + {loaded_model.intercept:.2f}")
+
+    print("\n✅ Machine learning demonstrations complete!")
+    print("\nImplemented algorithms:")
+    print("- Neural Network (Feedforward with backpropagation)")
+    print("- Linear Regression (Least squares)")
+    print("- K-Means Clustering (Lloyd's algorithm)")
+    print("- Decision Tree (CART with Gini impurity)")
+    print("- Model evaluation and hyperparameter tuning")
+    print("- Model persistence (save/load)")
+
+if __name__ == "__main__":
+    main()
