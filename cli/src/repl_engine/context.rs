@@ -1,0 +1,346 @@
+use crate::repl_engine::ReplValue;
+use std::collections::HashMap;
+use chrono::{DateTime, Utc};
+
+#[derive(Debug, Clone)]
+pub struct ExecutionContext {
+    pub variables: HashMap<String, Variable>,
+    pub imports: HashMap<String, ImportInfo>,
+    pub functions: HashMap<String, FunctionInfo>,
+    pub classes: HashMap<String, ClassInfo>,
+    pub current_scope: ScopeInfo,
+    pub global_scope: ScopeInfo,
+    pub working_directory: std::path::PathBuf,
+    pub environment: HashMap<String, String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Variable {
+    pub name: String,
+    pub value: ReplValue,
+    pub var_type: VariableType,
+    pub scope: String,
+    pub mutable: bool,
+    pub created_at: DateTime<Utc>,
+    pub last_modified: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone)]
+pub enum VariableType {
+    Local,
+    Global,
+    Imported,
+    Function,
+    Class,
+    Constant,
+}
+
+#[derive(Debug, Clone)]
+pub struct ImportInfo {
+    pub module_name: String,
+    pub imported_names: Vec<String>,
+    pub alias: Option<String>,
+    pub source_path: std::path::PathBuf,
+    pub imported_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionInfo {
+    pub name: String,
+    pub parameters: Vec<Parameter>,
+    pub return_type: Option<String>,
+    pub body: String,
+    pub scope: String,
+    pub defined_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Parameter {
+    pub name: String,
+    pub param_type: Option<String>,
+    pub default_value: Option<ReplValue>,
+    pub optional: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct ClassInfo {
+    pub name: String,
+    pub methods: HashMap<String, FunctionInfo>,
+    pub properties: HashMap<String, Variable>,
+    pub parent_class: Option<String>,
+    pub interfaces: Vec<String>,
+    pub defined_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ScopeInfo {
+    pub name: String,
+    pub parent: Option<String>,
+    pub variables: HashMap<String, String>, // variable name -> variable id
+    pub functions: HashMap<String, String>, // function name -> function id
+    pub classes: HashMap<String, String>,   // class name -> class id
+    pub created_at: DateTime<Utc>,
+}
+
+impl ExecutionContext {
+    pub fn new() -> Self {
+        let now = Utc::now();
+        let global_scope = ScopeInfo {
+            name: "global".to_string(),
+            parent: None,
+            variables: HashMap::new(),
+            functions: HashMap::new(),
+            classes: HashMap::new(),
+            created_at: now,
+        };
+
+        Self {
+            variables: HashMap::new(),
+            imports: HashMap::new(),
+            functions: HashMap::new(),
+            classes: HashMap::new(),
+            current_scope: global_scope.clone(),
+            global_scope,
+            working_directory: std::env::current_dir().unwrap_or_default(),
+            environment: std::env::vars().collect(),
+        }
+    }
+
+    pub fn define_variable(&mut self, name: String, value: ReplValue, mutable: bool) -> String {
+        let now = Utc::now();
+        let var_id = format!("var_{}_{}", name, now.timestamp_millis());
+
+        let variable = Variable {
+            name: name.clone(),
+            value,
+            var_type: VariableType::Local,
+            scope: self.current_scope.name.clone(),
+            mutable,
+            created_at: now,
+            last_modified: now,
+        };
+
+        self.variables.insert(var_id.clone(), variable);
+        self.current_scope.variables.insert(name, var_id.clone());
+
+        var_id
+    }
+
+    pub fn get_variable(&self, name: &str) -> Option<&Variable> {
+        // First check current scope
+        if let Some(var_id) = self.current_scope.variables.get(name) {
+            return self.variables.get(var_id);
+        }
+
+        // Then check global scope
+        if let Some(var_id) = self.global_scope.variables.get(name) {
+            return self.variables.get(var_id);
+        }
+
+        None
+    }
+
+    pub fn get_variable_mut(&mut self, name: &str) -> Option<&mut Variable> {
+        // First check current scope
+        if let Some(var_id) = self.current_scope.variables.get(name).cloned() {
+            return self.variables.get_mut(&var_id);
+        }
+
+        // Then check global scope
+        if let Some(var_id) = self.global_scope.variables.get(name).cloned() {
+            return self.variables.get_mut(&var_id);
+        }
+
+        None
+    }
+
+    pub fn update_variable(&mut self, name: &str, value: ReplValue) -> Result<(), String> {
+        if let Some(variable) = self.get_variable_mut(name) {
+            if !variable.mutable {
+                return Err(format!("Cannot modify immutable variable '{}'", name));
+            }
+
+            variable.value = value;
+            variable.last_modified = Utc::now();
+            Ok(())
+        } else {
+            Err(format!("Variable '{}' not found", name))
+        }
+    }
+
+    pub fn define_function(&mut self, name: String, info: FunctionInfo) -> String {
+        let func_id = format!("func_{}_{}", name, Utc::now().timestamp_millis());
+        self.functions.insert(func_id.clone(), info);
+        self.current_scope.functions.insert(name, func_id.clone());
+        func_id
+    }
+
+    pub fn get_function(&self, name: &str) -> Option<&FunctionInfo> {
+        if let Some(func_id) = self.current_scope.functions.get(name) {
+            self.functions.get(func_id)
+        } else if let Some(func_id) = self.global_scope.functions.get(name) {
+            self.functions.get(func_id)
+        } else {
+            None
+        }
+    }
+
+    pub fn define_class(&mut self, name: String, info: ClassInfo) -> String {
+        let class_id = format!("class_{}_{}", name, Utc::now().timestamp_millis());
+        self.classes.insert(class_id.clone(), info);
+        self.current_scope.classes.insert(name, class_id.clone());
+        class_id
+    }
+
+    pub fn get_class(&self, name: &str) -> Option<&ClassInfo> {
+        if let Some(class_id) = self.current_scope.classes.get(name) {
+            self.classes.get(class_id)
+        } else if let Some(class_id) = self.global_scope.classes.get(name) {
+            self.classes.get(class_id)
+        } else {
+            None
+        }
+    }
+
+    pub fn add_import(&mut self, import_info: ImportInfo) {
+        self.imports.insert(import_info.module_name.clone(), import_info);
+    }
+
+    pub fn get_import(&self, module_name: &str) -> Option<&ImportInfo> {
+        self.imports.get(module_name)
+    }
+
+    pub fn list_variables(&self) -> Vec<&Variable> {
+        // Return variables from current scope and global scope
+        let mut vars = Vec::new();
+
+        for var_id in self.current_scope.variables.values() {
+            if let Some(var) = self.variables.get(var_id) {
+                vars.push(var);
+            }
+        }
+
+        for var_id in self.global_scope.variables.values() {
+            if let Some(var) = self.variables.get(var_id) {
+                if !vars.iter().any(|v| v.name == var.name) {
+                    vars.push(var);
+                }
+            }
+        }
+
+        vars
+    }
+
+    pub fn list_functions(&self) -> Vec<&FunctionInfo> {
+        let mut funcs = Vec::new();
+
+        for func_id in self.current_scope.functions.values() {
+            if let Some(func) = self.functions.get(func_id) {
+                funcs.push(func);
+            }
+        }
+
+        for func_id in self.global_scope.functions.values() {
+            if let Some(func) = self.functions.get(func_id) {
+                if !funcs.iter().any(|f| f.name == func.name) {
+                    funcs.push(func);
+                }
+            }
+        }
+
+        funcs
+    }
+
+    pub fn list_classes(&self) -> Vec<&ClassInfo> {
+        let mut classes = Vec::new();
+
+        for class_id in self.current_scope.classes.values() {
+            if let Some(class) = self.classes.get(class_id) {
+                classes.push(class);
+            }
+        }
+
+        for class_id in self.global_scope.classes.values() {
+            if let Some(class) = self.classes.get(class_id) {
+                if !classes.iter().any(|c| c.name == class.name) {
+                    classes.push(class);
+                }
+            }
+        }
+
+        classes
+    }
+
+    pub fn list_imports(&self) -> Vec<&ImportInfo> {
+        self.imports.values().collect()
+    }
+
+    pub fn clear_scope(&mut self) {
+        // Clear current scope but keep global scope
+        self.current_scope.variables.clear();
+        self.current_scope.functions.clear();
+        self.current_scope.classes.clear();
+    }
+
+    pub fn reset(&mut self) {
+        // Reset everything
+        self.variables.clear();
+        self.imports.clear();
+        self.functions.clear();
+        self.classes.clear();
+        self.current_scope = self.global_scope.clone();
+        self.global_scope.variables.clear();
+        self.global_scope.functions.clear();
+        self.global_scope.classes.clear();
+    }
+
+    pub fn get_environment_variable(&self, name: &str) -> Option<&String> {
+        self.environment.get(name)
+    }
+
+    pub fn set_environment_variable(&mut self, name: String, value: String) {
+        self.environment.insert(name, value);
+    }
+
+    pub fn get_working_directory(&self) -> &std::path::PathBuf {
+        &self.working_directory
+    }
+
+    pub fn set_working_directory(&mut self, path: std::path::PathBuf) {
+        self.working_directory = path;
+    }
+
+    pub fn get_scope_info(&self) -> String {
+        format!("Current scope: {}", self.current_scope.name)
+    }
+
+    pub fn enter_scope(&mut self, scope_name: String) {
+        let now = Utc::now();
+        let new_scope = ScopeInfo {
+            name: scope_name,
+            parent: Some(self.current_scope.name.clone()),
+            variables: HashMap::new(),
+            functions: HashMap::new(),
+            classes: HashMap::new(),
+            created_at: now,
+        };
+
+        self.current_scope = new_scope;
+    }
+
+    pub fn exit_scope(&mut self) {
+        if let Some(parent_name) = &self.current_scope.parent {
+            // In a real implementation, we'd restore the parent scope
+            // For now, just reset to global scope
+            if parent_name == "global" {
+                self.current_scope = self.global_scope.clone();
+            }
+        }
+    }
+}
+
+impl Default for ExecutionContext {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -35,6 +35,14 @@ similar = "2.0"
 lsp-types = "0.94"
 dirs = "5.0"
 pathdiff = "0.2"
+reqwest = { version = "0.11", features = ["json"] }
+url = "2.0"
+semver = "1.0"
+sha2 = "0.10"
+base64 = "0.21"
+tar = "0.4"
+flate2 = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
 nagari-compiler = { path = "../nagari-compiler" }
 nagari-runtime = { path = "../nagari-runtime" }
 
@@ -42,3 +50,7 @@ nagari-runtime = { path = "../nagari-runtime" }
 assert_cmd = "2.0"
 predicates = "3.0"
 tempfile = "3.0"
+tokio-test = "0.4"
+indexmap = "2.0"
+env_logger = "0.10"
+log = "0.4"

@@ -7,6 +7,8 @@ mod repl;
 mod lsp;
 mod utils;
 mod tools;
+mod package;
+mod repl_engine;
 
 use commands::*;
 use config::NagConfig;
@@ -347,15 +349,14 @@ async fn main() -> anyhow::Result<()> {
         }
         Commands::Test { paths, pattern, coverage, watch } => {
             test_command(paths, pattern, coverage, watch, &config).await
-        }
-        Commands::Repl { script, experimental } => {
-            repl_command(script, experimental, &config).await
+        }        Commands::Repl { script, experimental } => {
+            handle_repl_command(script, experimental, &config).await
         }
         Commands::Doc { command } => {
             doc_command(command, &config).await
         }
         Commands::Package { command } => {
-            package_command(command, &config).await
+            handle_package_command(command, &config).await
         }
         Commands::Lsp { mode, port } => {
             lsp_command(mode, port, &config).await

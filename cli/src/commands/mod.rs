@@ -1,5 +1,7 @@
 use crate::config::NagConfig;
 use crate::{DocCommands, PackageCommands};
+use crate::package::PackageManager;
+use crate::repl_engine::ReplEngine;
 use anyhow::{Result, Context};
 use colored::*;
 use std::path::PathBuf;
@@ -409,6 +411,106 @@ pub async fn package_command(command: PackageCommands, config: &NagConfig) -> Re
             println!("{} Packing package...", "📦".cyan());
             crate::tools::package_manager::pack_package(output, config).await?;
         }
+    }
+
+    Ok(())
+}
+
+// Package management commands
+pub async fn handle_package_command(
+    package_command: PackageCommands,
+    config: &NagConfig,
+) -> Result<()> {
+    let mut package_manager = PackageManager::new(config.clone())?;
+
+    match package_command {
+        PackageCommands::Init { name, yes } => {
+            package_manager.init_package(name, yes).await?;
+        }
+        PackageCommands::Install { packages, dev } => {
+            if packages.is_empty() {
+                // Install from manifest
+                package_manager.install(vec![], false).await?;
+            } else {
+                package_manager.install(packages, dev).await?;
+            }
+        }
+        PackageCommands::Uninstall { packages } => {
+            package_manager.uninstall(packages).await?;
+        }
+        PackageCommands::Update { packages } => {
+            package_manager.update(packages).await?;
+        }
+        PackageCommands::List => {
+            package_manager.list().await?;
+        }
+        PackageCommands::Search { query } => {
+            package_manager.search(query).await?;
+        }
+        PackageCommands::Info { package } => {
+            package_manager.info(package).await?;
+        }
+        PackageCommands::Publish { .. } => {
+            println!("{} Package publishing not yet implemented", "⚠️".yellow());
+        }
+        PackageCommands::Unpublish { .. } => {
+            println!("{} Package unpublishing not yet implemented", "⚠️".yellow());
+        }
+        PackageCommands::Login { registry } => {
+            println!("{} Registry login not yet implemented (registry: {:?})", "⚠️".yellow(), registry);
+        }
+        PackageCommands::Logout => {
+            println!("{} Registry logout not yet implemented", "⚠️".yellow());
+        }
+        PackageCommands::Cache { command } => {
+            match command.as_str() {
+                "info" => {
+                    package_manager.cache_info().await?;
+                }
+                "clean" => {
+                    package_manager.cache_clean().await?;
+                }
+                _ => {
+                    println!("{} Unknown cache command: {}", "❌".red(), command);
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+// Enhanced REPL command
+pub async fn handle_repl_command(
+    script: Option<PathBuf>,
+    load: Option<PathBuf>,
+    save: Option<PathBuf>,
+    session: Option<PathBuf>,
+    config: &NagConfig,
+) -> Result<()> {
+    let mut repl = ReplEngine::new(config.clone())?;
+
+    // Load script if provided
+    if let Some(script_path) = script {
+        repl.load_script(&script_path).await?;
+    }
+
+    // Load session if provided
+    if let Some(session_path) = session {
+        repl.load_session(&session_path)?;
+    }
+
+    // Load additional script if provided
+    if let Some(load_path) = load {
+        repl.load_script(&load_path).await?;
+    }
+
+    // Run the REPL
+    repl.run().await?;
+
+    // Save session if requested
+    if let Some(save_path) = save {
+        repl.save_session(&save_path)?;
     }
 
     Ok(())

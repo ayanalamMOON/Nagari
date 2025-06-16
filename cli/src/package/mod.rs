@@ -1,0 +1,16 @@
+pub mod manager;
+pub mod manifest;
+pub mod registry;
+pub mod resolver;
+pub mod cache;
+pub mod lockfile;
+
+#[cfg(test)]
+pub mod tests;
+
+pub use manager::PackageManager;
+pub use manifest::{PackageManifest, NagariConfig, DependencySpec};
+pub use registry::{RegistryClient, PackageInfo, VersionInfo};
+pub use resolver::{DependencyResolver, ResolutionResult};
+pub use cache::PackageCache;
+pub use lockfile::{LockFile, LockedDependency};
