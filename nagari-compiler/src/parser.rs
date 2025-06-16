@@ -30,6 +30,11 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<Statement, NagariError> {
+        // Check for decorators first
+        if self.check(&Token::At) {
+            return self.decorated_statement();
+        }
+
         if self.match_token(&Token::Def) || self.check(&Token::Async) {
             self.function_definition()
         } else if self.check(&Token::If) {
@@ -52,6 +57,21 @@ impl Parser {
             self.advance();
             self.consume_newline()?;
             Ok(Statement::Continue)
+        // New statement types
+        } else if self.check(&Token::With) {
+            self.with_statement()
+        } else if self.check(&Token::Try) {
+            self.try_statement()
+        } else if self.check(&Token::Raise) {
+            self.raise_statement()
+        } else if self.check(&Token::Type) {
+            self.type_alias_statement()
+        } else if self.check(&Token::Yield) {
+            if self.peek_ahead(1) == &Token::From {
+                self.yield_from_statement()
+            } else {
+                self.yield_statement()
+            }
         } else {
             self.assignment_or_expression()
         }
@@ -119,12 +139,17 @@ impl Parser {
 
         let body = self.block()?;
 
+        // Check if function contains yield statements (making it a generator)
+        let is_generator = self.contains_yield(&body);
+
         Ok(Statement::FunctionDef(FunctionDef {
             name,
             parameters,
             return_type,
             body,
             is_async,
+            decorators: Vec::new(), // Will be set by decorated_statement if needed
+            is_generator,
         }))
     }
 
@@ -345,7 +370,71 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Result<Expression, NagariError> {
-        self.equality()
+        self.ternary()
+    }
+
+    // Ternary conditional expression (a if condition else b)
+    fn ternary(&mut self) -> Result<Expression, NagariError> {
+        let expr = self.or_expr()?;
+
+        if self.match_token(&Token::If) {
+            let condition = self.or_expr()?;
+            self.consume(&Token::Else, "Expected 'else' in ternary expression")?;
+            let false_expr = self.or_expr()?;
+
+            Ok(Expression::Ternary(TernaryExpression {
+                condition: Box::new(condition),
+                true_expr: Box::new(expr),
+                false_expr: Box::new(false_expr),
+            }))
+        } else {
+            Ok(expr)
+        }
+    }
+
+    // Logical OR
+    fn or_expr(&mut self) -> Result<Expression, NagariError> {
+        let mut expr = self.and_expr()?;
+
+        while self.match_token(&Token::Or) {
+            let right = self.and_expr()?;
+            expr = Expression::Binary(BinaryExpression {
+                left: Box::new(expr),
+                operator: BinaryOperator::Or,
+                right: Box::new(right),
+            });
+        }
+
+        Ok(expr)
+    }
+
+    // Logical AND
+    fn and_expr(&mut self) -> Result<Expression, NagariError> {
+        let mut expr = self.not_expr()?;
+
+        while self.match_token(&Token::And) {
+            let right = self.not_expr()?;
+            expr = Expression::Binary(BinaryExpression {
+                left: Box::new(expr),
+                operator: BinaryOperator::And,
+                right: Box::new(right),
+            });
+        }
+
+        Ok(expr)
+    }
+
+    // Logical NOT
+    fn not_expr(&mut self) -> Result<Expression, NagariError> {
+        if self.match_token(&Token::Not) {
+            let expr = self.not_expr()?;
+            Ok(Expression::Unary(UnaryExpression {
+                operator: UnaryOperator::Not,
+                operand: Box::new(expr),
+            }))
+        } else {
+            self.equality()
+        }
     }
 
     fn equality(&mut self) -> Result<Expression, NagariError> {
@@ -581,4 +670,287 @@ impl Parser {
             Err(NagariError::ParseError("Expected newline".to_string()))
         }
     }
-}
+
+    // New parsing methods for modern language features
+
+    // Decorator parsing
+    fn decorated_statement(&mut self) -> Result<Statement, NagariError> {
+        let mut decorators = Vec::new();
+
+        while self.check(&Token::At) {
+            self.advance(); // consume @
+            let name = match self.advance() {
+                Token::Identifier(n) => n,
+                _ => return Err(NagariError::ParseError("Expected decorator name".to_string())),
+            };
+
+            let arguments = if self.match_token(&Token::LeftParen) {
+                let mut args = Vec::new();
+                if !self.check(&Token::RightParen) {
+                    loop {
+                        args.push(self.expression()?);
+                        if !self.match_token(&Token::Comma) {
+                            break;
+                        }
+                    }
+                }
+                self.consume(&Token::RightParen, "Expected ')' after decorator arguments")?;
+                Some(args)
+            } else {
+                None
+            };
+
+            decorators.push(Decorator { name, arguments });
+            self.consume_newline()?;
+        }
+
+        // Now parse the decorated statement (should be a function)
+        let mut stmt = self.statement()?;
+
+        // Add decorators to function definition
+        if let Statement::FunctionDef(ref mut func_def) = stmt {
+            func_def.decorators = decorators;
+        } else {
+            return Err(NagariError::ParseError("Decorators can only be applied to functions".to_string()));
+        }
+
+        Ok(stmt)
+    }
+
+    // Context management (with statements)
+    fn with_statement(&mut self) -> Result<Statement, NagariError> {
+        self.consume(&Token::With, "Expected 'with'")?;
+
+        let mut items = Vec::new();
+
+        loop {
+            let context_expr = self.expression()?;
+            let optional_vars = if self.match_token(&Token::As) {
+                match self.advance() {
+                    Token::Identifier(name) => Some(name),
+                    _ => return Err(NagariError::ParseError("Expected variable name after 'as'".to_string())),
+                }
+            } else {
+                None
+            };
+
+            items.push(WithItem { context_expr, optional_vars });
+
+            if !self.match_token(&Token::Comma) {
+                break;
+            }
+        }
+
+        self.consume(&Token::Colon, "Expected ':' after with clause")?;
+        self.consume(&Token::Newline, "Expected newline after ':'")?;
+        self.consume(&Token::Indent, "Expected indentation after with")?;
+
+        let body = self.block()?;
+
+        Ok(Statement::With(WithStatement { items, body }))
+    }
+
+    // Exception handling
+    fn try_statement(&mut self) -> Result<Statement, NagariError> {
+        self.consume(&Token::Try, "Expected 'try'")?;
+        self.consume(&Token::Colon, "Expected ':' after try")?;
+        self.consume(&Token::Newline, "Expected newline after ':'")?;
+        self.consume(&Token::Indent, "Expected indentation after try")?;
+
+        let body = self.block()?;
+        let mut except_handlers = Vec::new();
+
+        // Parse except clauses
+        while self.check(&Token::Except) {
+            self.advance(); // consume except
+
+            let exception_type = if self.check(&Token::Colon) {
+                None
+            } else {
+                Some(self.parse_type()?)
+            };
+
+            let name = if self.match_token(&Token::As) {
+                match self.advance() {
+                    Token::Identifier(n) => Some(n),
+                    _ => return Err(NagariError::ParseError("Expected exception variable name".to_string())),
+                }
+            } else {
+                None
+            };
+
+            self.consume(&Token::Colon, "Expected ':' after except clause")?;
+            self.consume(&Token::Newline, "Expected newline after ':'")?;
+            self.consume(&Token::Indent, "Expected indentation after except")?;
+
+            let handler_body = self.block()?;
+
+            except_handlers.push(ExceptHandler {
+                exception_type,
+                name,
+                body: handler_body,
+            });
+        }
+
+        // Parse optional else clause
+        let else_clause = if self.check(&Token::Else) {
+            self.advance();
+            self.consume(&Token::Colon, "Expected ':' after else")?;
+            self.consume(&Token::Newline, "Expected newline after ':'")?;
+            self.consume(&Token::Indent, "Expected indentation after else")?;
+            Some(self.block()?)
+        } else {
+            None
+        };
+
+        // Parse optional finally clause
+        let finally_clause = if self.check(&Token::Finally) {
+            self.advance();
+            self.consume(&Token::Colon, "Expected ':' after finally")?;
+            self.consume(&Token::Newline, "Expected newline after ':'")?;
+            self.consume(&Token::Indent, "Expected indentation after finally")?;
+            Some(self.block()?)
+        } else {
+            None
+        };
+
+        Ok(Statement::Try(TryStatement {
+            body,
+            except_handlers,
+            else_clause,
+            finally_clause,
+        }))
+    }
+
+    // Raise statements
+    fn raise_statement(&mut self) -> Result<Statement, NagariError> {
+        self.consume(&Token::Raise, "Expected 'raise'")?;
+
+        let exception = if self.check(&Token::Newline) {
+            None
+        } else {
+            Some(self.expression()?)
+        };
+
+        let cause = if self.match_token(&Token::From) {
+            Some(self.expression()?)
+        } else {
+            None
+        };
+
+        self.consume_newline()?;
+
+        Ok(Statement::Raise(RaiseStatement { exception, cause }))
+    }
+
+    // Type alias statements
+    fn type_alias_statement(&mut self) -> Result<Statement, NagariError> {
+        self.consume(&Token::Type, "Expected 'type'")?;
+
+        let name = match self.advance() {
+            Token::Identifier(n) => n,
+            _ => return Err(NagariError::ParseError("Expected type alias name".to_string())),
+        };
+
+        self.consume(&Token::Assign, "Expected '=' in type alias")?;
+        let type_expr = self.parse_type()?;
+        self.consume_newline()?;
+
+        Ok(Statement::TypeAlias(TypeAliasStatement { name, type_expr }))
+    }
+
+    // Yield statements
+    fn yield_statement(&mut self) -> Result<Statement, NagariError> {
+        self.consume(&Token::Yield, "Expected 'yield'")?;
+
+        let value = if self.check(&Token::Newline) {
+            None
+        } else {
+            Some(self.expression()?)
+        };
+
+        self.consume_newline()?;
+
+        Ok(Statement::Yield(YieldStatement { value }))
+    }
+
+    // Yield from statements
+    fn yield_from_statement(&mut self) -> Result<Statement, NagariError> {
+        self.consume(&Token::Yield, "Expected 'yield'")?;
+        self.consume(&Token::From, "Expected 'from' after yield")?;
+
+        let value = self.expression()?;
+        self.consume_newline()?;
+
+        Ok(Statement::YieldFrom(YieldFromStatement { value }))
+    }
+
+    // Helper methods
+    fn contains_yield(&self, statements: &[Statement]) -> bool {
+        for stmt in statements {
+            match stmt {
+                Statement::Yield(_) | Statement::YieldFrom(_) => return true,
+                Statement::If(if_stmt) => {
+                    if self.contains_yield(&if_stmt.then_branch) {
+                        return true;
+                    }
+                    for elif in &if_stmt.elif_branches {
+                        if self.contains_yield(&elif.body) {
+                            return true;
+                        }
+                    }
+                    if let Some(else_branch) = &if_stmt.else_branch {
+                        if self.contains_yield(else_branch) {
+                            return true;
+                        }
+                    }
+                }
+                Statement::While(while_loop) => {
+                    if self.contains_yield(&while_loop.body) {
+                        return true;
+                    }
+                }
+                Statement::For(for_loop) => {
+                    if self.contains_yield(&for_loop.body) {
+                        return true;
+                    }
+                }
+                Statement::Try(try_stmt) => {
+                    if self.contains_yield(&try_stmt.body) {
+                        return true;
+                    }
+                    for handler in &try_stmt.except_handlers {
+                        if self.contains_yield(&handler.body) {
+                            return true;
+                        }
+                    }
+                    if let Some(else_clause) = &try_stmt.else_clause {
+                        if self.contains_yield(else_clause) {
+                            return true;
+                        }
+                    }
+                    if let Some(finally_clause) = &try_stmt.finally_clause {
+                        if self.contains_yield(finally_clause) {
+                            return true;
+                        }
+                    }
+                }
+                Statement::With(with_stmt) => {
+                    if self.contains_yield(&with_stmt.body) {
+                        return true;
+                    }
+                }
+                _ => {}
+            }
+        }
+        false
+    }
+
+    fn peek_ahead(&self, offset: usize) -> &Token {
+        let pos = self.current + offset;
+        if pos < self.tokens.len() {
+            &self.tokens[pos]
+        } else {
+            &Token::Eof
+        }
+    }
