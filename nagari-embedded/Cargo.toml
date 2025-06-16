@@ -1,0 +1,42 @@
+[package]
+name = "nagari-embedded"
+version = "0.3.0"
+edition = "2021"
+description = "Embedded runtime for integrating Nagari into other applications"
+license = "MIT"
+repository = "https://github.com/nagari-lang/nagari"
+
+[dependencies]
+nagari-vm = { path = "../nagari-vm" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.0", features = ["full"], optional = true }
+async-trait = "0.1"
+
+# Python bindings
+pyo3 = { version = "0.20", features = ["extension-module"], optional = true }
+
+# Node.js bindings
+neon = { version = "0.10", optional = true }
+
+# C bindings
+libc = { version = "0.2", optional = true }
+
+# Unity/C# bindings
+cxx = { version = "1.0", optional = true }
+
+[features]
+default = ["async"]
+async = ["tokio"]
+python = ["pyo3"]
+nodejs = ["neon"]
+c-bindings = ["libc"]
+unity = ["cxx"]
+
+[lib]
+name = "nagari_embedded"
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "nagari_c_example"
+required-features = ["c-bindings"]

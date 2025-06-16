@@ -614,6 +614,8 @@ def UserCard({ user, onEdit, onDelete }: {
 - 🚧 **Mobile Development**: React Native integration and mobile-specific features
 - 🚧 **WebAssembly Target**: WASM compilation for near-native performance
 - 🚧 **Macro System**: Compile-time metaprogramming capabilities
+- 🚧 **WebAssembly Runtime**: Browser and edge deployment capabilities
+- 🚧 **Embedded Runtime**: Plugin and SDK integration for multiple platforms
 
 ### Long-term Vision: 1.0.0 (2026) 🎯
 
