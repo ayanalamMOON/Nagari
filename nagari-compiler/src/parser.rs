@@ -885,72 +885,990 @@ impl Parser {
         Ok(Statement::YieldFrom(YieldFromStatement { value }))
     }
 
-    // Helper methods
-    fn contains_yield(&self, statements: &[Statement]) -> bool {
-        for stmt in statements {
-            match stmt {
-                Statement::Yield(_) | Statement::YieldFrom(_) => return true,
-                Statement::If(if_stmt) => {
-                    if self.contains_yield(&if_stmt.then_branch) {
-                        return true;
+    // Class definition parsing
+    fn class_definition(&mut self) -> Result<Statement, NagariError> {
+        self.consume(&Token::Class, "Expected 'class'")?;
+
+        let name = match self.advance() {
+            Token::Identifier(n) => n,
+            _ => return Err(NagariError::ParseError("Expected class name".to_string())),
+        };
+
+        // Parse optional parent classes
+        let mut bases = Vec::new();
+        if self.match_token(&Token::LeftParen) {
+            if !self.check(&Token::RightParen) {
+                loop {
+                    match self.advance() {
+                        Token::Identifier(base) => bases.push(base),
+                        _ => return Err(NagariError::ParseError("Expected parent class name".to_string())),
                     }
-                    for elif in &if_stmt.elif_branches {
-                        if self.contains_yield(&elif.body) {
-                            return true;
-                        }
-                    }
-                    if let Some(else_branch) = &if_stmt.else_branch {
-                        if self.contains_yield(else_branch) {
-                            return true;
-                        }
-                    }
-                }
-                Statement::While(while_loop) => {
-                    if self.contains_yield(&while_loop.body) {
-                        return true;
+
+                    if !self.match_token(&Token::Comma) {
+                        break;
                     }
                 }
-                Statement::For(for_loop) => {
-                    if self.contains_yield(&for_loop.body) {
-                        return true;
+            }
+            self.consume(&Token::RightParen, "Expected ')' after parent classes")?;
+        }
+
+        self.consume(&Token::Colon, "Expected ':' after class definition")?;
+        self.consume(&Token::Newline, "Expected newline after ':'")?;
+        self.consume(&Token::Indent, "Expected indentation after class definition")?;
+
+        let mut methods = Vec::new();
+        let mut class_vars = Vec::new();
+
+        while !self.check(&Token::Dedent) && !self.is_at_end() {
+            if self.check(&Token::Newline) {
+                self.advance();
+                continue;
+            }
+
+            // Check for class variable definitions
+            if self.check(&Token::Identifier) {
+                let checkpoint = self.current;
+                let var_name = match self.advance() {
+                    Token::Identifier(n) => n,
+                    _ => unreachable!(),
+                };
+
+                if self.check(&Token::Colon) || self.check(&Token::Assign) {
+                    // This is a class variable
+                    self.current = checkpoint;
+                    let var_stmt = self.assignment()?;
+                    if let Statement::Assignment(assignment) = var_stmt {
+                        class_vars.push(assignment);
                     }
+                    continue;
                 }
-                Statement::Try(try_stmt) => {
-                    if self.contains_yield(&try_stmt.body) {
-                        return true;
-                    }
-                    for handler in &try_stmt.except_handlers {
-                        if self.contains_yield(&handler.body) {
-                            return true;
-                        }
-                    }
-                    if let Some(else_clause) = &try_stmt.else_clause {
-                        if self.contains_yield(else_clause) {
-                            return true;
-                        }
-                    }
-                    if let Some(finally_clause) = &try_stmt.finally_clause {
-                        if self.contains_yield(finally_clause) {
-                            return true;
-                        }
-                    }
+
+                // Not a class variable, reset and continue as normal
+                self.current = checkpoint;
+            }
+
+            // Parse method definitions
+            if self.check(&Token::Def) || self.check(&Token::Async) {
+                let method = self.function_definition()?;
+                if let Statement::FunctionDef(func_def) = method {
+                    methods.push(func_def);
                 }
-                Statement::With(with_stmt) => {
-                    if self.contains_yield(&with_stmt.body) {
-                        return true;
-                    }
-                }
-                _ => {}
+            } else {
+                return Err(NagariError::ParseError("Expected method or class variable definition".to_string()));
             }
         }
-        false
+
+        self.consume(&Token::Dedent, "Expected dedent after class body")?;
+
+        Ok(Statement::ClassDef(ClassDef {
+            name,
+            bases,
+            methods,
+            class_vars,
+            decorators: Vec::new(), // Will be set by decorated_statement if needed
+        }))
     }
 
-    fn peek_ahead(&self, offset: usize) -> &Token {
-        let pos = self.current + offset;
-        if pos < self.tokens.len() {
-            &self.tokens[pos]
-        } else {
-            &Token::Eof
+    // Parse attribute access (a.b)
+    fn attribute_access(&mut self, object: Expression) -> Result<Expression, NagariError> {
+        let attribute = match self.advance() {
+            Token::Identifier(name) => name,
+            _ => return Err(NagariError::ParseError("Expected attribute name".to_string())),
+        };
+
+        Ok(Expression::Attribute(AttributeExpression {
+            object: Box::new(object),
+            attribute,
+        }))
+    }
+
+    // Enhanced primary expression parsing with attribute access
+    fn enhanced_primary(&mut self) -> Result<Expression, NagariError> {
+        let mut expr = self.primary()?;
+
+        while self.match_token(&Token::Dot) {
+            expr = self.attribute_access(expr)?;
+        }
+
+        // Check for subscript operations
+        while self.match_token(&Token::LeftBracket) {
+            let index = self.expression()?;
+            self.consume(&Token::RightBracket, "Expected ']' after index")?;
+
+            expr = Expression::Subscript(SubscriptExpression {
+                object: Box::new(expr),
+                index: Box::new(index),
+            });
+        }
+
+        Ok(expr)
+    }
+
+    // Override call method to use enhanced_primary
+    fn enhanced_call(&mut self) -> Result<Expression, NagariError> {
+        let mut expr = self.enhanced_primary()?;
+
+        while self.match_token(&Token::LeftParen) {
+            let mut arguments = Vec::new();
+            let mut keyword_args = Vec::new();
+
+            if !self.check(&Token::RightParen) {
+                loop {
+                    // Check for keyword argument
+                    if let Token::Identifier(name) = self.peek().clone() {
+                        let checkpoint = self.current;
+                        self.advance(); // consume identifier
+
+                        if self.match_token(&Token::Assign) {
+                            // This is a keyword argument
+                            let value = self.expression()?;
+                            keyword_args.push(KeywordArg { name, value });
+
+                            if !self.match_token(&Token::Comma) {
+                                break;
+                            }
+                            continue;
+                        }
+
+                        // Not a keyword arg, reset and parse as positional
+                        self.current = checkpoint;
+                    }
+
+                    // Positional argument
+                    arguments.push(self.expression()?);
+                    if !self.match_token(&Token::Comma) {
+                        break;
+                    }
+                }
+            }
+
+            self.consume(&Token::RightParen, "Expected ')' after arguments")?;
+
+            expr = Expression::Call(CallExpression {
+                function: Box::new(expr),
+                arguments,
+                keyword_args,
+            });
+        }
+
+        Ok(expr)
+    }
+
+    // Parse dictionary literals
+    fn dictionary_literal(&mut self) -> Result<Expression, NagariError> {
+        self.consume(&Token::LeftBrace, "Expected '{'")?;
+
+        let mut pairs = Vec::new();
+
+        if !self.check(&Token::RightBrace) {
+            loop {
+                let key = self.expression()?;
+                self.consume(&Token::Colon, "Expected ':' after dictionary key")?;
+                let value = self.expression()?;
+
+                pairs.push(DictionaryPair { key, value });
+
+                if !self.match_token(&Token::Comma) {
+                    break;
+                }
+
+                // Allow trailing comma
+                if self.check(&Token::RightBrace) {
+                    break;
+                }
+            }
+        }
+
+        self.consume(&Token::RightBrace, "Expected '}' after dictionary")?;
+
+        Ok(Expression::Dictionary(pairs))
+    }
+
+    // Parse JSX expressions
+    fn jsx_element(&mut self) -> Result<Expression, NagariError> {
+        self.consume(&Token::LessThan, "Expected '<'")?;
+
+        let tag_name = match self.advance() {
+            Token::Identifier(name) => name,
+            _ => return Err(NagariError::ParseError("Expected JSX element name".to_string())),
+        };
+
+        // Parse attributes
+        let mut attributes = Vec::new();
+        while !self.check(&Token::GreaterThan) && !self.check(&Token::Slash) {
+            let attr_name = match self.advance() {
+                Token::Identifier(name) => name,
+                _ => return Err(NagariError::ParseError("Expected attribute name".to_string())),
+            };
+
+            self.consume(&Token::Assign, "Expected '=' after attribute name")?;
+
+            let attr_value = if self.check(&Token::LeftBrace) {
+                self.advance(); // consume {
+                let expr = self.expression()?;
+                self.consume(&Token::RightBrace, "Expected '}' after attribute expression")?;
+                JSXAttributeValue::Expression(expr)
+            } else {
+                match self.advance() {
+                    Token::StringLiteral(s) => JSXAttributeValue::StringLiteral(s),
+                    _ => return Err(NagariError::ParseError("Expected string or expression in attribute".to_string())),
+                }
+            };
+
+            attributes.push(JSXAttribute { name: attr_name, value: attr_value });
+        }
+
+        // Self-closing tag
+        if self.match_token(&Token::Slash) {
+            self.consume(&Token::GreaterThan, "Expected '>' after '/'")?;
+            return Ok(Expression::JSXElement(JSXElement {
+                tag_name,
+                attributes,
+                children: Vec::new(),
+            }));
+        }
+
+        self.consume(&Token::GreaterThan, "Expected '>'")?;
+
+        // Parse children
+        let mut children = Vec::new();
+        while !self.check(&Token::LessThan) || self.peek_ahead(1) != &Token::Slash {
+            if self.check(&Token::LessThan) {
+                // Child JSX element
+                children.push(self.jsx_element()?);
+            } else if self.check(&Token::LeftBrace) {
+                // Expression inside JSX
+                self.advance(); // consume {
+                let expr = self.expression()?;
+                self.consume(&Token::RightBrace, "Expected '}' after expression")?;
+                children.push(expr);
+            } else {
+                // Text content
+                match self.advance() {
+                    Token::StringLiteral(s) => children.push(Expression::Literal(Literal::String(s))),
+                    _ => return Err(NagariError::ParseError("Expected child element, expression, or text".to_string())),
+                }
+            }
+        }
+
+        // Closing tag
+        self.consume(&Token::LessThan, "Expected '<'")?;
+        self.consume(&Token::Slash, "Expected '/'")?;
+
+        let closing_tag = match self.advance() {
+            Token::Identifier(name) => name,
+            _ => return Err(NagariError::ParseError("Expected closing tag name".to_string())),
+        };
+
+        if closing_tag != tag_name {
+            return Err(NagariError::ParseError(format!("Mismatched JSX tags: {} and {}", tag_name, closing_tag)));
+        }
+
+        self.consume(&Token::GreaterThan, "Expected '>' after closing tag")?;
+
+        Ok(Expression::JSXElement(JSXElement {
+            tag_name,
+            attributes,
+            children,
+        }))
+    }
+
+    // Parse async/await expressions
+    fn async_expression(&mut self) -> Result<Expression, NagariError> {
+        self.consume(&Token::Async, "Expected 'async'")?;
+
+        // Check if this is an async function expression
+        if self.match_token(&Token::Def) {
+            // Anonymous async function
+            let name = String::from("anonymous");
+
+            self.consume(&Token::LeftParen, "Expected '(' after anonymous function")?;
+
+            let mut parameters = Vec::new();
+
+            if !self.check(&Token::RightParen) {
+                loop {
+                    let param_name = match self.advance() {
+                        Token::Identifier(n) => n,
+                        _ => return Err(NagariError::ParseError("Expected parameter name".to_string())),
+                    };
+
+                    let param_type = if self.match_token(&Token::Colon) {
+                        Some(self.parse_type()?)
+                    } else {
+                        None
+                    };
+
+                    let default_value = if self.match_token(&Token::Assign) {
+                        Some(self.expression()?)
+                    } else {
+                        None
+                    };
+
+                    parameters.push(Parameter {
+                        name: param_name,
+                        param_type,
+                        default_value,
+                    });
+
+                    if !self.match_token(&Token::Comma) {
+                        break;
+                    }
+                }
+            }
+
+            self.consume(&Token::RightParen, "Expected ')' after parameters")?;
+
+            let return_type = if self.match_token(&Token::Arrow) {
+                Some(self.parse_type()?)
+            } else {
+                None
+            };
+
+            self.consume(&Token::Colon, "Expected ':' after function signature")?;
+            self.consume(&Token::Newline, "Expected newline after ':'")?;
+            self.consume(&Token::Indent, "Expected indentation after function definition")?;
+
+            let body = self.block()?;
+
+            return Ok(Expression::FunctionExpr(FunctionExpr {
+                name,
+                parameters,
+                return_type,
+                body,
+                is_async: true,
+                is_generator: self.contains_yield(&body),
+            }));
+        }
+
+        // This is a normal expression with async prefix
+        let expr = self.expression()?;
+
+        Ok(Expression::Async(Box::new(expr)))
+    }
+
+    // Parse lambda expressions
+    fn lambda_expression(&mut self) -> Result<Expression, NagariError> {
+        self.consume(&Token::Lambda, "Expected 'lambda'")?;
+
+        let mut parameters = Vec::new();
+
+        // Parse parameters until colon
+        if !self.check(&Token::Colon) {
+            loop {
+                let param_name = match self.advance() {
+                    Token::Identifier(n) => n,
+                    _ => return Err(NagariError::ParseError("Expected parameter name".to_string())),
+                };
+
+                parameters.push(Parameter {
+                    name: param_name,
+                    param_type: None,
+                    default_value: None,
+                });
+
+                if !self.match_token(&Token::Comma) {
+                    break;
+                }
+            }
+        }
+
+        self.consume(&Token::Colon, "Expected ':' after lambda parameters")?;
+
+        // Lambda body is a single expression
+        let body_expr = self.expression()?;
+
+        Ok(Expression::Lambda(LambdaExpr {
+            parameters,
+            body: body_expr,
+        }))
+    }
+
+    // Parse comprehensions (list, dict, set)
+    fn comprehension(&mut self, first_element: Expression) -> Result<Expression, NagariError> {
+        let target = match self.advance() {
+            Token::Identifier(name) => name,
+            _ => return Err(NagariError::ParseError("Expected identifier after 'for'".to_string())),
+        };
+
+        self.consume(&Token::In, "Expected 'in' after identifier")?;
+        let iterator = self.expression()?;
+
+        let mut conditions = Vec::new>();
+
+        // Optional if conditions
+        while self.match_token(&Token::If) {
+            let condition = self.expression()?;
+            conditions.push(condition);
+        }
+
+        self.consume(&Token::RightBracket, "Expected ']' after comprehension")?;
+
+        Ok(Expression::ListComprehension(ListComprehension {
+            element: Box::new(first_element),
+            target,
+            iterator: Box::new(iterator),
+            conditions,
+        }))
+    }
+
+    // Update statement method to include class definitions
+    fn updated_statement(&mut self) -> Result<Statement, NagariError> {
+        // Check for decorators first
+        if self.check(&Token::At) {
+            return self.decorated_statement();
+        }
+
+        if self.match_token(&Token::Class) {
+            // Reset position and delegate to class_definition
+            self.current -= 1;
+            return self.class_definition();
+        } else if self.match_token(&Token::Def) || self.check(&Token::Async) {
+            // Reset position and delegate to function_definition
+            self.current -= 1;
+            return self.function_definition();
+        }
+
+        // Continue with existing statement parsing...
+        // ...
+    }
+
+    // Helper method for determining if a token is a binary operator
+    fn is_binary_op(&self, token: &Token) -> bool {
+        matches!(token,
+            Token::Plus | Token::Minus | Token::Multiply |
+            Token::Divide | Token::Modulo | Token::Equal |
+            Token::NotEqual | Token::Less | Token::Greater |
+            Token::LessEqual | Token::GreaterEqual | Token::And |
+            Token::Or | Token::BitAnd | Token::BitOr | Token::BitXor |
+            Token::LeftShift | Token::RightShift
+        )
+    }
+
+    // Parse spread operator in function calls and object/array literals
+    fn parse_spread_element(&mut self) -> Result<Expression, NagariError> {
+        self.consume(&Token::Spread, "Expected spread operator")?;
+        let expr = self.expression()?;
+
+        Ok(Expression::Spread(Box::new(expr)))
+    }
+
+    // Parse template literals
+    fn parse_template_literal(&mut self) -> Result<Expression, NagariError> {
+        self.consume(&Token::TemplateStart, "Expected template literal start")?;
+
+        let mut parts = Vec::new();
+        let mut expressions = Vec::new();
+
+        // Add initial string part
+        match self.advance() {
+            Token::StringLiteral(s) => parts.push(s),
+            _ => return Err(NagariError::ParseError("Expected string in template literal".to_string())),
+        }
+
+        // Parse expressions and string parts
+        while self.match_token(&Token::TemplateExprStart) {
+            expressions.push(self.expression()?);
+            self.consume(&Token::TemplateExprEnd, "Expected '}' after template expression")?;
+
+            match self.advance() {
+                Token::StringLiteral(s) => parts.push(s),
+                _ => return Err(NagariError::ParseError("Expected string in template literal".to_string())),
+            }
+        }
+
+        self.consume(&Token::TemplateEnd, "Expected template literal end")?;
+
+        Ok(Expression::TemplateLiteral(TemplateLiteral {
+            parts,
+            expressions,
+        }))
+    }
+
+    // Parse object destructuring in assignments
+    fn parse_destructuring_assignment(&mut self) -> Result<Statement, NagariError> {
+        self.consume(&Token::LeftBrace, "Expected '{'")?;
+
+        let mut properties = Vec::new();
+
+        if !self.check(&Token::RightBrace) {
+            loop {
+                let property = match self.advance() {
+                    Token::Identifier(name) => name,
+                    _ => return Err(NagariError::ParseError("Expected property name in destructuring".to_string())),
+                };
+
+                let alias = if self.match_token(&Token::Colon) {
+                    match self.advance() {
+                        Token::Identifier(name) => Some(name),
+                        _ => return Err(NagariError::ParseError("Expected alias in destructuring".to_string())),
+                    }
+                } else {
+                    None
+                };
+
+                properties.push(DestructuringProperty { property, alias });
+
+                if !self.match_token(&Token::Comma) {
+                    break;
+                }
+
+                // Allow trailing comma
+                if self.check(&Token::RightBrace) {
+                    break;
+                }
+            }
+        }
+
+        self.consume(&Token::RightBrace, "Expected '}' after destructuring pattern")?;
+        self.consume(&Token::Assign, "Expected '=' after destructuring pattern")?;
+
+        let value = self.expression()?;
+        self.consume_newline()?;
+
+        Ok(Statement::DestructuringAssignment(DestructuringAssignment {
+            properties,
+            value,
+        }))
+    }
+
+    // Parse array destructuring in assignments
+    fn parse_array_destructuring(&mut self) -> Result<Statement, NagariError> {
+        self.consume(&Token::LeftBracket, "Expected '['")?;
+
+        let mut elements = Vec::new();
+
+        if !self.check(&Token::RightBracket) {
+            loop {
+                if self.check(&Token::Comma) {
+                    // Skip position for elements we don't care about
+                    elements.push(None);
+                    self.advance();
+                } else {
+                    let element = match self.advance() {
+                        Token::Identifier(name) => Some(name),
+                        _ => return Err(NagariError::ParseError("Expected variable name in array destructuring".to_string())),
+                    };
+
+                    elements.push(element);
+
+                    if !self.match_token(&Token::Comma) {
+                        break;
+                    }
+                }
+
+                // Allow trailing comma
+                if self.check(&Token::RightBracket) {
+                    break;
+                }
+            }
+        }
+
+        self.consume(&Token::RightBracket, "Expected ']' after array destructuring")?;
+        self.consume(&Token::Assign, "Expected '=' after array destructuring")?;
+
+        let value = self.expression()?;
+        self.consume_newline()?;
+
+        Ok(Statement::ArrayDestructuringAssignment(ArrayDestructuringAssignment {
+            elements,
+            value,
+        }))
+    }
+
+    // Enhanced import statement with better support for named and default imports
+    fn enhanced_import_statement(&mut self) -> Result<Statement, NagariError> {
+        self.consume(&Token::Import, "Expected 'import'")?;
+
+        // Check for different import patterns
+
+        // import defaultExport from "module-name";
+        if let Token::Identifier(default_import) = self.peek().clone() {
+            self.advance(); // consume identifier
+
+            if self.match_token(&Token::From) {
+                let module = match self.advance() {
+                    Token::StringLiteral(name) => name,
+                    _ => return Err(NagariError::ParseError("Expected module name string after 'from'".to_string())),
+                };
+
+                self.consume_newline()?;
+                return Ok(Statement::ImportDefault(ImportDefaultStatement {
+                    default_import,
+                    module,
+                }));
+            }
+
+            // Reset and try different import pattern
+            self.current -= 1;
+        }
+
+        // import { export1, export2 } from "module-name";
+        if self.match_token(&Token::LeftBrace) {
+            let mut named_imports = Vec::new();
+
+            if !self.check(&Token::RightBrace) {
+                loop {
+                    let import_name = match self.advance() {
+                        Token::Identifier(name) => name,
+                        _ => return Err(NagariError::ParseError("Expected import name".to_string())),
+                    };
+
+                    let alias = if self.match_token(&Token::As) {
+                        match self.advance() {
+                            Token::Identifier(alias) => Some(alias),
+                            _ => return Err(NagariError::ParseError("Expected alias after 'as'".to_string())),
+                        }
+                    } else {
+                        None
+                    };
+
+                    named_imports.push(NamedImport { name: import_name, alias });
+
+                    if !self.match_token(&Token::Comma) {
+                        break;
+                    }
+
+                    // Allow trailing comma
+                    if self.check(&Token::RightBrace) {
+                        break;
+                    }
+                }
+            }
+
+            self.consume(&Token::RightBrace, "Expected '}' after named imports")?;
+            self.consume(&Token::From, "Expected 'from' after named imports")?;
+
+            let module = match self.advance() {
+                Token::StringLiteral(name) => name,
+                _ => return Err(NagariError::ParseError("Expected module name string after 'from'".to_string())),
+            };
+
+            self.consume_newline()?;
+            return Ok(Statement::ImportNamed(ImportNamedStatement {
+                named_imports,
+                module,
+            }));
+        }
+
+        // import * as name from "module-name";
+        if self.match_token(&Token::Multiply) {
+            self.consume(&Token::As, "Expected 'as' after '*'")?;
+
+            let namespace = match self.advance() {
+                Token::Identifier(name) => name,
+                _ => return Err(NagariError::ParseError("Expected namespace name after 'as'".to_string())),
+            };
+
+            self.consume(&Token::From, "Expected 'from' after namespace")?;
+
+            let module = match self.advance() {
+                Token::StringLiteral(name) => name,
+                _ => return Err(NagariError::ParseError("Expected module name string after 'from'".to_string())),
+            };
+
+            self.consume_newline()?;
+            return Ok(Statement::ImportNamespace(ImportNamespaceStatement {
+                namespace,
+                module,
+            }));
+        }
+
+        // import "module-name"; (side-effect import)
+        if let Token::StringLiteral(module) = self.peek().clone() {
+            self.advance(); // consume string
+            self.consume_newline()?;
+
+            return Ok(Statement::ImportSideEffect(ImportSideEffectStatement {
+                module,
+            }));
+        }
+
+        return Err(NagariError::ParseError("Invalid import statement".to_string()));
+    }
+
+    // Parse export statements
+    fn export_statement(&mut self) -> Result<Statement, NagariError> {
+        self.consume(&Token::Export, "Expected 'export'")?;
+
+        // export default expression;
+        if self.match_token(&Token::Default) {
+            let expr = self.expression()?;
+            self.consume_newline()?;
+
+            return Ok(Statement::ExportDefault(ExportDefaultStatement {
+                expression: expr,
+            }));
+        }
+
+        // export { name1, name2 };
+        if self.match_token(&Token::LeftBrace) {
+            let mut exports = Vec::new();
+
+            if !self.check(&Token::RightBrace) {
+                loop {
+                    let export_name = match self.advance() {
+                        Token::Identifier(name) => name,
+                        _ => return Err(NagariError::ParseError("Expected export name".to_string())),
+                    };
+
+                    let alias = if self.match_token(&Token::As) {
+                        match self.advance() {
+                            Token::Identifier(alias) => Some(alias),
+                            _ => return Err(NagariError::ParseError("Expected alias after 'as'".to_string())),
+                        }
+                    } else {
+                        None
+                    };
+
+                    exports.push(NamedExport { name: export_name, alias });
+
+                    if !self.match_token(&Token::Comma) {
+                        break;
+                    }
+
+                    // Allow trailing comma
+                    if self.check(&Token::RightBrace) {
+                        break;
+                    }
+                }
+            }
+
+            self.consume(&Token::RightBrace, "Expected '}' after named exports")?;
+
+            // Optional from clause
+            let source = if self.match_token(&Token::From) {
+                match self.advance() {
+                    Token::StringLiteral(source) => Some(source),
+                    _ => return Err(NagariError::ParseError("Expected module string after 'from'".to_string())),
+                }
+            } else {
+                None
+            };
+
+            self.consume_newline()?;
+            return Ok(Statement::ExportNamed(ExportNamedStatement {
+                exports,
+                source,
+            }));
+        }
+
+        // export * from "module";
+        if self.match_token(&Token::Multiply) {
+            let alias = if self.match_token(&Token::As) {
+                match self.advance() {
+                    Token::Identifier(alias) => Some(alias),
+                    _ => return Err(NagariError::ParseError("Expected namespace alias after 'as'".to_string())),
+                }
+            } else {
+                None
+            };
+
+            self.consume(&Token::From, "Expected 'from' after export *")?;
+
+            let source = match self.advance() {
+                Token::StringLiteral(source) => source,
+                _ => return Err(NagariError::ParseError("Expected module string after 'from'".to_string())),
+            };
+
+            self.consume_newline()?;
+            return Ok(Statement::ExportAll(ExportAllStatement {
+                source,
+                alias,
+            }));
+        }
+
+        // export declaration
+        let declaration = self.statement()?;
+
+        Ok(Statement::ExportDeclaration(ExportDeclarationStatement {
+            declaration: Box::new(declaration),
+        }))
+    }
+}
+
+// Add additional AST structs for the newly added language features
+
+#[derive(Debug, Clone)]
+pub struct KeywordArg {
+    pub name: String,
+    pub value: Expression,
+}
+
+#[derive(Debug, Clone)]
+pub struct DictionaryPair {
+    pub key: Expression,
+    pub value: Expression,
+}
+
+#[derive(Debug, Clone)]
+pub struct ClassDef {
+    pub name: String,
+    pub bases: Vec<String>,
+    pub methods: Vec<FunctionDef>,
+    pub class_vars: Vec<Assignment>,
+    pub decorators: Vec<Decorator>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AttributeExpression {
+    pub object: Box<Expression>,
+    pub attribute: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct SubscriptExpression {
+    pub object: Box<Expression>,
+    pub index: Box<Expression>,
+}
+
+#[derive(Debug, Clone)]
+pub struct JSXElement {
+    pub tag_name: String,
+    pub attributes: Vec<JSXAttribute>,
+    pub children: Vec<Expression>,
+}
+
+#[derive(Debug, Clone)]
+pub struct JSXAttribute {
+    pub name: String,
+    pub value: JSXAttributeValue,
+}
+
+#[derive(Debug, Clone)]
+pub enum JSXAttributeValue {
+    StringLiteral(String),
+    Expression(Expression),
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionExpr {
+    pub name: String,
+    pub parameters: Vec<Parameter>,
+    pub return_type: Option<Type>,
+    pub body: Vec<Statement>,
+    pub is_async: bool,
+    pub is_generator: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct LambdaExpr {
+    pub parameters: Vec<Parameter>,
+    pub body: Expression,
+}
+
+#[derive(Debug, Clone)]
+pub struct ListComprehension {
+    pub element: Box<Expression>,
+    pub target: String,
+    pub iterator: Box<Expression>,
+    pub conditions: Vec<Expression>,
+}
+
+#[derive(Debug, Clone)]
+pub struct TemplateLiteral {
+    pub parts: Vec<String>,
+    pub expressions: Vec<Expression>,
+}
+
+#[derive(Debug, Clone)]
+pub struct DestructuringProperty {
+    pub property: String,
+    pub alias: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct DestructuringAssignment {
+    pub properties: Vec<DestructuringProperty>,
+    pub value: Expression,
+}
+
+#[derive(Debug, Clone)]
+pub struct ArrayDestructuringAssignment {
+    pub elements: Vec<Option<String>>,
+    pub value: Expression,
+}
+
+#[derive(Debug, Clone)]
+pub struct ImportDefaultStatement {
+    pub default_import: String,
+    pub module: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct NamedImport {
+    pub name: String,
+    pub alias: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ImportNamedStatement {
+    pub named_imports: Vec<NamedImport>,
+    pub module: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct ImportNamespaceStatement {
+    pub namespace: String,
+    pub module: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct ImportSideEffectStatement {
+    pub module: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExportDefaultStatement {
+    pub expression: Expression,
+}
+
+#[derive(Debug, Clone)]
+pub struct NamedExport {
+    pub name: String,
+    pub alias: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExportNamedStatement {
+    pub exports: Vec<NamedExport>,
+    pub source: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExportAllStatement {
+    pub source: String,
+    pub alias: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExportDeclarationStatement {
+    pub declaration: Box<Statement>,
+}
+
+// Update the Expression and Statement enums to include the new node types
+
+impl Expression {
+    // Add new variant definitions to the existing Expression enum
+    pub fn is_lvalue(&self) -> bool {
+        match self {
+            Expression::Identifier(_) => true,
+            Expression::Attribute(_) => true,
+            Expression::Subscript(_) => true,
+            _ => false,
         }
     }
+}
+
+impl Statement {
+    // Add helper methods for the Statement enum
+    pub fn is_definition(&self) -> bool {
+        match self {
+            Statement::FunctionDef(_) => true,
+            Statement::ClassDef(_) => true,
+            Statement::Assignment(_) => true,
+            Statement::TypeAlias(_) => true,
+            _ => false,
+        }
+    }
+}
