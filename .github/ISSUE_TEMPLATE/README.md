@@ -29,22 +29,26 @@ When contributing code, please use our comprehensive pull request template that 
 
 ## 🎯 Issue Lifecycle
 
-### 1. **Creation** 
+### 1. **Creation**
+
 - Use appropriate template
 - Provide all requested information
 - Add relevant labels
 
 ### 2. **Triage**
+
 - Core team reviews and labels
 - Priority and milestone assignment
 - Discussion and clarification
 
 ### 3. **Implementation**
+
 - Issue assigned to contributor
 - Work tracked through PR
 - Code review and testing
 
 ### 4. **Resolution**
+
 - PR merged or issue closed
 - Documentation updated
 - Release planning
@@ -52,21 +56,24 @@ When contributing code, please use our comprehensive pull request template that 
 ## 🏷️ Label System
 
 ### Type Labels
+
 - `bug` - Something is broken
-- `enhancement` - Improve existing functionality  
+- `enhancement` - Improve existing functionality
 - `feature` - New functionality
 - `documentation` - Documentation improvements
 - `performance` - Performance related
 - `security` - Security related
 - `question` - Questions and help
 
-### Priority Labels  
+### Priority Labels
+
 - `priority:critical` - Blocking issues
 - `priority:high` - Important for next release
 - `priority:medium` - Nice to have soon
 - `priority:low` - Future consideration
 
 ### Status Labels
+
 - `needs-triage` - Needs initial review
 - `needs-discussion` - Requires design discussion
 - `needs-investigation` - Requires research
@@ -76,6 +83,7 @@ When contributing code, please use our comprehensive pull request template that 
 - `needs-testing` - Needs testing
 
 ### Component Labels
+
 - `compiler` - Lexer, parser, transpiler
 - `runtime` - VM and runtime system
 - `cli` - Command line tools
@@ -87,6 +95,7 @@ When contributing code, please use our comprehensive pull request template that 
 ## 🔄 Contribution Workflow
 
 ### For Bug Reports
+
 1. Search existing issues first
 2. Use bug report template
 3. Provide minimal reproduction case
@@ -94,6 +103,7 @@ When contributing code, please use our comprehensive pull request template that 
 5. Wait for triage and discussion
 
 ### For Feature Requests
+
 1. Check if similar feature exists
 2. Use feature request template
 3. Provide clear use cases
@@ -101,6 +111,7 @@ When contributing code, please use our comprehensive pull request template that 
 5. Engage in design discussion
 
 ### For Enhancements
+
 1. Use enhancement template
 2. Explain current limitations
 3. Propose specific improvements
@@ -108,6 +119,7 @@ When contributing code, please use our comprehensive pull request template that 
 5. Discuss with maintainers
 
 ### For Pull Requests
+
 1. Reference related issues
 2. Use PR template
 3. Include tests and documentation
@@ -117,18 +129,21 @@ When contributing code, please use our comprehensive pull request template that 
 ## 🤝 Community Guidelines
 
 ### Be Respectful
+
 - Use welcoming and inclusive language
 - Respect different viewpoints and experiences
 - Accept constructive criticism gracefully
 - Focus on what's best for the community
 
 ### Be Helpful
+
 - Provide context and details
 - Help others learn and contribute
 - Share knowledge and experience
 - Collaborate on solutions
 
 ### Be Patient
+
 - Maintainers are volunteers
 - Complex features take time
 - Quality is more important than speed
@@ -137,12 +152,14 @@ When contributing code, please use our comprehensive pull request template that 
 ## 📞 Getting Help
 
 ### Before Creating an Issue
+
 1. **Check Documentation**: Browse [docs/](../docs/) for guides and references
 2. **Search Issues**: Look for existing discussions about your topic
 3. **Read FAQ**: Check [FAQ](../docs/faq.md) for common questions
 4. **Try Discord**: Join our [community chat](https://discord.gg/nagari) for quick help
 
 ### When to Use Which Channel
+
 - **Discord**: Quick questions, real-time discussion, community chat
 - **Issues**: Bug reports, feature requests, formal proposals
 - **Discussions**: Design discussions, brainstorming, RFCs
@@ -151,6 +168,7 @@ When contributing code, please use our comprehensive pull request template that 
 ## 🎖️ Recognition
 
 ### Contributor Recognition
+
 We recognize and celebrate all forms of contribution:
 
 - **Code Contributors**: Bug fixes, features, improvements
@@ -159,7 +177,9 @@ We recognize and celebrate all forms of contribution:
 - **Testing Contributors**: Bug reports, testing, quality assurance
 
 ### Hall of Fame
+
 Outstanding contributors are featured in:
+
 - Project README
 - Release notes
 - Community Discord
@@ -170,18 +190,21 @@ Outstanding contributors are featured in:
 We track several metrics to ensure project health:
 
 ### Response Times
+
 - **Initial Triage**: Within 3 business days
 - **Bug Fixes**: Critical bugs within 1 week
 - **Feature Discussion**: Within 1 week
 - **PR Review**: Within 1 week
 
 ### Quality Metrics
+
 - Test coverage > 80%
 - Documentation coverage for all public APIs
 - No high-severity security issues
 - Regular dependency updates
 
 ### Community Metrics
+
 - Active contributors per month
 - Issue resolution rate
 - Community satisfaction surveys

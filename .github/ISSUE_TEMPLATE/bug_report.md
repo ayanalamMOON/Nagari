@@ -21,11 +21,13 @@ A clear and concise description of what actually happened.
 ## 🔄 Reproduction Steps
 
 Steps to reproduce the behavior:
+
 1. Go to '...'
 2. Run command '...'
 3. See error
 
 **Minimal Reproducible Example:**
+
 ```nagari
 // Please provide the smallest possible Nagari code that demonstrates the issue
 fn example() {
@@ -36,16 +38,19 @@ fn example() {
 ## 🌍 Environment
 
 **System Information:**
+
 - OS: [e.g. Windows 11, macOS 14, Ubuntu 22.04]
 - Architecture: [e.g. x64, ARM64]
 - Shell: [e.g. bash, PowerShell, zsh]
 
 **Nagari Version:**
+
 - Version: [e.g. 0.2.1]
 - Installation method: [e.g. cargo install, built from source]
 - Build date: [run `nagari --version` for details]
 
 **Runtime Environment:**
+
 - Node.js version: [if applicable]
 - Python version: [if applicable]
 - Browser: [if applicable]
@@ -53,6 +58,7 @@ fn example() {
 ## 📋 Additional Context
 
 **Error Messages:**
+
 ```
 Paste any error messages, stack traces, or logs here
 ```
@@ -61,6 +67,7 @@ Paste any error messages, stack traces, or logs here
 If applicable, add screenshots to help explain your problem.
 
 **Related Issues:**
+
 - Link to any related issues or discussions
 
 **Workarounds:**
@@ -77,12 +84,14 @@ If you found any temporary workarounds, please describe them.
 ## 🏷️ Priority
 
 **Impact Level:**
+
 - [ ] Critical - Prevents core functionality
 - [ ] High - Significantly impacts workflow
 - [ ] Medium - Moderate impact on workflow
 - [ ] Low - Minor inconvenience
 
 **Frequency:**
+
 - [ ] Always - Happens every time
 - [ ] Often - Happens frequently
 - [ ] Sometimes - Happens occasionally
@@ -91,6 +100,7 @@ If you found any temporary workarounds, please describe them.
 ## 📝 Additional Notes
 
 Add any other context about the problem here, including:
+
 - When did this issue first appear?
 - Does it affect multiple components (compiler, CLI, REPL, LSP)?
 - Are there any performance implications?

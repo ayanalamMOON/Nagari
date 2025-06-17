@@ -57,7 +57,7 @@ Are there any current workarounds for this functionality?
 **Target Audience:**
 
 - [ ] Beginner developers
-- [ ] Intermediate developers  
+- [ ] Intermediate developers
 - [ ] Advanced developers
 - [ ] Library/framework authors
 - [ ] Application developers

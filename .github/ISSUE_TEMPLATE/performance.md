@@ -12,7 +12,7 @@ assignees: ''
 **Component Affected:**
 
 - [ ] Compiler (nagari-compiler)
-- [ ] Runtime/VM (nagari-vm)  
+- [ ] Runtime/VM (nagari-vm)
 - [ ] CLI Tools
 - [ ] REPL
 - [ ] LSP Server
@@ -86,7 +86,7 @@ hyperfine "nagari run benchmark.nag"
 If you have profiling data, please include:
 
 - CPU profiling results
-- Memory profiling results  
+- Memory profiling results
 - Flamegraphs or call graphs
 - Hot spots identified
 
