@@ -1,6 +1,12 @@
 [workspace]
 members = [
-    "nagari-compiler"
+    "cli",
+    "nagari-compiler",
+    "lsp-server",
+    "nagari-vm",
+    "nagari-wasm",
+    "nagari-embedded",
+    "registry-server"
 ]
 
 [workspace.package]
