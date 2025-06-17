@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Community Discord
+    url: https://discord.gg/nagari
+    about: Join our Discord server for real-time discussions and quick help
+  - name: 📚 Documentation
+    url: https://github.com/nagari-lang/nagari/tree/main/docs
+    about: Browse our comprehensive documentation and guides
+  - name: 🚀 Quick Start Guide
+    url: https://github.com/nagari-lang/nagari/blob/main/docs/getting-started.md
+    about: Get started with Nagari in minutes
+  - name: ❓ FAQ
+    url: https://github.com/nagari-lang/nagari/blob/main/docs/faq.md
+    about: Check if your question is already answered in our FAQ
+  - name: 📧 Security Issues
+    url: mailto:security@nagari-lang.org
+    about: Report security vulnerabilities privately via email
