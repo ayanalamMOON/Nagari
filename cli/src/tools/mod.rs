@@ -56,3 +56,81 @@ impl LintIssue {
         )
     }
 }
+
+/// Tools utilities that use the imported components
+pub struct ToolsManager {
+    formatter: NagFormatter,
+    linter: NagLinter,
+    doc_generator: DocGenerator,
+}
+
+impl ToolsManager {    pub fn new() -> Result<Self> {
+        // Create default configs
+        let nag_config = crate::config::NagConfig::default();
+        
+        Ok(Self {
+            formatter: NagFormatter::new(&nag_config.format),
+            linter: NagLinter::new(&nag_config.lint),
+            doc_generator: DocGenerator::new(&nag_config),
+        })
+    }    pub fn format_files(&self, files: &[PathBuf]) -> Result<Vec<FileChange>> {
+        let mut changes = Vec::new();
+        for file in files {
+            match self.formatter.format_file(file, false, false) {
+                Ok(change) => changes.push(change),
+                Err(e) => {
+                    changes.push(FileChange {
+                        path: file.clone(),
+                        changed: false,
+                        diff: None,
+                        errors: vec![e.to_string()],
+                    });
+                }
+            }
+        }
+        Ok(changes)
+    }
+      pub fn lint_files(&self, files: &[PathBuf]) -> Result<Vec<FileChange>> {
+        let mut changes = Vec::new();
+        for file in files {
+            match self.linter.lint_file(file, false) {
+                Ok(issues) => {
+                    let error_messages: Vec<String> = issues.into_iter()
+                        .map(|issue| format!("Line {}: {}", issue.line, issue.message))
+                        .collect();
+                    changes.push(FileChange {
+                        path: file.clone(),
+                        changed: false,
+                        diff: None,
+                        errors: error_messages,
+                    });
+                }
+                Err(e) => {
+                    changes.push(FileChange {
+                        path: file.clone(),
+                        changed: false,
+                        diff: None,
+                        errors: vec![e.to_string()],
+                    });
+                }
+            }
+        }
+        Ok(changes)
+    }
+    
+    pub fn generate_docs(&self, source_dir: &PathBuf, output_dir: &PathBuf) -> Result<Vec<FileChange>> {
+        match self.doc_generator.generate(source_dir, output_dir, "html", false) {
+            Ok(_) => Ok(vec![FileChange {
+                path: output_dir.clone(),
+                changed: true,
+                diff: None,
+                errors: Vec::new(),            }]),
+            Err(e) => Ok(vec![FileChange {
+                path: output_dir.clone(),
+                changed: false,
+                diff: None,
+                errors: vec![e.to_string()],
+            }])
+        }
+    }
+}

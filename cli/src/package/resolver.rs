@@ -1,11 +1,15 @@
-use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
-use std::path::PathBuf;
 use anyhow::Result;
 use semver::{Version, VersionReq};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::future::Future;
+use std::path::PathBuf;
+use std::pin::Pin;
+use std::process::Command;
 
-use crate::package::manifest::{PackageManifest, DependencySpec};
+use crate::package::manifest::{DependencySpec, PackageManifest};
 use crate::package::registry::{RegistryClient, VersionInfo};
+use tempfile::TempDir;
 
 #[derive(Debug, Clone)]
 pub struct DependencyResolver {
@@ -94,11 +98,11 @@ pub struct ResolutionContext {
 
 #[derive(Debug, Clone)]
 pub enum UpdateStrategy {
-    None,          // Use exact versions from lockfile
-    Patch,         // Allow patch updates (~1.2.3)
-    Minor,         // Allow minor updates (^1.2.3)
-    Major,         // Allow major updates (>=1.2.3)
-    Latest,        // Use latest available
+    None,   // Use exact versions from lockfile
+    Patch,  // Allow patch updates (~1.2.3)
+    Minor,  // Allow minor updates (^1.2.3)
+    Major,  // Allow major updates (>=1.2.3)
+    Latest, // Use latest available
 }
 
 impl DependencyResolver {
@@ -153,24 +157,33 @@ impl DependencyResolver {
         let mut resolution_graph = HashMap::new();
 
         for (name, (spec, is_dev, is_optional, is_peer)) in all_deps {
-            match self.resolve_dependency_tree(&name, &spec, context, &mut resolution_graph).await {
+            match self
+                .resolve_dependency_tree(&name, &spec, context, &mut resolution_graph)
+                .await
+            {
                 Ok(resolved) => {
-                    resolution.resolved.insert(name.clone(), ResolvedDependency {
-                        name: name.clone(),
-                        version: resolved.version.clone(),
-                        resolved_url: resolved.resolved_url.clone(),
-                        integrity: resolved.integrity.clone(),
-                        dependencies: resolved.dependencies.clone(),
-                        dev: is_dev,
-                        optional: is_optional,
-                        peer: is_peer,
-                    });
+                    resolution.resolved.insert(
+                        name.clone(),
+                        ResolvedDependency {
+                            name: name.clone(),
+                            version: resolved.version.clone(),
+                            resolved_url: resolved.resolved_url.clone(),
+                            integrity: resolved.integrity.clone(),
+                            dependencies: resolved.dependencies.clone(),
+                            dev: is_dev,
+                            optional: is_optional,
+                            peer: is_peer,
+                        },
+                    );
                 }
                 Err(e) => {
                     if is_optional {
                         resolution.warnings.push(ResolutionWarning {
                             kind: WarningKind::OptionalDependencyFailed,
-                            message: format!("Failed to resolve optional dependency {}: {}", name, e),
+                            message: format!(
+                                "Failed to resolve optional dependency {}: {}",
+                                name, e
+                            ),
                             package: Some(name),
                         });
                     } else {
@@ -189,6 +202,79 @@ impl DependencyResolver {
         Ok(resolution)
     }
 
+    fn resolve_dependency_tree_boxed<'a>(
+        &'a mut self,
+        name: &'a str,
+        spec: &'a DependencySpec,
+        context: &'a ResolutionContext,
+        resolution_graph: &'a mut HashMap<String, ResolvedDependency>,
+    ) -> Pin<Box<dyn Future<Output = Result<ResolvedDependency>> + Send + 'a>> {
+        Box::pin(async move {
+            // Handle local path dependencies
+            if let DependencySpec::Detailed {
+                path: Some(path), ..
+            } = spec
+            {
+                return self.resolve_git_dependency(name, "", None, None).await;
+            }
+
+            // Handle git dependencies
+            if let DependencySpec::Detailed {
+                git: Some(git_url),
+                branch,
+                tag,
+                ..
+            } = spec
+            {
+                return self
+                    .resolve_git_dependency(name, git_url, branch.as_deref(), tag.as_deref())
+                    .await;
+            }
+
+            // Handle registry dependencies
+            let version_req = self.parse_version_requirement(spec)?;
+            // Clone package_info to avoid holding a reference across await
+            let package_info = self.get_package_info(name).await?.clone();
+
+            let suitable_version =
+                self.find_suitable_version(&package_info.versions, &version_req, context)?;
+            let version_info = package_info
+                .version_info
+                .get(&suitable_version)
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Version info not found for {} {}", name, suitable_version)
+                })?;
+
+            // Clone dependencies to avoid borrow checker issues
+            let deps_to_resolve: Vec<_> = version_info
+                .dependencies
+                .iter()
+                .map(|(name, version)| (name.clone(), version.clone()))
+                .collect();
+
+            // Recursively resolve dependencies
+            let mut dependencies = HashMap::new();
+            for (dep_name, dep_version_req) in deps_to_resolve {
+                let dep_spec = DependencySpec::Version(dep_version_req);
+                let resolved_dep = self
+                    .resolve_dependency_tree_boxed(&dep_name, &dep_spec, context, resolution_graph)
+                    .await?;
+                dependencies.insert(dep_name, resolved_dep.version);
+            }
+
+            Ok(ResolvedDependency {
+                name: name.to_string(),
+                version: suitable_version,
+                resolved_url: version_info.dist.tarball.clone(),
+                integrity: version_info.dist.integrity.clone().unwrap_or_default(),
+                dependencies,
+                dev: false,
+                optional: false,
+                peer: false,
+            })
+        })
+    }
+
     async fn resolve_dependency_tree(
         &mut self,
         name: &str,
@@ -196,50 +282,15 @@ impl DependencyResolver {
         context: &ResolutionContext,
         resolution_graph: &mut HashMap<String, ResolvedDependency>,
     ) -> Result<ResolvedDependency> {
-        // Handle local path dependencies
-        if let DependencySpec::Detailed { path: Some(path), .. } = spec {
-            return self.resolve_local_dependency(name, path).await;
-        }
-
-        // Handle git dependencies
-        if let DependencySpec::Detailed { git: Some(git_url), branch, tag, .. } = spec {
-            return self.resolve_git_dependency(name, git_url, branch.as_deref(), tag.as_deref()).await;
-        }
-
-        // Handle registry dependencies
-        let version_req = self.parse_version_requirement(spec)?;
-        let package_info = self.get_package_info(name).await?;
-
-        let suitable_version = self.find_suitable_version(&package_info.versions, &version_req, context)?;
-        let version_info = package_info.version_info.get(&suitable_version)
-            .ok_or_else(|| anyhow::anyhow!("Version info not found for {} {}", name, suitable_version))?;
-
-        // Clone dependencies to avoid borrow checker issues
-        let deps_to_resolve: Vec<_> = version_info.dependencies.iter()
-            .map(|(name, version)| (name.clone(), version.clone()))
-            .collect();
-
-        // Recursively resolve dependencies
-        let mut dependencies = HashMap::new();
-        for (dep_name, dep_version_req) in deps_to_resolve {
-            let dep_spec = DependencySpec::Version(dep_version_req);
-            let resolved_dep = self.resolve_dependency_tree(&dep_name, &dep_spec, context, resolution_graph).await?;
-            dependencies.insert(dep_name, resolved_dep.version);
-        }
-
-        Ok(ResolvedDependency {
-            name: name.to_string(),
-            version: suitable_version,
-            resolved_url: version_info.dist.tarball.clone(),
-            integrity: version_info.dist.integrity.clone().unwrap_or_default(),
-            dependencies,
-            dev: false,
-            optional: false,
-            peer: false,
-        })
+        self.resolve_dependency_tree_boxed(name, spec, context, resolution_graph)
+            .await
     }
 
-    async fn resolve_local_dependency(&self, name: &str, path: &PathBuf) -> Result<ResolvedDependency> {
+    async fn resolve_local_dependency(
+        &self,
+        name: &str,
+        path: &PathBuf,
+    ) -> Result<ResolvedDependency> {
         let manifest_path = path.join("nagari.json");
         let manifest = PackageManifest::from_file(&manifest_path)?;
 
@@ -264,14 +315,79 @@ impl DependencyResolver {
         branch: Option<&str>,
         tag: Option<&str>,
     ) -> Result<ResolvedDependency> {
-        // TODO: Implement git dependency resolution
-        // This would involve cloning the repo, reading nagari.json, etc.
-        anyhow::bail!("Git dependencies not yet implemented");
+        // Implement git dependency resolution
+        // 1. Clone or fetch the git repository to a temp/cache directory.
+        // 2. Checkout the specified branch or tag if provided.
+        // 3. Read the nagari.json manifest from the repo.
+        // 4. Parse the version and dependencies.
+        // 5. Return a ResolvedDependency.
+
+        // Create a temporary directory for the git clone
+        let temp_dir = TempDir::new()?;
+        let repo_path = temp_dir.path();
+
+        // Prepare git clone command
+        let mut clone_args = vec![git_url, repo_path.to_str().unwrap()];
+        if let Some(branch) = branch {
+            clone_args.insert(0, "--branch");
+            clone_args.insert(1, branch);
+        }
+        if let Some(tag) = tag {
+            clone_args.insert(0, "--branch");
+            clone_args.insert(1, tag);
+        }
+
+        // Clone the repository
+        let status = Command::new("git")
+            .arg("clone")
+            .args(&clone_args)
+            .arg("--depth=1")
+            .status()?;
+        if !status.success() {
+            anyhow::bail!("Failed to clone git repository: {}", git_url);
+        }
+
+        // Read the manifest file
+        let manifest_path = repo_path.join("nagari.json");
+        let manifest = PackageManifest::from_file(&manifest_path)?;
+
+        let version = Version::parse(&manifest.version)?;
+
+        // Collect dependencies (only names and version requirements)
+        let dependencies = manifest
+            .dependencies
+            .iter()
+            .map(|(dep_name, dep_spec)| {
+                let req = match dep_spec {
+                    DependencySpec::Version(v) => VersionReq::parse(v).unwrap_or(VersionReq::STAR),
+                    DependencySpec::Detailed {
+                        version: Some(v), ..
+                    } => VersionReq::parse(v).unwrap_or(VersionReq::STAR),
+                    _ => VersionReq::STAR,
+                };
+                // Use 0.0.0 as placeholder, since we don't resolve transitive git deps here
+                (dep_name.clone(), Version::new(0, 0, 0))
+            })
+            .collect();
+
+        Ok(ResolvedDependency {
+            name: name.to_string(),
+            version,
+            resolved_url: git_url.to_string(),
+            integrity: String::new(),
+            dependencies,
+            dev: false,
+            optional: false,
+            peer: false,
+        })
     }
 
     async fn get_package_info(&mut self, name: &str) -> Result<&CachedPackageInfo> {
         if !self.cache.package_info.contains_key(name) {
-            let package_info = self.registry.get_package_info(name).await?
+            let package_info = self
+                .registry
+                .get_package_info(name)
+                .await?
                 .ok_or_else(|| anyhow::anyhow!("Package {} not found", name))?;
 
             let mut versions = Vec::new();
@@ -286,10 +402,13 @@ impl DependencyResolver {
 
             versions.sort();
 
-            self.cache.package_info.insert(name.to_string(), CachedPackageInfo {
-                versions,
-                version_info,
-            });
+            self.cache.package_info.insert(
+                name.to_string(),
+                CachedPackageInfo {
+                    versions,
+                    version_info,
+                },
+            );
         }
 
         Ok(self.cache.package_info.get(name).unwrap())
@@ -298,7 +417,10 @@ impl DependencyResolver {
     fn parse_version_requirement(&self, spec: &DependencySpec) -> Result<VersionReq> {
         let version_str = match spec {
             DependencySpec::Version(version) => version,
-            DependencySpec::Detailed { version: Some(version), .. } => version,
+            DependencySpec::Detailed {
+                version: Some(version),
+                ..
+            } => version,
             _ => return Err(anyhow::anyhow!("No version specified")),
         };
 
@@ -314,9 +436,7 @@ impl DependencyResolver {
     ) -> Result<Version> {
         let mut suitable_versions: Vec<_> = versions
             .iter()
-            .filter(|v| {
-                requirement.matches(v) && (context.allow_prereleases || v.pre.is_empty())
-            })
+            .filter(|v| requirement.matches(v) && (context.allow_prereleases || v.pre.is_empty()))
             .cloned()
             .collect();
 
@@ -335,13 +455,13 @@ impl DependencyResolver {
         }
     }
 
-    async fn detect_conflicts(&self, resolution: &mut ResolutionResult) -> Result<()> {
+    async fn detect_conflicts(&self, _resolution: &mut ResolutionResult) -> Result<()> {
         // TODO: Implement conflict detection logic
         // This would check for version conflicts between dependencies
         Ok(())
     }
 
-    async fn detect_warnings(&self, resolution: &mut ResolutionResult) -> Result<()> {
+    async fn detect_warnings(&self, _resolution: &mut ResolutionResult) -> Result<()> {
         // TODO: Implement warning detection logic
         // This would check for deprecated packages, security vulnerabilities, etc.
         Ok(())

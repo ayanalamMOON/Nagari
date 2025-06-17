@@ -997,7 +997,7 @@ impl Parser {
             // Check for class variable definitions
             if matches!(self.peek(), Token::Identifier(_)) {
                 let checkpoint = self.current;
-                let var_name = match self.advance() {
+                let _var_name = match self.advance() {
                     Token::Identifier(n) => n,
                     _ => unreachable!(),
                 };
@@ -1303,7 +1303,7 @@ impl Parser {
         // Check if this is an async function expression
         if self.match_token(&Token::Def) {
             // Anonymous async function
-            let name = String::from("anonymous");
+            let _name = String::from("anonymous");
 
             self.consume(&Token::LeftParen, "Expected '(' after anonymous function")?;
 
@@ -1346,7 +1346,7 @@ impl Parser {
 
             self.consume(&Token::RightParen, "Expected ')' after parameters")?;
 
-            let return_type = if self.match_token(&Token::Arrow) {
+            let _return_type = if self.match_token(&Token::Arrow) {
                 Some(self.parse_type()?)
             } else {
                 None
@@ -1898,11 +1898,9 @@ impl Parser {
                     .collect(),
                 module: source,
             }));
-        }
-
-        // export * from "module";
+        } // export * from "module";
         if self.match_token(&Token::Multiply) {
-            let alias = if self.match_token(&Token::As) {
+            let _alias = if self.match_token(&Token::As) {
                 match self.advance() {
                     Token::Identifier(alias) => Some(alias),
                     _ => {

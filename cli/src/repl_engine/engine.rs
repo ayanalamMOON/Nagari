@@ -1,12 +1,13 @@
 use crate::config::NagConfig;
 use crate::repl_engine::{
-    ReplEditor, CodeEvaluator, ExecutionContext, CommandHistory,
-    CodeCompleter, SyntaxHighlighter, ReplSession, BuiltinCommands
+    BuiltinCommands, CodeCompleter, CodeEvaluator, CommandHistory, ExecutionContext, ReplEditor,
+    ReplSession, SyntaxHighlighter,
 };
 use anyhow::Result;
 use std::collections::HashMap;
+use std::future::Future;
 use std::path::PathBuf;
-use chrono::{DateTime, Utc};
+use std::pin::Pin;
 
 pub struct ReplEngine {
     config: NagConfig,
@@ -24,6 +25,7 @@ pub struct ReplEngine {
 #[derive(Debug, Clone)]
 pub struct ReplState {
     pub running: bool,
+    pub should_exit: bool,
     pub current_input: String,
     pub multiline_buffer: Vec<String>,
     pub in_multiline: bool,
@@ -61,17 +63,17 @@ pub struct ReplConfig {
 
 #[derive(Debug, Clone)]
 pub enum MultilineMode {
-    Auto,      // Auto-detect based on syntax
-    Explicit,  // Require explicit continuation
-    Disabled,  // Single line only
+    Auto,     // Auto-detect based on syntax
+    Explicit, // Require explicit continuation
+    Disabled, // Single line only
 }
 
 #[derive(Debug, Clone)]
 pub enum OutputFormat {
-    Pretty,    // Formatted output
-    Json,      // JSON output
-    Raw,       // Raw output
-    Debug,     // Debug output with types
+    Pretty, // Formatted output
+    Json,   // JSON output
+    Raw,    // Raw output
+    Debug,  // Debug output with types
 }
 
 impl ReplEngine {
@@ -89,6 +91,7 @@ impl ReplEngine {
 
         let state = ReplState {
             running: false,
+            should_exit: false,
             current_input: String::new(),
             multiline_buffer: Vec::new(),
             in_multiline: false,
@@ -136,32 +139,37 @@ impl ReplEngine {
         Ok(())
     }
 
-    async fn read_input(&mut self) -> Result<String> {
-        let prompt = if self.state.in_multiline {
-            &self.get_continuation_prompt()
-        } else {
-            &self.get_prompt()
-        };
+    fn read_input(&mut self) -> Pin<Box<dyn Future<Output = Result<String>> + '_>> {
+        Box::pin(async move {
+            let prompt = if self.state.in_multiline {
+                &self.get_continuation_prompt()
+            } else {
+                &self.get_prompt()
+            };
 
-        let input = self.editor.read_line(prompt, &mut self.completer, &mut self.highlighter).await?;
+            let input = self
+                .editor
+                .read_line(prompt, &mut self.completer, &mut self.highlighter)
+                .await?;
 
-        if self.should_continue_multiline(&input) {
-            self.state.multiline_buffer.push(input);
-            self.state.in_multiline = true;
-            self.update_indent_level();
-            return self.read_input().await;
-        }
+            if self.should_continue_multiline(&input) {
+                self.state.multiline_buffer.push(input);
+                self.state.in_multiline = true;
+                self.update_indent_level();
+                return self.read_input().await;
+            }
 
-        if self.state.in_multiline {
-            self.state.multiline_buffer.push(input);
-            let complete_input = self.state.multiline_buffer.join("\n");
-            self.state.multiline_buffer.clear();
-            self.state.in_multiline = false;
-            self.state.indent_level = 0;
-            Ok(complete_input)
-        } else {
-            Ok(input)
-        }
+            if self.state.in_multiline {
+                self.state.multiline_buffer.push(input);
+                let complete_input = self.state.multiline_buffer.join("\n");
+                self.state.multiline_buffer.clear();
+                self.state.in_multiline = false;
+                self.state.indent_level = 0;
+                Ok(complete_input)
+            } else {
+                Ok(input)
+            }
+        })
     }
 
     async fn process_input(&mut self, input: String) -> Result<()> {
@@ -197,9 +205,65 @@ impl ReplEngine {
         }
 
         let cmd_name = parts[0];
-        let args = &parts[1..];
+        let args = &parts[1..];        // Note: cmd_name and args are used directly in match below
 
-        match self.builtin_commands.execute(cmd_name, args, self).await {
+        // Handle commands without borrowing self
+        let result: Result<String> = match cmd_name {
+            "help" | "h" | "?" => {
+                if args.is_empty() {
+                    Ok("Available commands:\n.help - Show this help\n.exit - Exit the REPL\n.clear - Clear screen\n.history - Show history\n.vars - Show variables\n.reset - Reset context".to_string())
+                } else {
+                    Ok(format!("Help for specific command: {}", args[0]))
+                }
+            }
+            "exit" | "quit" | "q" => {
+                self.state.running = false;
+                Ok("Goodbye!".to_string())
+            }
+            "clear" | "cls" => {
+                print!("\x1B[2J\x1B[1;1H");
+                Ok(String::new())
+            }
+            "history" | "hist" => {
+                Ok("Command history functionality not yet implemented.".to_string())
+            }
+            "vars" | "variables" => {
+                Ok("Variable listing functionality not yet implemented.".to_string())
+            }
+            "funcs" | "functions" => {
+                Ok("Function listing functionality not yet implemented.".to_string())
+            }
+            "reset" | "restart" => {
+                self.context = ExecutionContext::new();
+                Ok("REPL context reset.".to_string())
+            }
+            "load" | "source" => {
+                if args.is_empty() {
+                    Ok("Usage: .load <filename>".to_string())
+                } else {
+                    Ok(format!(
+                        "Loading file '{}' functionality not yet implemented.",
+                        args[0]
+                    ))
+                }
+            }
+            "save" => {
+                if args.is_empty() {
+                    Ok("Usage: .save <filename>".to_string())
+                } else {
+                    Ok(format!(
+                        "Saving to file '{}' functionality not yet implemented.",
+                        args[0]
+                    ))
+                }
+            }
+            _ => Ok(format!(
+                "Unknown command: {}. Type .help for available commands.",
+                cmd_name
+            )),
+        };
+
+        match result {
             Ok(output) => {
                 if !output.is_empty() {
                     println!("{}", output);
@@ -228,12 +292,12 @@ impl ReplEngine {
         let input = input.trim();
 
         // Check for incomplete constructs
-        input.ends_with(':') ||
-        input.ends_with('{') ||
-        input.ends_with('[') ||
-        input.ends_with('(') ||
-        self.has_unmatched_brackets(input) ||
-        self.is_incomplete_string(input)
+        input.ends_with(':')
+            || input.ends_with('{')
+            || input.ends_with('[')
+            || input.ends_with('(')
+            || self.has_unmatched_brackets(input)
+            || self.is_incomplete_string(input)
     }
 
     fn has_unmatched_brackets(&self, input: &str) -> bool {
@@ -333,7 +397,9 @@ impl ReplEngine {
             ReplValue::List(items) => {
                 print!("[");
                 for (i, item) in items.iter().enumerate() {
-                    if i > 0 { print!(", "); }
+                    if i > 0 {
+                        print!(", ");
+                    }
                     self.display_pretty_result(item);
                 }
                 println!("]");

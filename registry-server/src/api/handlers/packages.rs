@@ -8,10 +8,11 @@ pub fn routes() -> Router {
     Router::new()
         .route("/", get(list_packages).post(publish_package))
         .route("/:name", get(get_package))
-        .route("/:name/:version", get(get_package_version))
+        .route("/:name/:version", get(get_package_version).put(update_package_version))
         .route("/:name/:version/download", get(download_package))
         .route("/:name/owners", get(get_package_owners).post(add_package_owner))
         .route("/:name/owners/:username", delete(remove_package_owner))
+        .route("/:name/metadata", put(update_package_metadata))
 }
 
 /// List packages
@@ -62,4 +63,14 @@ async fn add_package_owner() -> &'static str {
 /// Remove package owner
 async fn remove_package_owner() -> &'static str {
     "Remove package owner"
+}
+
+/// Update package version
+async fn update_package_version() -> &'static str {
+    "Package version updated"
+}
+
+/// Update package metadata
+async fn update_package_metadata() -> &'static str {
+    "Package metadata updated"
 }

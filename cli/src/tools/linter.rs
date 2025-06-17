@@ -319,11 +319,11 @@ impl LintRule for UnusedVariableRule {
     fn fix(&self, content: &str, issue: &LintIssue) -> Result<Option<String>> {
         // Simple fix: comment out the unused assignment
         let lines: Vec<&str> = content.lines().collect();
-        let mut fixed_lines = lines.clone();
+        let mut fixed_lines: Vec<String> = lines.iter().map(|s| s.to_string()).collect();
 
         if let Some(line) = fixed_lines.get_mut((issue.line - 1) as usize) {
             if !line.trim().starts_with('#') {
-                *line = &format!("# {}", line);
+                *line = format!("# {}", line);
             }
         }
 
@@ -397,17 +397,17 @@ impl LintRule for UnusedImportRule {
         let from_import_regex = Regex::new(r"^from\s+\S+\s+import\s+([a-zA-Z_][a-zA-Z0-9_]*)")?;
 
         for (line_num, line) in content.lines().enumerate() {
-            let mut imported_name = None;
+            let mut imported_name: Option<String> = None;
 
             if let Some(captures) = import_regex.captures(line) {
-                imported_name = Some(&captures[1]);
+                imported_name = Some(captures[1].to_string());
             } else if let Some(captures) = from_import_regex.captures(line) {
-                imported_name = Some(&captures[1]);
+                imported_name = Some(captures[1].to_string());
             }
 
             if let Some(name) = imported_name {
                 // Check if import is used
-                let usage_regex = Regex::new(&format!(r"\b{}\b", regex::escape(name)))?;
+                let usage_regex = Regex::new(&format!(r"\b{}\b", regex::escape(&name)))?;
                 let rest_of_file = content.lines().skip(line_num + 1).collect::<Vec<_>>().join("\n");
 
                 if !usage_regex.is_match(&rest_of_file) {
@@ -624,12 +624,11 @@ impl LintRule for IndentationRule {
 
     fn fix(&self, content: &str, issue: &LintIssue) -> Result<Option<String>> {
         let lines: Vec<&str> = content.lines().collect();
-        let mut fixed_lines = lines.clone();
+        let mut fixed_lines: Vec<String> = lines.iter().map(|s| s.to_string()).collect();
 
         if let Some(line) = fixed_lines.get_mut((issue.line - 1) as usize) {
             // Replace tabs with 4 spaces
-            let fixed_line = line.replace('\t', "    ");
-            *line = &fixed_line;
+            *line = line.replace('\t', "    ");
         }
 
         Ok(Some(fixed_lines.join("\n")))

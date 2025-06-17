@@ -463,17 +463,15 @@ impl DocGenerator {
                 for j in (i + 1)..std::cmp::min(i + 3, lines.len()) {
                 let prop_line = lines[j].trim();
                 if prop_line.starts_with("def ") {
-                    let prop_name = self.extract_property_name(prop_line);
-                    if let Some(name) = prop_name {
+                    let name = self.extract_property_name(prop_line);
                     if include_private || !name.starts_with('_') {
                         let property = DocProperty {
-                        name,
-                        prop_type: Some(self.extract_property_type(prop_line)),
-                        description: self.extract_property_description(lines, j).unwrap_or_default(),
-                        readonly: true, // @property is readonly by default
+                            name,
+                            prop_type: Some(self.extract_property_type(prop_line)),
+                            description: self.extract_property_description(&lines.iter().map(|s| s.to_string()).collect::<Vec<_>>(), j).unwrap_or_default(),
+                            readonly: true, // @property is readonly by default
                         };
                         properties.push(property);
-                    }
                     }
                     break;
                 }
@@ -486,10 +484,10 @@ impl DocGenerator {
                 let var_part = &trimmed[5..eq_pos].trim(); // Skip "self."
                 if include_private || !var_part.starts_with('_') {
                     let property = DocProperty {
-                    name: var_part.to_string(),
-                    prop_type: Some(self.infer_type_from_assignment(&trimmed[eq_pos + 1..].trim())),
-                    description: self.extract_property_description(lines, i).unwrap_or_default(),
-                    readonly: false,
+                        name: var_part.to_string(),
+                        prop_type: Some(self.infer_type_from_assignment(&trimmed[eq_pos + 1..].trim())),
+                        description: self.extract_property_description(&lines.iter().map(|s| s.to_string()).collect::<Vec<_>>(), i).unwrap_or_default(),
+                        readonly: false,
                     };
                     properties.push(property);
                 }

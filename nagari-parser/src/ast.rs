@@ -42,6 +42,17 @@ pub enum Statement {
         superclass: Option<String>,
         methods: Vec<Statement>,
     },
+    ExportNamed {
+        exports: Vec<NamedExport>,
+        source: Option<String>,
+    },
+    ExportAll {
+        source: String,
+        alias: Option<String>,
+    },
+    ExportDeclaration {
+        declaration: Box<Statement>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -142,4 +153,23 @@ pub enum AssignmentOperator {
 pub struct ObjectProperty {
     pub key: String,
     pub value: Expression,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct NamedExport {
+    pub name: String,
+    pub alias: Option<String>,
+}
+
+// Implement is_lvalue method for Expression
+impl Expression {
+    pub fn is_lvalue(&self) -> bool {
+        match self {
+            Expression::Identifier(_) => true,
+            Expression::Member { .. } => true,
+            Expression::Array(_) => true,
+            Expression::Object(_) => true,
+            _ => false,
+        }
+    }
 }

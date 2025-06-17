@@ -68,6 +68,8 @@ pub enum Token {
     MinusAssign,
     StarAssign,
     SlashAssign,
+    MultiplyAssign, // *=
+    DivideAssign,   // /=
 
     // Punctuation
     LeftParen,
@@ -86,6 +88,12 @@ pub enum Token {
     // Special
     Newline,
     Eof,
+
+    // Export-related tokens
+    ExportNamed,       // export { ... } from '...';
+    ExportAll,         // export * from '...';
+    ExportDeclaration, // export default ...;
+    StringLiteral(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]

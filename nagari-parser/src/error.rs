@@ -42,4 +42,16 @@ pub enum ParseError {
         line: usize,
         column: usize,
     },
+
+    #[error("Unexpected end of input")]
+    UnexpectedEndOfInput,
+
+    #[error("Expected a string literal")]
+    ExpectedStringLiteral,
+
+    #[error("Invalid assignment target")]
+    InvalidAssignmentTarget,
+
+    #[error("Unexpected end of file")]
+    UnexpectedEOF,
 }

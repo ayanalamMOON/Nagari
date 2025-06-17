@@ -4,6 +4,7 @@ pub mod registry;
 pub mod resolver;
 pub mod cache;
 pub mod lockfile;
+pub mod utils;
 
 #[cfg(test)]
 pub mod tests;
@@ -14,3 +15,4 @@ pub use registry::{RegistryClient, PackageInfo, VersionInfo};
 pub use resolver::{DependencyResolver, ResolutionResult};
 pub use cache::PackageCache;
 pub use lockfile::{LockFile, LockedDependency};
+pub use utils::PackageUtils;

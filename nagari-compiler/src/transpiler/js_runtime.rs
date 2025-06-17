@@ -7,6 +7,7 @@ pub struct JSRuntime {
     builtin_mappings: HashMap<String, String>,
 }
 
+#[allow(dead_code)]
 impl JSRuntime {
     pub fn new(target: &str) -> Self {
         let mut runtime = Self {
@@ -40,7 +41,10 @@ impl JSRuntime {
         self.builtin_mappings.insert("all".to_string(), "every".to_string());
     }
 
+    #[allow(dead_code)]
     pub fn get_builtin_mapping(&self, name: &str) -> Option<&String> {
+        // This function would look up 'name' in its internal map of Nagari built-ins
+        // to their JavaScript equivalents or helper function names.
         self.builtin_mappings.get(name)
     }
 
@@ -166,6 +170,7 @@ function setComp(iterable, transform, condition = () => true) {
 "#.to_string()
     }
 
+    #[allow(dead_code)]
     pub fn wrap_async_function(&self, function_name: &str, is_async: bool) -> String {
         if is_async {
             match self.target.as_str() {

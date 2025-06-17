@@ -1,15 +1,14 @@
 use crate::config::NagConfig;
 use crate::package::{
-    manifest::{PackageManifest, DependencySpec},
-    registry::RegistryClient,
-    resolver::{DependencyResolver, ResolutionContext, UpdateStrategy},
     cache::PackageCache,
     lockfile::LockFile,
+    manifest::{DependencySpec, PackageManifest},
+    registry::RegistryClient,
+    resolver::{DependencyResolver, ResolutionContext, UpdateStrategy},
 };
 use anyhow::Result;
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
 use std::fs;
+use std::path::PathBuf;
 
 pub struct PackageManager {
     config: NagConfig,
@@ -20,11 +19,11 @@ pub struct PackageManager {
 
 impl PackageManager {
     pub fn new(config: NagConfig) -> Result<Self> {
-        let registry_url = config.package.registry_url.as_deref()
-            .unwrap_or("https://registry.nagari.dev");
+        let registry_url = config.package.registry.as_str();
 
         let registry = RegistryClient::new(registry_url)?;
-        let resolver = DependencyResolver::new(registry.clone());        let cache_dir = if config.package.cache_dir.is_empty() {
+        let resolver = DependencyResolver::new(registry.clone());
+        let cache_dir = if config.package.cache_dir.is_empty() {
             dirs::cache_dir()
                 .unwrap_or_else(|| PathBuf::from(".nagari-cache"))
                 .join("nagari")
@@ -53,7 +52,8 @@ impl PackageManager {
                 println!("Aborted.");
                 return Ok(());
             }
-        }        let package_name = name.unwrap_or_else(|| {
+        }
+        let package_name = name.unwrap_or_else(|| {
             if let Ok(current_dir) = std::env::current_dir() {
                 if let Some(dir_name) = current_dir.file_name() {
                     if let Some(name_str) = dir_name.to_str() {
@@ -77,7 +77,10 @@ impl PackageManager {
         fs::create_dir_all("docs")?;
 
         if !PathBuf::from("README.md").exists() {
-            fs::write("README.md", &format!("# {}\n\nA Nagari package.\n", manifest.name))?;
+            fs::write(
+                "README.md",
+                &format!("# {}\n\nA Nagari package.\n", manifest.name),
+            )?;
         }
 
         if !PathBuf::from(".nagignore").exists() {
@@ -93,7 +96,9 @@ impl PackageManager {
         let mut manifest = if manifest_path.exists() {
             PackageManifest::from_file(&manifest_path)?
         } else {
-            return Err(anyhow::anyhow!("No nagari.json found. Run 'nag package init' first."));
+            return Err(anyhow::anyhow!(
+                "No nagari.json found. Run 'nag package init' first."
+            ));
         };
 
         // Add packages to manifest
@@ -115,13 +120,20 @@ impl PackageManager {
             ResolutionContext::production()
         };
 
-        let resolution = self.resolver.resolve_dependencies(&manifest, &context).await?;
+        let resolution = self
+            .resolver
+            .resolve_dependencies(&manifest, &context)
+            .await?;
 
         // Display resolution results
         if !resolution.conflicts.is_empty() {
             println!("⚠️  Dependency conflicts detected:");
             for conflict in &resolution.conflicts {
-                println!("  - {}: {}", conflict.package, conflict.conflicting_versions.len());
+                println!(
+                    "  - {}: {}",
+                    conflict.package,
+                    conflict.conflicting_versions.len()
+                );
             }
         }
 
@@ -137,7 +149,10 @@ impl PackageManager {
             println!("📦 Installing {}@{}", name, resolved_dep.version);
 
             // Download and cache package
-            let package_data = self.registry.download_package(name, &resolved_dep.version.to_string()).await?;
+            let package_data = self
+                .registry
+                .download_package(name, &resolved_dep.version.to_string())
+                .await?;
             let metadata = serde_json::json!({
                 "name": name,
                 "version": resolved_dep.version.to_string(),
@@ -145,7 +160,14 @@ impl PackageManager {
                 "integrity": resolved_dep.integrity
             });
 
-            self.cache.cache_package(name, &resolved_dep.version.to_string(), &package_data, metadata).await?;
+            self.cache
+                .cache_package(
+                    name,
+                    &resolved_dep.version.to_string(),
+                    &package_data,
+                    metadata,
+                )
+                .await?;
         }
 
         // Update manifest
@@ -210,14 +232,16 @@ impl PackageManager {
         Ok(())
     }
 
-    pub async fn update(&mut self, packages: Option<Vec<String>>) -> Result<()> {
+    pub async fn update(&mut self, _packages: Option<Vec<String>>) -> Result<()> {
         let manifest_path = PathBuf::from("nagari.json");
         let manifest = PackageManifest::from_file(&manifest_path)?;
 
-        let context = ResolutionContext::development()
-            .with_update_strategy(UpdateStrategy::Minor);
+        let context = ResolutionContext::development().with_update_strategy(UpdateStrategy::Minor);
 
-        let resolution = self.resolver.resolve_dependencies(&manifest, &context).await?;
+        let resolution = self
+            .resolver
+            .resolve_dependencies(&manifest, &context)
+            .await?;
 
         // Show update information
         println!("📦 Checking for updates...");
@@ -233,7 +257,10 @@ impl PackageManager {
             for (name, resolved_dep) in &resolution.resolved {
                 if let Some(old_dep) = old_lock.get_package(name) {
                     if old_dep.version != resolved_dep.version.to_string() {
-                        println!("⬆️  {}@{} → {}", name, old_dep.version, resolved_dep.version);
+                        println!(
+                            "⬆️  {}@{} → {}",
+                            name, old_dep.version, resolved_dep.version
+                        );
                     }
                 }
             }
@@ -293,7 +320,10 @@ impl PackageManager {
             if let Some(ref description) = package.description {
                 println!("   {}", description);
             }
-            println!("   Latest: {} | Score: {:.2}", package.version, result.searchScore);
+            println!(
+                "   Latest: {} | Score: {:.2}",
+                package.version, result.searchScore
+            );
             if !package.keywords.is_empty() {
                 println!("   Keywords: {}", package.keywords.join(", "));
             }
@@ -306,7 +336,10 @@ impl PackageManager {
     pub async fn info(&self, package_name: String) -> Result<()> {
         println!("📦 Package information for '{}'", package_name);
 
-        let package_info = self.registry.get_package_info(&package_name).await?
+        let package_info = self
+            .registry
+            .get_package_info(&package_name)
+            .await?
             .ok_or_else(|| anyhow::anyhow!("Package '{}' not found", package_name))?;
 
         println!("Name: {}", package_info.name);
@@ -335,7 +368,15 @@ impl PackageManager {
         versions.sort();
         versions.reverse();
 
-        println!("Versions: {}", versions.iter().take(10).map(|s| s.as_str()).collect::<Vec<_>>().join(", "));
+        println!(
+            "Versions: {}",
+            versions
+                .iter()
+                .take(10)
+                .map(|s| s.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
         if versions.len() > 10 {
             println!("  ... and {} more", versions.len() - 10);
         }
@@ -374,7 +415,10 @@ impl PackageManager {
         // This would contain the actual installation logic
         // For now, just cache the packages
         for (name, resolved_dep) in &resolution.resolved {
-            let package_data = self.registry.download_package(name, &resolved_dep.version.to_string()).await?;
+            let package_data = self
+                .registry
+                .download_package(name, &resolved_dep.version.to_string())
+                .await?;
             let metadata = serde_json::json!({
                 "name": name,
                 "version": resolved_dep.version.to_string(),
@@ -382,7 +426,14 @@ impl PackageManager {
                 "integrity": resolved_dep.integrity
             });
 
-            self.cache.cache_package(name, &resolved_dep.version.to_string(), &package_data, metadata).await?;
+            self.cache
+                .cache_package(
+                    name,
+                    &resolved_dep.version.to_string(),
+                    &package_data,
+                    metadata,
+                )
+                .await?;
         }
 
         Ok(())

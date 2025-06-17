@@ -2,20 +2,25 @@
 
 use crate::ast::ImportStatement;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 pub struct ModuleResolver {
     builtin_modules: HashMap<String, BuiltinModule>,
     target: String,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct BuiltinModule {
     pub name: String,
-    pub js_equivalent: String,
-    pub exports: Vec<String>,
-    pub interop_required: bool,
+    pub path: PathBuf, // Path to the Nagari source file for the module
+    #[allow(dead_code)]
+    pub exports: Vec<String>, // List of exported symbols, if known statically
+    pub js_path: Option<PathBuf>, // Path to pre-transpiled JS version, if available
+    pub interop_required: bool, // Whether the module requires JS interop
+    pub js_equivalent: Option<String>, // JS equivalent module name/path
 }
 
+#[allow(dead_code)]
 impl ModuleResolver {
     pub fn new(target: &str) -> Self {
         let mut resolver = Self {
@@ -24,81 +29,132 @@ impl ModuleResolver {
         };
         resolver.init_builtin_modules();
         resolver
-    }
-
-    fn init_builtin_modules(&mut self) {
+    }    fn init_builtin_modules(&mut self) {
         // React ecosystem
         self.add_builtin_module(BuiltinModule {
             name: "react".to_string(),
-            js_equivalent: "react".to_string(),
-            exports: vec!["React".to_string(), "useState".to_string(), "useEffect".to_string()],
+            path: PathBuf::from("react"),
+            exports: vec![
+                "React".to_string(),
+                "useState".to_string(),
+                "useEffect".to_string(),
+            ],
+            js_path: None,
             interop_required: true,
+            js_equivalent: Some("react".to_string()),
         });
 
         // Node.js modules
         self.add_builtin_module(BuiltinModule {
-            name: "fs".to_string(),
-            js_equivalent: if self.target == "node" { "fs" } else { "fs/promises" }.to_string(),
-            exports: vec!["readFile".to_string(), "writeFile".to_string(), "mkdir".to_string()],
+            name: "fs".to_string(),            path: PathBuf::from(if self.target == "node" {
+                "fs"
+            } else {
+                "fs/promises"
+            }),
+            exports: vec![
+                "readFile".to_string(),
+                "writeFile".to_string(),
+                "mkdir".to_string(),
+            ],
+            js_path: None,
             interop_required: true,
+            js_equivalent: Some("fs".to_string()),
         });
 
         self.add_builtin_module(BuiltinModule {
             name: "http".to_string(),
-            js_equivalent: "http".to_string(),
-            exports: vec!["createServer".to_string(), "get".to_string(), "post".to_string()],
+            path: PathBuf::from("http"),
+            exports: vec![
+                "createServer".to_string(),
+                "get".to_string(),
+                "post".to_string(),
+            ],
+            js_path: None,
             interop_required: true,
+            js_equivalent: Some("http".to_string()),
         });
 
         self.add_builtin_module(BuiltinModule {
             name: "path".to_string(),
-            js_equivalent: "path".to_string(),
-            exports: vec!["join".to_string(), "resolve".to_string(), "dirname".to_string()],
-            interop_required: false,
+            path: PathBuf::from("path"),
+            exports: vec![
+                "join".to_string(),
+                "resolve".to_string(),
+                "dirname".to_string(),
+            ],
+            js_path: None,
+            interop_required: true,
+            js_equivalent: Some("path".to_string()),
         });
 
         self.add_builtin_module(BuiltinModule {
             name: "os".to_string(),
-            js_equivalent: "os".to_string(),
-            exports: vec!["platform".to_string(), "arch".to_string(), "cpus".to_string()],
-            interop_required: false,
+            path: PathBuf::from("os"),
+            exports: vec![
+                "platform".to_string(),
+                "arch".to_string(),
+                "cpus".to_string(),
+            ],
+            js_path: None,
+            interop_required: true,
+            js_equivalent: Some("os".to_string()),
         });
 
         // Express framework
         self.add_builtin_module(BuiltinModule {
             name: "express".to_string(),
-            js_equivalent: "express".to_string(),
+            path: PathBuf::from("express"),
             exports: vec!["express".to_string()],
+            js_path: None,
             interop_required: true,
+            js_equivalent: Some("express".to_string()),
         });
 
         // Built-in globals (available through interop)
         self.add_builtin_module(BuiltinModule {
             name: "console".to_string(),
-            js_equivalent: "console".to_string(),
+            path: PathBuf::from("console"),
             exports: vec!["log".to_string(), "error".to_string(), "warn".to_string()],
-            interop_required: true,
+            js_path: None,
+            interop_required: false,
+            js_equivalent: None,
         });
 
         self.add_builtin_module(BuiltinModule {
             name: "Math".to_string(),
-            js_equivalent: "Math".to_string(),
-            exports: vec!["sin".to_string(), "cos".to_string(), "max".to_string(), "min".to_string()],
-            interop_required: true,
+            path: PathBuf::from("Math"),
+            exports: vec![
+                "sin".to_string(),
+                "cos".to_string(),
+                "max".to_string(),
+                "min".to_string(),
+            ],
+            js_path: None,
+            interop_required: false,
+            js_equivalent: None,
         });
 
         self.add_builtin_module(BuiltinModule {
             name: "JSON".to_string(),
-            js_equivalent: "JSON".to_string(),
+            path: PathBuf::from("JSON"),
             exports: vec!["parse".to_string(), "stringify".to_string()],
-            interop_required: true,
+            js_path: None,
+            interop_required: false,
+            js_equivalent: None,
         });
 
         self.add_builtin_module(BuiltinModule {
             name: "Promise".to_string(),
-            js_equivalent: "Promise".to_string(),
-            exports: vec!["resolve".to_string(), "reject".to_string(), "all".to_string(), "race".to_string()],
-            interop_required: true,
+            path: PathBuf::from("Promise"),
+            exports: vec![
+                "resolve".to_string(),
+                "reject".to_string(),
+                "all".to_string(),
+                "race".to_string(),
+            ],
+            js_path: None,
+            interop_required: false,
+            js_equivalent: None,
         });
     }
 
@@ -106,6 +162,7 @@ impl ModuleResolver {
         self.builtin_modules.insert(module.name.clone(), module);
     }
 
+    #[allow(dead_code)]
     pub fn is_builtin_module(&self, name: &str) -> bool {
         self.builtin_modules.contains_key(name)
     }
@@ -129,10 +186,7 @@ impl ModuleResolver {
     fn generate_interop_import(&self, import: &ImportStatement, builtin: &BuiltinModule) -> String {
         if let Some(items) = &import.items {
             if import.module == "react" {
-                format!(
-                    "const {{ {} }} = ReactInterop;",
-                    items.join(", ")
-                )
+                format!("const {{ {} }} = ReactInterop;", items.join(", "))
             } else {
                 format!(
                     "const {{ {} }} = InteropRegistry.getModule(\"{}\") || {{}};",
@@ -146,28 +200,23 @@ impl ModuleResolver {
             } else {
                 format!(
                     "const {} = InteropRegistry.getModule(\"{}\");",
-                    import.module,
-                    builtin.name
+                    import.module, builtin.name
                 )
             }
         }
     }
-
-    fn generate_standard_import(&self, import: &ImportStatement, builtin: &BuiltinModule) -> String {
+    fn generate_standard_import(
+        &self,
+        import: &ImportStatement,
+        builtin: &BuiltinModule,
+    ) -> String {
+        let js_module = builtin.js_equivalent.as_ref().unwrap_or(&builtin.name);
         match self.target.as_str() {
             "esm" | "es6" => {
                 if let Some(items) = &import.items {
-                    format!(
-                        "import {{ {} }} from \"{}\";",
-                        items.join(", "),
-                        builtin.js_equivalent
-                    )
+                    format!("import {{ {} }} from \"{}\";", items.join(", "), js_module)
                 } else {
-                    format!(
-                        "import {} from \"{}\";",
-                        import.module,
-                        builtin.js_equivalent
-                    )
+                    format!("import {} from \"{}\";", import.module, js_module)
                 }
             }
             "node" | "cjs" => {
@@ -175,17 +224,13 @@ impl ModuleResolver {
                     format!(
                         "const {{ {} }} = require(\"{}\");",
                         items.join(", "),
-                        builtin.js_equivalent
+                        js_module
                     )
                 } else {
-                    format!(
-                        "const {} = require(\"{}\");",
-                        import.module,
-                        builtin.js_equivalent
-                    )
+                    format!("const {} = require(\"{}\");", import.module, js_module)
                 }
             }
-            _ => self.generate_external_import(import)
+            _ => self.generate_external_import(import),
         }
     }
 
@@ -199,11 +244,7 @@ impl ModuleResolver {
                         import.module
                     )
                 } else {
-                    format!(
-                        "import {} from \"{}\";",
-                        import.module,
-                        import.module
-                    )
+                    format!("import {} from \"{}\";", import.module, import.module)
                 }
             }
             "node" | "cjs" => {
@@ -214,11 +255,7 @@ impl ModuleResolver {
                         import.module
                     )
                 } else {
-                    format!(
-                        "const {} = require(\"{}\");",
-                        import.module,
-                        import.module
-                    )
+                    format!("const {} = require(\"{}\");", import.module, import.module)
                 }
             }
             _ => {
@@ -229,22 +266,14 @@ impl ModuleResolver {
                         import.module
                     )
                 } else {
-                    format!(
-                        "import {} from \"{}\";",
-                        import.module,
-                        import.module
-                    )
+                    format!("import {} from \"{}\";", import.module, import.module)
                 }
             }
         }
     }
 
     pub fn get_runtime_imports(&self, jsx_enabled: bool) -> String {
-        let mut imports = vec![
-            "jsToNagari",
-            "nagariToJS",
-            "InteropRegistry"
-        ];
+        let mut imports = vec!["jsToNagari", "nagariToJS", "InteropRegistry"];
 
         if jsx_enabled {
             imports.extend_from_slice(&["jsx", "Fragment", "jsxToReact", "ReactInterop"]);
@@ -255,11 +284,51 @@ impl ModuleResolver {
                 format!("import {{ {} }} from 'nagari-runtime';", imports.join(", "))
             }
             "node" | "cjs" => {
-                format!("const {{ {} }} = require('nagari-runtime');", imports.join(", "))
+                format!(
+                    "const {{ {} }} = require('nagari-runtime');",
+                    imports.join(", ")
+                )
             }
             _ => {
                 format!("import {{ {} }} from 'nagari-runtime';", imports.join(", "))
             }
         }
+    }
+
+    pub fn resolve_module_path(&self, module_name: &str) -> Option<&PathBuf> {
+        self.builtin_modules.get(module_name).map(|module| &module.path)
+    }
+
+    pub fn get_js_path(&self, module_name: &str) -> Option<&PathBuf> {
+        self.builtin_modules.get(module_name)
+            .and_then(|module| module.js_path.as_ref())
+    }
+
+    pub fn get_module_info(&self, module_name: &str) -> Option<&BuiltinModule> {
+        self.builtin_modules.get(module_name)
+    }
+
+    pub fn list_builtin_modules(&self) -> Vec<(&String, &PathBuf)> {
+        self.builtin_modules.iter()
+            .map(|(name, module)| (name, &module.path))
+            .collect()
+    }
+}
+
+impl BuiltinModule {
+    pub fn get_source_path(&self) -> &PathBuf {
+        &self.path
+    }
+
+    pub fn get_compiled_path(&self) -> Option<&PathBuf> {
+        self.js_path.as_ref()
+    }
+
+    pub fn has_precompiled_js(&self) -> bool {
+        self.js_path.is_some()
+    }
+
+    pub fn get_effective_path(&self) -> &PathBuf {
+        self.js_path.as_ref().unwrap_or(&self.path)
     }
 }

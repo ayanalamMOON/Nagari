@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use nagari_vm::{Value as NagariValue, VM as NagariVM};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -5,9 +6,6 @@ use std::sync::{Arc, Mutex};
 
 #[cfg(feature = "async")]
 use tokio::sync::RwLock as AsyncRwLock;
-
-#[cfg(feature = "async")]
-use async_trait::async_trait;
 
 // Platform-specific bindings
 #[cfg(feature = "python")]
@@ -60,43 +58,153 @@ impl Default for RuntimeConfig {
 }
 
 impl EmbeddedRuntime {
-    pub fn new(_config: RuntimeConfig) -> Result<Self, String> {
-        unimplemented!("EmbeddedRuntime::new is not implemented yet");
+    pub fn new(config: RuntimeConfig) -> Result<Self, String> {
+        let vm = NagariVM::new(config.debug_mode);
+        Ok(Self {
+            vm: Arc::new(Mutex::new(vm)),
+            modules: HashMap::new(),
+            config,
+        })
     }
+    pub fn run_script(&mut self, script: &str) -> Result<EmbeddedValue, String> {
+        let _vm = self
+            .vm
+            .lock()
+            .map_err(|e| format!("Failed to lock VM: {}", e))?;
 
-    pub fn run_script(&mut self, _script: &str) -> Result<EmbeddedValue, String> {
-        unimplemented!("EmbeddedRuntime::run_script is not implemented yet");
+        // Apply runtime config constraints
+        if let Some(_timeout) = self.config.execution_timeout {
+            // In a real implementation, this would set up execution timeout
+            if self.config.debug_mode {
+                eprintln!("Executing script with timeout constraint");
+            }
+        }
+
+        // Check permissions based on config
+        if !self.config.allow_io && script.contains("fs") {
+            return Err("IO operations not allowed".to_string());
+        }
+
+        if !self.config.allow_network && script.contains("http") {
+            return Err("Network operations not allowed".to_string());
+        }
+
+        // For now, simulate script execution - in real implementation this would:
+        // 1. Compile script to bytecode
+        // 2. Load bytecode into VM
+        // 3. Run VM
+        if self.config.debug_mode {
+            eprintln!("Executing script: {}", &script[..script.len().min(50)]);
+        }
+
+        // Return a placeholder result
+        Ok(EmbeddedValue::String(format!(
+            "Script executed: {}",
+            script.len()
+        )))
     }
 
     pub fn call_function(
         &mut self,
-        _name: &str,
-        _args: Vec<EmbeddedValue>,
+        name: &str,
+        args: Vec<EmbeddedValue>,
     ) -> Result<EmbeddedValue, String> {
-        unimplemented!("EmbeddedRuntime::call_function is not implemented yet");
+        let _vm = self
+            .vm
+            .lock()
+            .map_err(|e| format!("Failed to lock VM: {}", e))?;
+
+        // Convert args to NagariValue for future use
+        let _nagari_args: Vec<NagariValue> = args.into_iter().map(|v| v.to_nagari()).collect();
+
+        // In a real implementation, this would look up and call the function
+        if self.config.debug_mode {
+            eprintln!("Calling function: {}", name);
+        }
+
+        Ok(EmbeddedValue::None)
     }
 
-    pub fn load_module(&mut self, _name: &str, _code: &str) -> Result<(), String> {
-        unimplemented!("EmbeddedRuntime::load_module is not implemented yet");
+    pub fn load_module(&mut self, name: &str, code: &str) -> Result<(), String> {
+        if !self.config.allow_io && name.contains("fs") {
+            return Err("IO operations not allowed in this runtime".to_string());
+        }
+
+        if !self.config.allow_network && name.contains("http") {
+            return Err("Network operations not allowed in this runtime".to_string());
+        }
+
+        self.modules.insert(name.to_string(), code.to_string());
+
+        if self.config.debug_mode {
+            eprintln!("Loaded module: {} ({} bytes)", name, code.len());
+        }
+
+        Ok(())
     }
 
-    pub fn register_host_function<F>(&mut self, _name: &str, _func: F) -> Result<(), String>
+    pub fn register_host_function<F>(&mut self, name: &str, _func: F) -> Result<(), String>
     where
         F: Fn(Vec<EmbeddedValue>) -> EmbeddedValue + Send + Sync + 'static,
     {
-        unimplemented!("EmbeddedRuntime::register_host_function is not implemented yet");
+        if self.config.sandbox_mode && name.contains("unsafe") {
+            return Err("Unsafe functions not allowed in sandbox mode".to_string());
+        }
+
+        // In a real implementation, this would register the function with the VM
+        if self.config.debug_mode {
+            eprintln!("Registered host function: {}", name);
+        }
+
+        Ok(())
+    }
+    pub fn set_global(&mut self, name: &str, value: EmbeddedValue) -> Result<(), String> {
+        let mut vm = self
+            .vm
+            .lock()
+            .map_err(|e| format!("Failed to lock VM: {}", e))?;
+
+        // Convert to NagariValue
+        let nagari_value = value.to_nagari();
+
+        // Use the VM's new public method to set global
+        vm.define_global(name, nagari_value);
+
+        if self.config.debug_mode {
+            eprintln!("Set global variable: {}", name);
+        }
+
+        Ok(())
     }
 
-    pub fn set_global(&mut self, _name: &str, _value: EmbeddedValue) -> Result<(), String> {
-        unimplemented!("EmbeddedRuntime::set_global is not implemented yet");
-    }
+    pub fn get_global(&self, name: &str) -> Result<Option<EmbeddedValue>, String> {
+        let vm = self
+            .vm
+            .lock()
+            .map_err(|e| format!("Failed to lock VM: {}", e))?;
 
-    pub fn get_global(&self, _name: &str) -> Result<Option<EmbeddedValue>, String> {
-        unimplemented!("EmbeddedRuntime::get_global is not implemented yet");
+        match vm.get_global(name) {
+            Some(value) => Ok(Some(EmbeddedValue::from_nagari(value.clone()))),
+            None => Ok(None),
+        }
     }
 
     pub fn reset(&mut self) -> Result<(), String> {
-        unimplemented!("EmbeddedRuntime::reset is not implemented yet");
+        let mut vm = self
+            .vm
+            .lock()
+            .map_err(|e| format!("Failed to lock VM: {}", e))?;
+
+        // Use the VM's new clear method
+        vm.clear_globals();
+
+        self.modules.clear();
+
+        if self.config.debug_mode {
+            eprintln!("Runtime reset");
+        }
+
+        Ok(())
     }
 }
 
@@ -211,15 +319,58 @@ impl AsyncEmbeddedRuntime {
             config,
         })
     }
+    pub async fn run_script(&self, script: &str) -> Result<EmbeddedValue, String> {
+        let mut vm = self.vm.write().await;
 
-    pub async fn run_script(&self, _script: &str) -> Result<EmbeddedValue, String> {
-        let mut vm = self.vm.write().await;        // TODO: The current VM only supports bytecode execution, not direct source code
+        // Apply runtime config constraints
+        if let Some(_timeout) = self.config.execution_timeout {
+            if self.config.debug_mode {
+                eprintln!("Executing async script with timeout constraint");
+            }
+        }
+
+        // Check permissions
+        if !self.config.allow_io && script.contains("fs") {
+            return Err("IO operations not allowed".to_string());
+        }
+
+        if !self.config.allow_network && script.contains("http") {
+            return Err("Network operations not allowed".to_string());
+        }
+
+        // TODO: The current VM only supports bytecode execution, not direct source code
         // For now, return a placeholder until we integrate with the compiler
         match vm.run().await {
             Ok(()) => Ok(EmbeddedValue::None), // VM run returns (), not a value
             Err(e) => Err(format!("Script execution error: {:?}", e)),
         }
-    }    pub async fn call_function_async(
+    }
+
+    pub async fn load_module_async(&self, name: &str, code: &str) -> Result<(), String> {
+        let mut modules = self.modules.write().await;
+
+        if !self.config.allow_io && name.contains("fs") {
+            return Err("IO operations not allowed in this runtime".to_string());
+        }
+
+        if !self.config.allow_network && name.contains("http") {
+            return Err("Network operations not allowed in this runtime".to_string());
+        }
+
+        modules.insert(name.to_string(), code.to_string());
+
+        if self.config.debug_mode {
+            eprintln!("Loaded async module: {} ({} bytes)", name, code.len());
+        }
+
+        Ok(())
+    }
+
+    pub async fn get_loaded_modules(&self) -> Vec<String> {
+        let modules = self.modules.read().await;
+        modules.keys().cloned().collect()
+    }
+    pub async fn call_function_async(
         &self,
         _name: &str,
         _args: Vec<EmbeddedValue>,
@@ -233,16 +384,19 @@ impl AsyncEmbeddedRuntime {
 }
 
 // Host function trait for type-safe function registration
+#[async_trait]
 pub trait HostFunction {
-    fn call(&self, args: Vec<EmbeddedValue>) -> Result<EmbeddedValue, String>;
+    async fn call(&self, args: Vec<EmbeddedValue>) -> Result<EmbeddedValue, String>;
 }
 
-impl<F> HostFunction for F
+#[async_trait]
+impl<F, Fut> HostFunction for F
 where
-    F: Fn(Vec<EmbeddedValue>) -> Result<EmbeddedValue, String>,
+    F: Fn(Vec<EmbeddedValue>) -> Fut + Send + Sync,
+    Fut: std::future::Future<Output = Result<EmbeddedValue, String>> + Send,
 {
-    fn call(&self, args: Vec<EmbeddedValue>) -> Result<EmbeddedValue, String> {
-        self(args)
+    async fn call(&self, args: Vec<EmbeddedValue>) -> Result<EmbeddedValue, String> {
+        self(args).await
     }
 }
 

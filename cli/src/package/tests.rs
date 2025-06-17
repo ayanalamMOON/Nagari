@@ -1,4 +1,6 @@
-use crate::package::{PackageManager, Manifest, Package, VersionReq};
+use crate::config::NagConfig;
+use crate::package::PackageManager;
+use semver::VersionReq;
 use std::collections::HashMap;
 use tempfile::TempDir;
 use tokio;
@@ -10,7 +12,8 @@ mod tests {
     #[tokio::test]
     async fn test_package_manager_new() {
         let temp_dir = TempDir::new().unwrap();
-        let manager = PackageManager::new(temp_dir.path().to_path_buf()).await.unwrap();
+        let config = NagConfig::load(Some(temp_dir.path())).unwrap();
+        let manager = PackageManager::new(config).unwrap();
 
         assert_eq!(manager.get_cache_dir(), temp_dir.path().join(".nagari"));
         assert!(manager.get_cache_dir().exists());
@@ -58,14 +61,19 @@ mod tests {
 
         assert_eq!(parsed_manifest.package.name, "test-package");
         assert_eq!(parsed_manifest.package.version, "1.0.0");
-        assert_eq!(parsed_manifest.package.description, Some("A test package".to_string()));
+        assert_eq!(
+            parsed_manifest.package.description,
+            Some("A test package".to_string())
+        );
         assert_eq!(parsed_manifest.dependencies.len(), 1);
     }
 
     #[tokio::test]
     async fn test_package_manager_install() {
         let temp_dir = TempDir::new().unwrap();
-        let mut manager = PackageManager::new(temp_dir.path().to_path_buf()).await.unwrap();
+        let mut manager = PackageManager::new(temp_dir.path().to_path_buf())
+            .await
+            .unwrap();
 
         // Create a mock manifest
         let mut manifest = Manifest::new("test-project".to_string(), "1.0.0".to_string());
@@ -142,7 +150,10 @@ mod resolver_tests {
 
         let mut dependencies = HashMap::new();
         dependencies.insert("package-a".to_string(), VersionReq::parse("1.0.0").unwrap());
-        dependencies.insert("package-b".to_string(), VersionReq::parse("^2.0.0").unwrap());
+        dependencies.insert(
+            "package-b".to_string(),
+            VersionReq::parse("^2.0.0").unwrap(),
+        );
 
         // Mock resolution - in reality this would contact registries
         // let result = resolver.resolve(dependencies).await;
@@ -167,14 +178,19 @@ mod cache_tests {
     #[tokio::test]
     async fn test_cache_operations() {
         let temp_dir = TempDir::new().unwrap();
-        let cache = PackageCache::new(temp_dir.path().to_path_buf()).await.unwrap();
+        let cache = PackageCache::new(temp_dir.path().to_path_buf())
+            .await
+            .unwrap();
 
         let package_name = "test-package";
         let version = "1.0.0";
         let package_data = b"mock package data";
 
         // Test storing package
-        cache.store_package(package_name, version, package_data).await.unwrap();
+        cache
+            .store_package(package_name, version, package_data)
+            .await
+            .unwrap();
 
         // Test checking if package exists
         assert!(cache.has_package(package_name, version).await);
@@ -191,7 +207,9 @@ mod cache_tests {
     #[tokio::test]
     async fn test_cache_cleanup() {
         let temp_dir = TempDir::new().unwrap();
-        let cache = PackageCache::new(temp_dir.path().to_path_buf()).await.unwrap();
+        let cache = PackageCache::new(temp_dir.path().to_path_buf())
+            .await
+            .unwrap();
 
         // Store multiple packages
         for i in 0..5 {
@@ -199,7 +217,10 @@ mod cache_tests {
             let version = "1.0.0";
             let package_data = format!("data for package {}", i).as_bytes();
 
-            cache.store_package(&package_name, version, package_data).await.unwrap();
+            cache
+                .store_package(&package_name, version, package_data)
+                .await
+                .unwrap();
         }
 
         // Test cleanup functionality
@@ -213,7 +234,7 @@ mod cache_tests {
 #[cfg(test)]
 mod lockfile_tests {
     use super::*;
-    use crate::package::{Lockfile, LockEntry};
+    use crate::package::{LockEntry, Lockfile};
 
     #[tokio::test]
     async fn test_lockfile_creation() {
@@ -228,7 +249,8 @@ mod lockfile_tests {
         let entry = LockEntry {
             name: "test-package".to_string(),
             version: "1.0.0".to_string(),
-            resolved: "https://registry.example.com/test-package/-/test-package-1.0.0.tgz".to_string(),
+            resolved: "https://registry.example.com/test-package/-/test-package-1.0.0.tgz"
+                .to_string(),
             integrity: "sha512-...".to_string(),
             dependencies: HashMap::new(),
         };
@@ -247,7 +269,8 @@ mod lockfile_tests {
         let entry = LockEntry {
             name: "test-package".to_string(),
             version: "1.0.0".to_string(),
-            resolved: "https://registry.example.com/test-package/-/test-package-1.0.0.tgz".to_string(),
+            resolved: "https://registry.example.com/test-package/-/test-package-1.0.0.tgz"
+                .to_string(),
             integrity: "sha512-test".to_string(),
             dependencies: HashMap::new(),
         };

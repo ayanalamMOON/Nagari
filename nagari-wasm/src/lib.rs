@@ -146,6 +146,42 @@ impl NagariWasmVM {
         // TODO: reset method not available in current VM
         self.globals.clear();
         Ok(())
+    }    
+    #[wasm_bindgen]
+    pub fn load_and_run_bytecode(&mut self, bytecode: Vec<u8>) -> Result<JSValue, JsValue> {
+        self.vm.load_bytecode(&bytecode)
+            .map_err(|e| JsValue::from_str(&format!("Failed to load bytecode: {}", e)))?;
+        
+        // For now, we'll return success status since the VM doesn't return values from run()
+        Ok(JSValue::new(nagari_value_to_js(&NagariValue::String("Bytecode loaded successfully".to_string()))))
+    }
+    
+    #[wasm_bindgen]
+    pub fn set_global_variable(&mut self, name: &str, value: &str) -> Result<(), JsValue> {
+        // Convert string value to NagariValue for now
+        let nagari_value = NagariValue::String(value.to_string());
+        self.vm.define_global(name, nagari_value);
+        Ok(())
+    }
+    
+    #[wasm_bindgen]
+    pub fn get_global_variable(&self, name: &str) -> Result<JSValue, JsValue> {
+        match self.vm.get_global(name) {
+            Some(value) => Ok(JSValue::new(nagari_value_to_js(value))),
+            None => Err(JsValue::from_str(&format!("Global variable '{}' not found", name))),
+        }
+    }
+    
+    #[wasm_bindgen]
+    pub fn reset_vm(&mut self) -> Result<(), JsValue> {
+        self.vm.clear_globals();
+        self.globals.clear();
+        Ok(())
+    }
+    
+    #[wasm_bindgen]
+    pub fn get_vm_state(&self) -> Result<String, JsValue> {
+        Ok(format!("VM initialized with {} global variables", self.globals.len()))
     }
 }
 

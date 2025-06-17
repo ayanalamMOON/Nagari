@@ -1,5 +1,6 @@
 #[derive(Debug, Clone, PartialEq)]
-pub enum Token {    // Keywords
+pub enum Token {
+    // Keywords
     Def,
     Return,
     If,
@@ -40,13 +41,13 @@ pub enum Token {    // Keywords
     FloatLiteral(f64),
     StringLiteral(String),
     BoolLiteral(bool),
-    None,    // Operators
+    None, // Operators
     Plus,
     Minus,
     Multiply,
     Divide,
     Modulo,
-    Power,          // **
+    Power, // **
     Equal,
     NotEqual,
     Less,
@@ -73,12 +74,12 @@ pub enum Token {    // Keywords
     Comma,
     Colon,
     Dot,
-    Arrow,      // ->
+    Arrow, // ->
 
     // JSX tokens
-    JSXOpen,        // <
-    JSXClose,       // >
-    JSXSelfClose,   // />
+    JSXOpen,      // <
+    JSXClose,     // >
+    JSXSelfClose, // />
     JSXText(String),
 
     // Additional missing tokens referenced in parser
@@ -90,11 +91,11 @@ pub enum Token {    // Keywords
     BitXor,
     LeftShift,
     RightShift,
-    Spread,             // ...
-    TemplateStart,      // `
-    TemplateEnd,        // `
-    TemplateExprStart,  // ${
-    TemplateExprEnd,    // }
+    Spread,            // ...
+    TemplateStart,     // `
+    TemplateEnd,       // `
+    TemplateExprStart, // ${
+    TemplateExprEnd,   // }
 
     // Special
     Newline,
@@ -321,9 +322,9 @@ impl Lexer {
                 value.push(self.advance());
             }
 
-            let float_val = value.parse::<f64>().map_err(|_| {
-                NagariError::LexError(format!("Invalid float literal: {}", value))
-            })?;
+            let float_val = value
+                .parse::<f64>()
+                .map_err(|_| NagariError::LexError(format!("Invalid float literal: {}", value)))?;
 
             Ok(Token::FloatLiteral(float_val))
         } else {
@@ -338,7 +339,10 @@ impl Lexer {
     fn identifier_or_keyword(&mut self) -> Result<Token, NagariError> {
         let mut value = String::new();
 
-        while self.peek().map_or(false, |c| c.is_ascii_alphanumeric() || c == '_') {
+        while self
+            .peek()
+            .map_or(false, |c| c.is_ascii_alphanumeric() || c == '_')
+        {
             value.push(self.advance());
         }
 

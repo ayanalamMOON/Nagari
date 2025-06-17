@@ -1,7 +1,7 @@
 use tower_lsp::lsp_types::*;
 use dashmap::DashMap;
 use ropey::Rope;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
 pub struct Document {
@@ -114,5 +114,27 @@ impl DocumentManager {
 
     pub async fn list_documents(&self) -> Vec<Url> {
         self.documents.iter().map(|entry| entry.key().clone()).collect()
+    }
+
+    /// Get a shared reference to a document using Arc
+    pub async fn get_document_arc(&self, uri: &Url) -> Option<Arc<Document>> {
+        self.documents.get(uri).map(|entry| Arc::new(entry.clone()))
+    }
+
+    /// Store a document with Arc sharing
+    pub async fn store_document_arc(&self, document: Arc<Document>) {
+        self.documents.insert(document.uri.clone(), (*document).clone());
+    }
+
+    /// Get multiple documents as Arc references
+    pub async fn get_documents_arc(&self, uris: &[Url]) -> Vec<Arc<Document>> {
+        uris.iter()
+            .filter_map(|uri| self.documents.get(uri).map(|entry| Arc::new(entry.clone())))
+            .collect()
+    }
+
+    /// Get a thread-safe mutable reference to a document using Mutex
+    pub async fn get_document_mutex(&self, uri: &Url) -> Option<Arc<std::sync::Mutex<Document>>> {
+        self.documents.get(uri).map(|entry| Arc::new(std::sync::Mutex::new(entry.clone())))
     }
 }

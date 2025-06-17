@@ -388,12 +388,16 @@ impl Type {
 }
 
 // Type inference engine
+#[derive(Debug, Clone, PartialEq)]
 pub struct TypeInferenceEngine {
     type_variables: HashMap<String, Type>,
+    #[allow(dead_code)]
     constraints: Vec<TypeConstraint>,
+    #[allow(dead_code)]
     generic_scope: Vec<HashMap<String, TypeParameter>>,
 }
 
+#[allow(dead_code)]
 impl TypeInferenceEngine {
     pub fn new() -> Self {
         Self {

@@ -290,4 +290,25 @@ impl VM {
         println!();
         println!("  Stack: {:?}", self.stack);
     }
+
+    // Public methods for external access
+    pub fn define_global(&mut self, name: &str, value: Value) {
+        self.environment.define_global(name, value);
+    }
+
+    pub fn get_global(&self, name: &str) -> Option<&Value> {
+        self.environment.get(name)
+    }
+
+    pub fn set_global(&mut self, name: &str, value: Value) -> Result<(), String> {
+        self.environment.set(name, value)
+    }
+
+    pub fn clear_globals(&mut self) {
+        self.environment = Environment::new();
+        // Re-setup built-ins after clearing
+        for (name, value) in setup_builtins() {
+            self.environment.define_global(&name, value);
+        }
+    }
 }

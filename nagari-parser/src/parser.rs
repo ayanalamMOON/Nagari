@@ -29,15 +29,29 @@ impl Parser {
     }
 
     fn parse_statement(&mut self) -> Result<Statement, ParseError> {
-        match &self.peek().token {
-            Token::Let => self.parse_let_statement(),
-            Token::Const => self.parse_const_statement(),
-            Token::Function => self.parse_function_statement(),
-            Token::Return => self.parse_return_statement(),
-            Token::If => self.parse_if_statement(),
-            Token::While => self.parse_while_statement(),
-            Token::For => self.parse_for_statement(),
-            Token::Class => self.parse_class_statement(),
+        match self.peek_token()?.map(|t| t.token.clone()) {
+            Some(Token::ExportNamed) => {
+                let exports = self.parse_named_exports()?;
+                let source = self.parse_optional_source()?;
+                Ok(Statement::ExportNamed { exports, source })
+            }
+            Some(Token::ExportAll) => {
+                let source = self.parse_source()?;
+                let alias = self.parse_optional_alias()?;
+                Ok(Statement::ExportAll { source, alias })
+            }
+            Some(Token::ExportDeclaration) => {
+                let declaration = Box::new(self.parse_declaration()?);
+                Ok(Statement::ExportDeclaration { declaration })
+            }
+            Some(Token::Let) => self.parse_let_statement(),
+            Some(Token::Const) => self.parse_const_statement(),
+            Some(Token::Function) => self.parse_function_statement(),
+            Some(Token::Return) => self.parse_return_statement(),
+            Some(Token::If) => self.parse_if_statement(),
+            Some(Token::While) => self.parse_while_statement(),
+            Some(Token::For) => self.parse_for_statement(),
+            Some(Token::Class) => self.parse_class_statement(),
             _ => {
                 let expr = self.parse_expression()?;
                 self.consume_statement_terminator()?;
@@ -207,31 +221,31 @@ impl Parser {
     }
 
     fn parse_assignment(&mut self) -> Result<Expression, ParseError> {
-        let expr = self.parse_conditional()?;
-
-        if let Token::Assign
-        | Token::PlusAssign
-        | Token::MinusAssign
-        | Token::StarAssign
-        | Token::SlashAssign = &self.peek().token
-        {
-            let operator = match &self.advance().token {
-                Token::Assign => AssignmentOperator::Assign,
-                Token::PlusAssign => AssignmentOperator::AddAssign,
-                Token::MinusAssign => AssignmentOperator::SubtractAssign,
-                Token::StarAssign => AssignmentOperator::MultiplyAssign,
-                Token::SlashAssign => AssignmentOperator::DivideAssign,
-                _ => unreachable!(),
-            };
-            let right = self.parse_assignment()?;
-            return Ok(Expression::Assignment {
-                left: Box::new(expr),
-                operator,
-                right: Box::new(right),
-            });
+        let left = self.parse_expression()?;
+        if !left.is_lvalue() {
+            return Err(ParseError::InvalidAssignmentTarget);
         }
-
-        Ok(expr)
+        let token = self.consume_token()?.token.clone();
+        let operator = match token {
+            Token::Assign => AssignmentOperator::Assign,
+            Token::PlusAssign => AssignmentOperator::AddAssign,
+            Token::MinusAssign => AssignmentOperator::SubtractAssign,
+            Token::MultiplyAssign => AssignmentOperator::MultiplyAssign,
+            Token::DivideAssign => AssignmentOperator::DivideAssign,
+            _ => {
+                return Err(ParseError::UnexpectedToken {
+                    token: format!("{:?}", token),
+                    line: 0,
+                    column: 0,
+                })
+            }
+        };
+        let right = self.parse_expression()?;
+        Ok(Expression::Assignment {
+            left: Box::new(left),
+            operator,
+            right: Box::new(right),
+        })
     }
 
     fn parse_conditional(&mut self) -> Result<Expression, ParseError> {
@@ -280,66 +294,76 @@ impl Parser {
 
         Ok(expr)
     }
-
     fn parse_equality(&mut self) -> Result<Expression, ParseError> {
         let mut expr = self.parse_comparison()?;
 
-        while let Token::Equal | Token::NotEqual = &self.peek().token {
-            let operator = match &self.advance().token {
-                Token::Equal => BinaryOperator::Equal,
-                Token::NotEqual => BinaryOperator::NotEqual,
-                _ => unreachable!(),
-            };
-            let right = self.parse_comparison()?;
-            expr = Expression::Binary {
-                left: Box::new(expr),
-                operator,
-                right: Box::new(right),
-            };
+        while let Ok(Some(token_with_pos)) = self.peek_token() {
+            match &token_with_pos.token {
+                Token::Equal | Token::NotEqual => {
+                    let operator = match &self.advance()?.token {
+                        Token::Equal => BinaryOperator::Equal,
+                        Token::NotEqual => BinaryOperator::NotEqual,
+                        _ => unreachable!(),
+                    };
+                    let right = self.parse_comparison()?;
+                    expr = Expression::Binary {
+                        left: Box::new(expr),
+                        operator,
+                        right: Box::new(right),
+                    };
+                }
+                _ => break,
+            }
         }
 
         Ok(expr)
     }
-
     fn parse_comparison(&mut self) -> Result<Expression, ParseError> {
         let mut expr = self.parse_term()?;
 
-        while let Token::Greater | Token::GreaterEqual | Token::Less | Token::LessEqual =
-            &self.peek().token
-        {
-            let operator = match &self.advance().token {
-                Token::Greater => BinaryOperator::Greater,
-                Token::GreaterEqual => BinaryOperator::GreaterEqual,
-                Token::Less => BinaryOperator::Less,
-                Token::LessEqual => BinaryOperator::LessEqual,
-                _ => unreachable!(),
-            };
-            let right = self.parse_term()?;
-            expr = Expression::Binary {
-                left: Box::new(expr),
-                operator,
-                right: Box::new(right),
-            };
+        while let Ok(Some(token_with_pos)) = self.peek_token() {
+            match &token_with_pos.token {
+                Token::Greater | Token::GreaterEqual | Token::Less | Token::LessEqual => {
+                    let operator = match &self.advance()?.token {
+                        Token::Greater => BinaryOperator::Greater,
+                        Token::GreaterEqual => BinaryOperator::GreaterEqual,
+                        Token::Less => BinaryOperator::Less,
+                        Token::LessEqual => BinaryOperator::LessEqual,
+                        _ => unreachable!(),
+                    };
+                    let right = self.parse_term()?;
+                    expr = Expression::Binary {
+                        left: Box::new(expr),
+                        operator,
+                        right: Box::new(right),
+                    };
+                }
+                _ => break,
+            }
         }
 
         Ok(expr)
     }
-
     fn parse_term(&mut self) -> Result<Expression, ParseError> {
         let mut expr = self.parse_factor()?;
 
-        while let Token::Minus | Token::Plus = &self.peek().token {
-            let operator = match &self.advance().token {
-                Token::Minus => BinaryOperator::Subtract,
-                Token::Plus => BinaryOperator::Add,
-                _ => unreachable!(),
-            };
-            let right = self.parse_factor()?;
-            expr = Expression::Binary {
-                left: Box::new(expr),
-                operator,
-                right: Box::new(right),
-            };
+        while let Ok(Some(token_with_pos)) = self.peek_token() {
+            match &token_with_pos.token {
+                Token::Minus | Token::Plus => {
+                    let operator = match &self.advance()?.token {
+                        Token::Minus => BinaryOperator::Subtract,
+                        Token::Plus => BinaryOperator::Add,
+                        _ => unreachable!(),
+                    };
+                    let right = self.parse_factor()?;
+                    expr = Expression::Binary {
+                        left: Box::new(expr),
+                        operator,
+                        right: Box::new(right),
+                    };
+                }
+                _ => break,
+            }
         }
 
         Ok(expr)
@@ -348,40 +372,49 @@ impl Parser {
     fn parse_factor(&mut self) -> Result<Expression, ParseError> {
         let mut expr = self.parse_unary()?;
 
-        while let Token::Slash | Token::Star | Token::Percent = &self.peek().token {
-            let operator = match &self.advance().token {
-                Token::Slash => BinaryOperator::Divide,
-                Token::Star => BinaryOperator::Multiply,
-                Token::Percent => BinaryOperator::Modulo,
-                _ => unreachable!(),
-            };
-            let right = self.parse_unary()?;
-            expr = Expression::Binary {
-                left: Box::new(expr),
-                operator,
-                right: Box::new(right),
-            };
+        while let Ok(Some(token_with_pos)) = self.peek_token() {
+            match &token_with_pos.token {
+                Token::Slash | Token::Star | Token::Percent => {
+                    let operator = match &self.advance()?.token {
+                        Token::Slash => BinaryOperator::Divide,
+                        Token::Star => BinaryOperator::Multiply,
+                        Token::Percent => BinaryOperator::Modulo,
+                        _ => unreachable!(),
+                    };
+                    let right = self.parse_unary()?;
+                    expr = Expression::Binary {
+                        left: Box::new(expr),
+                        operator,
+                        right: Box::new(right),
+                    };
+                }
+                _ => break,
+            }
         }
 
         Ok(expr)
     }
 
     fn parse_unary(&mut self) -> Result<Expression, ParseError> {
-        if let Token::Not | Token::Minus | Token::Plus = &self.peek().token {
-            let operator = match &self.advance().token {
-                Token::Not => UnaryOperator::Not,
-                Token::Minus => UnaryOperator::Minus,
-                Token::Plus => UnaryOperator::Plus,
-                _ => unreachable!(),
-            };
-            let right = self.parse_unary()?;
-            return Ok(Expression::Unary {
-                operator,
-                operand: Box::new(right),
-            });
+        if let Ok(Some(token_with_pos)) = self.peek_token() {
+            match &token_with_pos.token {
+                Token::Not | Token::Minus | Token::Plus => {
+                    let operator = match &self.advance()?.token {
+                        Token::Not => UnaryOperator::Not,
+                        Token::Minus => UnaryOperator::Minus,
+                        Token::Plus => UnaryOperator::Plus,
+                        _ => unreachable!(),
+                    };
+                    let right = self.parse_unary()?;
+                    return Ok(Expression::Unary {
+                        operator,
+                        operand: Box::new(right),
+                    });
+                }
+                _ => {}
+            }
         }
-
-        self.parse_call()
+        self.parse_primary()
     }
 
     fn parse_call(&mut self) -> Result<Expression, ParseError> {
@@ -434,47 +467,51 @@ impl Parser {
     }
 
     fn parse_primary(&mut self) -> Result<Expression, ParseError> {
-        match &self.peek().token {
-            Token::True => {
-                self.advance();
-                Ok(Expression::Literal(Literal::Boolean(true)))
+        if let Ok(Some(token_with_pos)) = self.peek_token() {
+            match &token_with_pos.token {
+                Token::True => {
+                    self.advance()?;
+                    Ok(Expression::Literal(Literal::Boolean(true)))
+                }
+                Token::False => {
+                    self.advance()?;
+                    Ok(Expression::Literal(Literal::Boolean(false)))
+                }
+                Token::Null => {
+                    self.advance()?;
+                    Ok(Expression::Literal(Literal::Null))
+                }
+                Token::Number(n) => {
+                    let value = *n;
+                    self.advance()?;
+                    Ok(Expression::Literal(Literal::Number(value)))
+                }
+                Token::String(s) => {
+                    let value = s.clone();
+                    self.advance()?;
+                    Ok(Expression::Literal(Literal::String(value)))
+                }
+                Token::Identifier(name) => {
+                    let name = name.clone();
+                    self.advance()?;
+                    Ok(Expression::Identifier(name))
+                }
+                Token::LeftParen => {
+                    self.advance()?;
+                    let expr = self.parse_expression()?;
+                    self.consume(&Token::RightParen, "Expected ')'")?;
+                    Ok(expr)
+                }
+                Token::LeftBracket => self.parse_array_literal(),
+                Token::LeftBrace => self.parse_object_literal(),
+                _ => Err(ParseError::UnexpectedToken {
+                    token: format!("{:?}", token_with_pos.token),
+                    line: token_with_pos.line,
+                    column: token_with_pos.column,
+                }),
             }
-            Token::False => {
-                self.advance();
-                Ok(Expression::Literal(Literal::Boolean(false)))
-            }
-            Token::Null => {
-                self.advance();
-                Ok(Expression::Literal(Literal::Null))
-            }
-            Token::Number(n) => {
-                let value = *n;
-                self.advance();
-                Ok(Expression::Literal(Literal::Number(value)))
-            }
-            Token::String(s) => {
-                let value = s.clone();
-                self.advance();
-                Ok(Expression::Literal(Literal::String(value)))
-            }
-            Token::Identifier(name) => {
-                let name = name.clone();
-                self.advance();
-                Ok(Expression::Identifier(name))
-            }
-            Token::LeftParen => {
-                self.advance();
-                let expr = self.parse_expression()?;
-                self.consume(&Token::RightParen, "Expected ')'")?;
-                Ok(expr)
-            }
-            Token::LeftBracket => self.parse_array_literal(),
-            Token::LeftBrace => self.parse_object_literal(),
-            _ => Err(ParseError::UnexpectedToken {
-                token: format!("{:?}", self.peek().token),
-                line: self.peek().line,
-                column: self.peek().column,
-            }),
+        } else {
+            Err(ParseError::UnexpectedEof)
         }
     }
 
@@ -516,86 +553,241 @@ impl Parser {
         Ok(Expression::Object(properties))
     }
 
-    // Helper methods
-    fn match_token(&mut self, token: &Token) -> bool {
-        if self.check(token) {
-            self.advance();
-            true
-        } else {
-            false
-        }
-    }
-
-    fn check(&self, token: &Token) -> bool {
-        if self.is_at_end() {
-            false
-        } else {
-            std::mem::discriminant(&self.peek().token) == std::mem::discriminant(token)
-        }
-    }
-
-    fn advance(&mut self) -> &TokenWithPosition {
-        if !self.is_at_end() {
-            self.current += 1;
-        }
-        self.previous()
-    }
-
+    // Implement missing methods and correct field access
     fn is_at_end(&self) -> bool {
-        self.peek().token == Token::Eof
+        self.current >= self.tokens.len()
     }
 
-    fn peek(&self) -> &TokenWithPosition {
-        &self.tokens[self.current]
-    }
-
-    fn previous(&self) -> &TokenWithPosition {
-        &self.tokens[self.current - 1]
-    }
-
-    fn consume(&mut self, token: &Token, _message: &str) -> Result<&TokenWithPosition, ParseError> {
-        if self.check(token) {
-            Ok(self.advance())
+    fn check(&self, expected: &Token) -> bool {
+        if let Some(token_with_pos) = self.peek_token().ok().flatten() {
+            &token_with_pos.token == expected
         } else {
-            Err(ParseError::Expected {
-                expected: format!("{:?}", token),
-                found: format!("{:?}", self.peek().token),
-                line: self.peek().line,
-                column: self.peek().column,
-            })
+            false
         }
     }
 
-    fn consume_identifier(&mut self, _message: &str) -> Result<String, ParseError> {
-        if let Token::Identifier(name) = &self.peek().token {
-            let name = name.clone();
-            self.advance();
-            Ok(name)
-        } else {
-            Err(ParseError::Expected {
-                expected: "identifier".to_string(),
-                found: format!("{:?}", self.peek().token),
-                line: self.peek().line,
-                column: self.peek().column,
-            })
+    fn consume_token(&mut self) -> Result<&TokenWithPosition, ParseError> {
+        self.advance()
+    }
+
+    fn peek(&self) -> Result<&TokenWithPosition, ParseError> {
+        self.peek_token()?.ok_or(ParseError::UnexpectedEof)
+    }
+
+    // Map Token to AssignmentOperator
+    fn map_token_to_operator(token: Token) -> Result<AssignmentOperator, ParseError> {
+        match token {
+            Token::Assign => Ok(AssignmentOperator::Assign),
+            Token::PlusAssign => Ok(AssignmentOperator::AddAssign),
+            Token::MinusAssign => Ok(AssignmentOperator::SubtractAssign),
+            Token::MultiplyAssign => Ok(AssignmentOperator::MultiplyAssign),
+            Token::DivideAssign => Ok(AssignmentOperator::DivideAssign),
+            _ => Err(ParseError::UnexpectedToken {
+                token: format!("{:?}", token),
+                line: 0,
+                column: 0,
+            }),
         }
     }
 
     fn consume_statement_terminator(&mut self) -> Result<(), ParseError> {
-        if self.check(&Token::Semicolon) {
-            self.advance();
-        } else if self.check(&Token::Newline) {
-            self.advance();
-        } else if self.check(&Token::Eof) {
-            // Allow EOF to terminate statements
+        if self.match_token(&Token::Semicolon) || self.match_token(&Token::Newline) {
+            Ok(())
         } else {
-            return Err(ParseError::Expected {
-                expected: "';' or newline".to_string(),
-                found: format!("{:?}", self.peek().token),
-                line: self.peek().line,
-                column: self.peek().column,
-            });
+            let found_token = self
+                .peek_token()
+                .ok()
+                .flatten()
+                .map(|t| format!("{:?}", t.token))
+                .unwrap_or_else(|| "EOF".to_string());
+            let (line, column) = self
+                .peek_token()
+                .ok()
+                .flatten()
+                .map(|t| (t.line, t.column))
+                .unwrap_or((0, 0));
+            Err(ParseError::Expected {
+                expected: "statement terminator (semicolon or newline)".to_string(),
+                found: found_token,
+                line,
+                column,
+            })
         }
-        Ok(())
     }
+
+    fn parse_named_exports(&mut self) -> Result<Vec<NamedExport>, ParseError> {
+        self.consume(&Token::ExportNamed, "Expected 'export' keyword")?;
+        self.consume(&Token::LeftBrace, "Expected '{'")?;
+
+        let mut exports = Vec::new();
+        while !self.check(&Token::RightBrace) && !self.is_at_end() {
+            if self.check(&Token::Newline) {
+                self.advance().ok();
+                continue;
+            }
+
+            let name = self.consume_identifier("Expected export name")?;
+            let alias = None; // Placeholder for alias parsing
+            exports.push(NamedExport { name, alias });
+
+            if !self.match_token(&Token::Comma) {
+                break;
+            }
+        }
+
+        self.consume(&Token::RightBrace, "Expected '}'")?;
+        Ok(exports)
+    }
+
+    fn parse_optional_source(&mut self) -> Result<Option<String>, ParseError> {
+        if self.match_token(&Token::From) {
+            Ok(Some(
+                self.consume_identifier("Expected source after 'from'")?,
+            ))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn parse_source(&mut self) -> Result<String, ParseError> {
+        self.consume(&Token::From, "Expected 'from'")?;
+        self.consume_identifier("Expected source after 'from'")
+    }
+
+    fn parse_optional_alias(&mut self) -> Result<Option<String>, ParseError> {
+        if self.match_token(&Token::As) {
+            Ok(Some(self.consume_identifier("Expected alias after 'as'")?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn parse_declaration(&mut self) -> Result<Statement, ParseError> {
+        Err(ParseError::UnexpectedToken {
+            token: self
+                .peek_token()
+                .ok()
+                .flatten()
+                .map(|t| format!("{:?}", t.token))
+                .unwrap_or("EOF".to_string()),
+            line: self
+                .peek_token()
+                .ok()
+                .flatten()
+                .map(|t| t.line)
+                .unwrap_or(0),
+            column: self
+                .peek_token()
+                .ok()
+                .flatten()
+                .map(|t| t.column)
+                .unwrap_or(0),
+        })
+    }
+
+    fn advance(&mut self) -> Result<&TokenWithPosition, ParseError> {
+        if self.is_at_end() {
+            Err(ParseError::UnexpectedEof)
+        } else {
+            self.current += 1;
+            Ok(&self.tokens[self.current - 1])
+        }
+    }
+
+    fn match_token(&mut self, expected: &Token) -> bool {
+        if let Some(token_with_pos) = self.peek_token().ok().flatten() {
+            if &token_with_pos.token == expected {
+                self.advance().ok();
+                return true;
+            }
+        }
+        false
+    }
+
+    fn consume(&mut self, expected: &Token, _error_message: &str) -> Result<(), ParseError> {
+        if self.match_token(expected) {
+            Ok(())
+        } else {
+            Err(ParseError::UnexpectedToken {
+                token: format!(
+                    "{:?}",
+                    self.peek_token()
+                        .ok()
+                        .flatten()
+                        .map(|t| t.token.clone())
+                        .unwrap_or(Token::Eof)
+                ),
+                line: self
+                    .peek_token()
+                    .ok()
+                    .flatten()
+                    .map(|t| t.line)
+                    .unwrap_or(0),
+                column: self
+                    .peek_token()
+                    .ok()
+                    .flatten()
+                    .map(|t| t.column)
+                    .unwrap_or(0),
+            })
+        }
+    }
+
+    fn consume_identifier(&mut self, _error_message: &str) -> Result<String, ParseError> {
+        if let Some(token_with_pos) = self.peek_token().ok().flatten() {
+            if let Token::Identifier(name) = &token_with_pos.token {
+                let name_clone = name.clone();
+                self.advance().ok();
+                return Ok(name_clone);
+            }
+        }
+        Err(ParseError::UnexpectedToken {
+            token: format!(
+                "{:?}",
+                self.peek_token()
+                    .ok()
+                    .flatten()
+                    .map(|t| t.token.clone())
+                    .unwrap_or(Token::Eof)
+            ),
+            line: self
+                .peek_token()
+                .ok()
+                .flatten()
+                .map(|t| t.line)
+                .unwrap_or(0),
+            column: self
+                .peek_token()
+                .ok()
+                .flatten()
+                .map(|t| t.column)
+                .unwrap_or(0),
+        })
+    }
+
+    fn peek_token(&self) -> Result<Option<&TokenWithPosition>, ParseError> {
+        if self.is_at_end() {
+            Ok(None)
+        } else {
+            Ok(Some(&self.tokens[self.current]))
+        }
+    }
+}
+
+// Define missing structs for export statements
+#[derive(Debug, Clone)]
+pub struct ExportNamedStatement {
+    pub exports: Vec<NamedExport>,
+    pub source: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExportAllStatement {
+    pub source: String,
+    pub alias: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExportDeclarationStatement {
+    pub declaration: Box<Statement>,
 }

@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use std::fs;
 use anyhow::Result;
 use sha2::{Sha256, Digest};
+use base64::{Engine as _, engine::general_purpose};
 
 #[derive(Debug, Clone)]
 pub struct PackageCache {
@@ -84,7 +85,7 @@ impl PackageCache {
         // Calculate integrity hash
         let mut hasher = Sha256::new();
         hasher.update(tarball_data);
-        let integrity = format!("sha256-{}", base64::encode(hasher.finalize()));
+        let integrity = format!("sha256-{}", general_purpose::STANDARD.encode(hasher.finalize()));
 
         // Define paths
         let tarball_path = self.cache_dir
@@ -157,12 +158,18 @@ impl PackageCache {
     }
 
     pub fn clear_cache(&mut self) -> Result<()> {
+        // Get all cache keys to remove
+        let cache_keys: Vec<String> = self.metadata.packages.keys().cloned().collect();
+
         // Remove all cached packages
-        for cache_key in self.metadata.packages.keys().cloned().collect::<Vec<_>>() {
+        for cache_key in cache_keys {
             if let Some(info) = self.metadata.packages.get(&cache_key) {
-                let name = &info.name;
-                let version = &info.version;
-                self.remove_package(name, version)?;
+                let name = info.name.clone();
+                let version = info.version.clone();
+                // Remove from metadata first to avoid borrow conflicts
+                self.metadata.packages.remove(&cache_key);
+                // Then remove from filesystem
+                self.remove_package(&name, &version)?;
             }
         }
 
@@ -238,7 +245,7 @@ impl PackageCache {
                 let tarball_data = fs::read(&info.tarball_path)?;
                 let mut hasher = Sha256::new();
                 hasher.update(&tarball_data);
-                let actual_integrity = format!("sha256-{}", base64::encode(hasher.finalize()));
+                let actual_integrity = format!("sha256-{}", general_purpose::STANDARD.encode(hasher.finalize()));
 
                 if &actual_integrity != expected_integrity {
                     corrupted.push(format!("{}@{} (integrity mismatch)", info.name, info.version));

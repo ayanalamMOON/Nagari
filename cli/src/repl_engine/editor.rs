@@ -1,5 +1,4 @@
 use reedline::{Reedline, Signal, Prompt, PromptEditMode, PromptHistorySearch, PromptHistorySearchStatus};
-use crossterm::style::{Color, Attribute};
 use anyhow::Result;
 
 use crate::repl_engine::{CodeCompleter, SyntaxHighlighter, ReplConfig};
@@ -16,7 +15,7 @@ pub struct NagariPrompt {
 
 impl ReplEditor {
     pub fn new(config: &ReplConfig) -> Result<Self> {
-        let mut line_editor = Reedline::create();        // Configure history
+        let line_editor = Reedline::create();        // Configure history
         if config.history_size > 0 {
             // TODO: Configure history with proper session ID
             // line_editor = line_editor.with_history_session_id(Some(HistorySessionId::...));
@@ -35,9 +34,9 @@ impl ReplEditor {
 
     pub async fn read_line(
         &mut self,
-        prompt_text: &str,
-        completer: &mut CodeCompleter,
-        highlighter: &mut SyntaxHighlighter,
+        _prompt_text: &str,
+        _completer: &mut CodeCompleter,
+        _highlighter: &mut SyntaxHighlighter,
     ) -> Result<String> {        // Update prompt text
         // TODO: Update prompt - this approach doesn't work with new reedline API
         // Would need to recreate the prompt object        // Set up completer and highlighter
@@ -50,22 +49,25 @@ impl ReplEditor {
             Ok(Signal::CtrlC) => Ok(String::new()),
             Err(e) => Err(anyhow::anyhow!("Input error: {}", e)),
         }
-    }    pub fn add_history(&mut self, line: String) {
+    }    pub fn add_history(&mut self, _line: String) {
         // Add line to history - API changed in newer reedline
         // TODO: Use proper history API
         let _ = self.line_editor.history_mut();
     }
 
     pub fn set_completer(&mut self, completer: Box<dyn reedline::Completer>) {
-        self.line_editor = self.line_editor.with_completer(completer);
+        let editor = std::mem::replace(&mut self.line_editor, Reedline::create());
+        self.line_editor = editor.with_completer(completer);
     }
 
     pub fn set_highlighter(&mut self, highlighter: Box<dyn reedline::Highlighter>) {
-        self.line_editor = self.line_editor.with_highlighter(highlighter);
+        let editor = std::mem::replace(&mut self.line_editor, Reedline::create());
+        self.line_editor = editor.with_highlighter(highlighter);
     }
 
     pub fn set_validator(&mut self, validator: Box<dyn reedline::Validator>) {
-        self.line_editor = self.line_editor.with_validator(validator);
+        let editor = std::mem::replace(&mut self.line_editor, Reedline::create());
+        self.line_editor = editor.with_validator(validator);
     }
 }
 

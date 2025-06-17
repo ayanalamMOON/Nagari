@@ -149,6 +149,78 @@ pub mod auth_service {
     }
 }
 
+/// Service response structure that uses Serialize
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ServiceResponse<T> {
+    pub success: bool,
+    pub data: Option<T>,
+    pub message: String,
+}
+
+impl<T> ServiceResponse<T> {
+    pub fn success(data: T) -> Self {
+        Self {
+            success: true,
+            data: Some(data),
+            message: "Operation completed successfully".to_string(),
+        }
+    }
+    
+    pub fn error(message: String) -> Self {
+        Self {
+            success: false,
+            data: None,
+            message,
+        }
+    }
+}
+
+/// Configuration structure that uses PathBuf
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ServiceConfig {
+    pub storage_path: PathBuf,
+    pub cache_path: PathBuf,
+    pub temp_path: PathBuf,
+}
+
+impl ServiceConfig {
+    pub fn new(base_path: PathBuf) -> Self {
+        Self {
+            storage_path: base_path.join("storage"),
+            cache_path: base_path.join("cache"),
+            temp_path: base_path.join("temp"),
+        }
+    }
+}
+
+/// Registry services manager that uses all service imports  
+pub struct RegistryServices {
+    config: ServiceConfig,
+}
+
+impl RegistryServices {
+    pub fn new(config: ServiceConfig) -> Result<Self> {
+        Ok(Self {
+            config,
+        })
+    }
+    
+    pub fn create_package_service(&self, db_pool: crate::db::DatabasePool) -> PackageService {
+        PackageService::new(db_pool)
+    }
+    
+    pub fn create_user_service(&self, db_pool: crate::db::DatabasePool) -> UserService {
+        UserService::new(db_pool)
+    }
+      pub fn create_auth_service(&self, auth_config: auth_service::AuthConfig) -> AuthService {
+        AuthService::new(auth_config)
+    }
+    
+    pub fn config(&self) -> &ServiceConfig {
+        &self.config
+    }
+}
+
 // Re-export services for easier importing
 pub use package_service::PackageService;
 pub use user_service::UserService;
