@@ -12,10 +12,9 @@ use crate::{
     completion::CompletionProvider,
     diagnostics::DiagnosticsProvider,
     goto::GotoProvider,
-    hover::HoverProvider,
-    references::ReferencesProvider,
+    hover::HoverProvider,    references::ReferenceProvider,
     rename::RenameProvider,
-    symbols::SymbolsProvider,
+    symbols::SymbolProvider,
     workspace::WorkspaceManager,
     formatting::FormattingProvider,
     semantic_tokens::SemanticTokensProvider,
@@ -30,10 +29,9 @@ pub struct NagariLanguageServer {
     completion_provider: CompletionProvider,
     diagnostics_provider: DiagnosticsProvider,
     goto_provider: GotoProvider,
-    hover_provider: HoverProvider,
-    references_provider: ReferencesProvider,
+    hover_provider: HoverProvider,    references_provider: ReferenceProvider,
     rename_provider: RenameProvider,
-    symbols_provider: SymbolsProvider,
+    symbols_provider: SymbolProvider,
     formatting_provider: FormattingProvider,
     semantic_tokens_provider: SemanticTokensProvider,
     inlay_hints_provider: InlayHintsProvider,
@@ -43,54 +41,25 @@ pub struct NagariLanguageServer {
 impl NagariLanguageServer {
     pub fn new(client: Client) -> Self {
         let document_manager = Arc::new(DocumentManager::new());
-        let workspace_manager = Arc::new(WorkspaceManager::new());
-
-        Self {
+        let workspace_manager = Arc::new(WorkspaceManager::new());        Self {
             client: client.clone(),
             completion_provider: CompletionProvider::new(
                 client.clone(),
                 document_manager.clone(),
                 workspace_manager.clone(),
             ),
-            diagnostics_provider: DiagnosticsProvider::new(
-                client.clone(),
-                document_manager.clone(),
-            ),
-            goto_provider: GotoProvider::new(
-                document_manager.clone(),
-                workspace_manager.clone(),
-            ),
-            hover_provider: HoverProvider::new(
-                document_manager.clone(),
-                workspace_manager.clone(),
-            ),
-            references_provider: ReferencesProvider::new(
-                document_manager.clone(),
-                workspace_manager.clone(),
-            ),
-            rename_provider: RenameProvider::new(
-                document_manager.clone(),
-                workspace_manager.clone(),
-            ),
-            symbols_provider: SymbolsProvider::new(
-                document_manager.clone(),
-                workspace_manager.clone(),
-            ),
+            diagnostics_provider: DiagnosticsProvider::new(),
+            goto_provider: GotoProvider::new(),
+            hover_provider: HoverProvider::new(),
+            references_provider: ReferenceProvider::new(),
+            rename_provider: RenameProvider::new(),
+            symbols_provider: SymbolProvider::new(),
             formatting_provider: FormattingProvider::new(),
-            semantic_tokens_provider: SemanticTokensProvider::new(
-                document_manager.clone(),
-            ),
-            inlay_hints_provider: InlayHintsProvider::new(
-                document_manager.clone(),
-                workspace_manager.clone(),
-            ),
-            code_actions_provider: CodeActionsProvider::new(
-                document_manager.clone(),
-                workspace_manager.clone(),
-            ),
+            semantic_tokens_provider: SemanticTokensProvider::new(),
+            inlay_hints_provider: InlayHintsProvider::new(),
+            code_actions_provider: CodeActionsProvider::new(),
             document_manager,
             workspace_manager,
-            client,
         }
     }
 }
@@ -144,11 +113,10 @@ impl LanguageServer for NagariLanguageServer {
         self.document_manager.open_document(
             params.text_document.uri.clone(),
             params.text_document.text,
-            params.text_document.version,
-        ).await;
+            params.text_document.version,        ).await;
 
-        // Run diagnostics
-        self.diagnostics_provider.check_document(&params.text_document.uri).await;
+        // Run diagnostics (placeholder)
+        // self.diagnostics_provider.get_diagnostics(&params.text_document.uri, "").await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
@@ -160,16 +128,16 @@ impl LanguageServer for NagariLanguageServer {
             params.text_document.version,
         ).await;
 
-        // Run diagnostics
-        self.diagnostics_provider.check_document(&params.text_document.uri).await;
+        // Run diagnostics (placeholder)
+        // self.diagnostics_provider.get_diagnostics(&params.text_document.uri, "").await;
     }
 
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
         tracing::debug!("Document saved: {}", params.text_document.uri);
 
-        // Re-run diagnostics and update workspace index
-        self.diagnostics_provider.check_document(&params.text_document.uri).await;
-        self.workspace_manager.update_file_index(&params.text_document.uri).await;
+        // Re-run diagnostics and update workspace index (placeholder)
+        // self.diagnostics_provider.get_diagnostics(&params.text_document.uri, "").await;
+        // self.workspace_manager.update_file_index(&params.text_document.uri).await;
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
@@ -181,84 +149,74 @@ impl LanguageServer for NagariLanguageServer {
     async fn completion(&self, params: CompletionParams) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
         let result = self.completion_provider.provide_completion(params).await;
         Ok(result)
-    }
-
-    async fn hover(&self, params: HoverParams) -> tower_lsp::jsonrpc::Result<Option<Hover>> {
-        let result = self.hover_provider.provide_hover(params).await;
+    }    async fn hover(&self, params: HoverParams) -> tower_lsp::jsonrpc::Result<Option<Hover>> {
+        let result = self.hover_provider.hover(params).await.unwrap_or(None);
+        Ok(result)
+    }async fn goto_definition(&self, params: GotoDefinitionParams) -> tower_lsp::jsonrpc::Result<Option<GotoDefinitionResponse>> {
+        let result = self.goto_provider.goto_definition(params).await.unwrap_or(None);
         Ok(result)
     }
 
-    async fn goto_definition(&self, params: GotoDefinitionParams) -> tower_lsp::jsonrpc::Result<Option<GotoDefinitionResponse>> {
-        let result = self.goto_provider.goto_definition(params).await;
+    async fn goto_declaration(&self, params: GotoDefinitionParams) -> tower_lsp::jsonrpc::Result<Option<GotoDefinitionResponse>> {
+        let result = self.goto_provider.goto_declaration(params).await.unwrap_or(None);
         Ok(result)
     }
 
-    async fn goto_declaration(&self, params: GotoDeclarationParams) -> tower_lsp::jsonrpc::Result<Option<GotoDeclarationResponse>> {
-        let result = self.goto_provider.goto_declaration(params).await;
-        Ok(result)
-    }
-
-    async fn goto_implementation(&self, params: GotoImplementationParams) -> tower_lsp::jsonrpc::Result<Option<GotoImplementationResponse>> {
-        let result = self.goto_provider.goto_implementation(params).await;
+    async fn goto_implementation(&self, params: GotoDefinitionParams) -> tower_lsp::jsonrpc::Result<Option<GotoDefinitionResponse>> {
+        let result = self.goto_provider.goto_implementation(params).await.unwrap_or(None);
         Ok(result)
     }
 
     async fn references(&self, params: ReferenceParams) -> tower_lsp::jsonrpc::Result<Option<Vec<Location>>> {
-        let result = self.references_provider.find_references(params).await;
+        let result = self.references_provider.references(params).await.unwrap_or(None);
         Ok(result)
     }
 
     async fn rename(&self, params: RenameParams) -> tower_lsp::jsonrpc::Result<Option<WorkspaceEdit>> {
-        let result = self.rename_provider.rename(params).await;
+        let result = self.rename_provider.rename(params).await.unwrap_or(None);
         Ok(result)
     }
 
     async fn document_symbol(&self, params: DocumentSymbolParams) -> tower_lsp::jsonrpc::Result<Option<DocumentSymbolResponse>> {
-        let result = self.symbols_provider.document_symbols(params).await;
+        let result = self.symbols_provider.document_symbols(params).await.unwrap_or(None);
         Ok(result)
-    }
-
-    async fn workspace_symbol(&self, params: WorkspaceSymbolParams) -> tower_lsp::jsonrpc::Result<Option<Vec<SymbolInformation>>> {
-        let result = self.symbols_provider.workspace_symbols(params).await;
-        Ok(result)
-    }
-
-    async fn formatting(&self, params: DocumentFormattingParams) -> tower_lsp::jsonrpc::Result<Option<Vec<TextEdit>>> {
-        let result = self.formatting_provider.format_document(params).await;
+    }    async fn formatting(&self, params: DocumentFormattingParams) -> tower_lsp::jsonrpc::Result<Option<Vec<TextEdit>>> {
+        let result = self.formatting_provider.document_formatting(params).await.unwrap_or(None);
         Ok(result)
     }
 
     async fn range_formatting(&self, params: DocumentRangeFormattingParams) -> tower_lsp::jsonrpc::Result<Option<Vec<TextEdit>>> {
-        let result = self.formatting_provider.format_range(params).await;
+        let result = self.formatting_provider.document_range_formatting(params).await.unwrap_or(None);
         Ok(result)
     }
 
     async fn semantic_tokens_full(&self, params: SemanticTokensParams) -> tower_lsp::jsonrpc::Result<Option<SemanticTokensResult>> {
-        let result = self.semantic_tokens_provider.semantic_tokens_full(params).await;
+        let result = self.semantic_tokens_provider.semantic_tokens_full(params).await.unwrap_or(None);
         Ok(result)
     }
 
     async fn semantic_tokens_range(&self, params: SemanticTokensRangeParams) -> tower_lsp::jsonrpc::Result<Option<SemanticTokensRangeResult>> {
-        let result = self.semantic_tokens_provider.semantic_tokens_range(params).await;
+        let result = self.semantic_tokens_provider.semantic_tokens_range(params).await.unwrap_or(None);
         Ok(result)
     }
 
     async fn inlay_hint(&self, params: InlayHintParams) -> tower_lsp::jsonrpc::Result<Option<Vec<InlayHint>>> {
-        let result = self.inlay_hints_provider.provide_inlay_hints(params).await;
+        let result = self.inlay_hints_provider.inlay_hint(params).await.unwrap_or(None);
         Ok(result)
     }
 
     async fn code_action(&self, params: CodeActionParams) -> tower_lsp::jsonrpc::Result<Option<CodeActionResponse>> {
-        let result = self.code_actions_provider.provide_code_actions(params).await;
+        let result = self.code_actions_provider.code_action(params).await.unwrap_or(None);
         Ok(result)
     }
 
-    async fn did_change_workspace_folders(&self, params: DidChangeWorkspaceFoldersParams) {
-        for folder in params.event.added {
-            self.workspace_manager.add_workspace_folder(folder).await;
-        }
-        for folder in params.event.removed {
-            self.workspace_manager.remove_workspace_folder(&folder.uri).await;
-        }
+    async fn did_change_workspace_folders(&self, _params: DidChangeWorkspaceFoldersParams) {
+        // TODO: Implement workspace folder management
+        // for folder in params.event.added {
+        //     self.workspace_manager.add_workspace_folder(folder).await;
+        // }
+        // for folder in params.event.removed {
+        //     self.workspace_manager.remove_workspace_folder(&folder.uri).await;
+        // }
     }
 }

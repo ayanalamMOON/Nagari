@@ -1,4 +1,4 @@
-use reedline::{Reedline, Signal, DefaultPrompt, Prompt, PromptEditMode, PromptHistorySearch, PromptHistorySearchStatus};
+use reedline::{Reedline, Signal, Prompt, PromptEditMode, PromptHistorySearch, PromptHistorySearchStatus};
 use crossterm::style::{Color, Attribute};
 use anyhow::Result;
 
@@ -16,11 +16,10 @@ pub struct NagariPrompt {
 
 impl ReplEditor {
     pub fn new(config: &ReplConfig) -> Result<Self> {
-        let mut line_editor = Reedline::create();
-
-        // Configure history
+        let mut line_editor = Reedline::create();        // Configure history
         if config.history_size > 0 {
-            line_editor = line_editor.with_history_session_id(Some("nagari-repl".to_string()));
+            // TODO: Configure history with proper session ID
+            // line_editor = line_editor.with_history_session_id(Some(HistorySessionId::...));
         }
 
         let prompt = Box::new(NagariPrompt::new(
@@ -39,20 +38,11 @@ impl ReplEditor {
         prompt_text: &str,
         completer: &mut CodeCompleter,
         highlighter: &mut SyntaxHighlighter,
-    ) -> Result<String> {
-        // Update prompt text
-        if let Some(nagari_prompt) = self.prompt.as_any().downcast_mut::<NagariPrompt>() {
-            nagari_prompt.set_prompt(prompt_text.to_string());
-        }
-
-        // Set up completer and highlighter
-        if completer.is_enabled() {
-            self.line_editor = self.line_editor.with_completer(Box::new(completer.clone()));
-        }
-
-        if highlighter.is_enabled() {
-            self.line_editor = self.line_editor.with_highlighter(Box::new(highlighter.clone()));
-        }
+    ) -> Result<String> {        // Update prompt text
+        // TODO: Update prompt - this approach doesn't work with new reedline API
+        // Would need to recreate the prompt object        // Set up completer and highlighter
+        // TODO: Configure completer and highlighter - reedline API has changed
+        // Need to use different approach to avoid ownership issues
 
         match self.line_editor.read_line(&*self.prompt) {
             Ok(Signal::Success(buffer)) => Ok(buffer),
@@ -60,11 +50,10 @@ impl ReplEditor {
             Ok(Signal::CtrlC) => Ok(String::new()),
             Err(e) => Err(anyhow::anyhow!("Input error: {}", e)),
         }
-    }
-
-    pub fn add_history(&mut self, line: String) {
-        // Add line to history
-        self.line_editor.add_history_entry(line);
+    }    pub fn add_history(&mut self, line: String) {
+        // Add line to history - API changed in newer reedline
+        // TODO: Use proper history API
+        let _ = self.line_editor.history_mut();
     }
 
     pub fn set_completer(&mut self, completer: Box<dyn reedline::Completer>) {
@@ -106,8 +95,7 @@ impl Prompt for NagariPrompt {
         "".into()
     }
 
-    fn render_prompt_indicator(&self, edit_mode: PromptEditMode) -> std::borrow::Cow<str> {
-        match edit_mode {
+    fn render_prompt_indicator(&self, edit_mode: PromptEditMode) -> std::borrow::Cow<str> {        match edit_mode {
             PromptEditMode::Default | PromptEditMode::Emacs => "".into(),
             PromptEditMode::Vi(vi_mode) => {
                 match vi_mode {
@@ -115,6 +103,7 @@ impl Prompt for NagariPrompt {
                     reedline::PromptViMode::Insert => "[I]".into(),
                 }
             }
+            PromptEditMode::Custom(_) => "".into(),
         }
     }
 
@@ -135,14 +124,6 @@ impl Prompt for NagariPrompt {
             "({}reverse-search: {}) ",
             prefix, history_search.term
         ).into()
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
     }
 }
 

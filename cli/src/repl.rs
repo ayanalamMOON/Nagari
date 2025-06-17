@@ -105,13 +105,11 @@ impl NagRepl {
         // 3. For expressions, evaluate and print the result
         // 4. For statements, execute and update the REPL state
 
-        println!("Executing: {}", code);
-
-        // For now, just transpile and show the JavaScript output
-        match self.compiler.transpile_string(code) {
-            Ok(js_code) => {
+        println!("Executing: {}", code);        // For now, just compile and show the JavaScript output
+        match self.compiler.compile_string(code, None) {
+            Ok(result) => {
                 println!("JavaScript output:");
-                println!("{}", js_code);
+                println!("{}", result.js_code);
 
                 // TODO: Actually execute the JavaScript code and capture output
                 // This would require integrating with a JavaScript runtime like V8 or QuickJS
@@ -137,7 +135,7 @@ impl NagRepl {
         println!("Examples:");
         println!("  x = 42");
         println!("  print(x)");
-        println!("  def greet(name): return f\"Hello, {name}!\"");
+        println!("  def greet(name): return f\"Hello, {{name}}!\"");
         println!("  greet(\"World\")");
     }
 

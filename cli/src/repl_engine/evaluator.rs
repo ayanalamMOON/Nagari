@@ -61,27 +61,16 @@ impl CodeEvaluator {
 
     pub async fn evaluate_statement(&mut self, stmt: &str, context: &mut ExecutionContext) -> Result<ReplValue> {
         self.evaluate(stmt, context).await
-    }
+    }    fn compile_nagari_code(&mut self, code: &str) -> Result<CompilationResult> {
+        // Compile the code
+        let result = self.compiler.compile_string(code, None)?;
 
-    fn compile_nagari_code(&mut self, code: &str) -> Result<CompilationResult> {
-        // Parse the code
-        let tokens = self.compiler.tokenize(code)?;
-        let ast = self.compiler.parse(tokens)?;
-
-        // Check if this is an expression or statement
-        let is_expression = self.is_expression(&ast);
-
-        // Compile to JavaScript
-        let mut javascript = self.compiler.transpile(ast)?;
-
-        // If it's an expression, wrap it to return the value
-        if is_expression {
-            javascript = format!("(function() {{ return {}; }})()", javascript);
-        }
-
+        // For expressions, we might need to modify the output
+        // This is a simplified version - a real implementation would
+        // need to analyze the AST to determine if it's an expression
         Ok(CompilationResult {
-            javascript,
-            is_expression,
+            javascript: result.js_code,
+            is_expression: false, // TODO: Determine if expression
             warnings: Vec::new(),
         })
     }
@@ -130,9 +119,7 @@ impl CodeEvaluator {
 
         // Default to undefined for unknown expressions
         Ok(ReplValue::Undefined)
-    }
-
-    fn is_expression(&self, ast: &nagari_compiler::ast::AstNode) -> bool {
+    }    fn is_expression(&self, _code: &str) -> bool {
         // In a real implementation, this would check the AST structure
         // For now, we'll use simple heuristics
         true // Assume everything is an expression for simplicity

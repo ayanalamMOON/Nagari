@@ -18,3 +18,7 @@ criterion = "0.5"
 [[bin]]
 name = "nagrun"
 path = "src/main.rs"
+
+[lib]
+name = "nagari_vm"
+path = "src/lib.rs"

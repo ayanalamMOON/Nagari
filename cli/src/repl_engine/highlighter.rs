@@ -1,5 +1,5 @@
 use reedline::{Highlighter, StyledText};
-use crossterm::style::{Color, Attribute};
+use crossterm::style::Color;
 
 #[derive(Debug, Clone)]
 pub struct SyntaxHighlighter {
@@ -62,7 +62,8 @@ impl SyntaxHighlighter {
                 TokenType::Whitespace | TokenType::Unknown => Color::Reset,
             };
 
-            styled.push_str(&token.text, Some(color), None, None);
+            // TODO: Apply proper styling with correct reedline API
+            styled.push((Default::default(), token.text));
         }
 
         styled

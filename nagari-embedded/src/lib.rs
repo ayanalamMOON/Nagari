@@ -1,7 +1,7 @@
+use nagari_vm::{Value as NagariValue, VM as NagariVM};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use serde::{Deserialize, Serialize};
-use nagari_vm::{VM as NagariVM, Value as NagariValue, Error as NagariError};
 
 #[cfg(feature = "async")]
 use tokio::sync::RwLock as AsyncRwLock;
@@ -50,7 +50,7 @@ impl Default for RuntimeConfig {
     fn default() -> Self {
         Self {
             memory_limit: Some(64 * 1024 * 1024), // 64MB default
-            execution_timeout: Some(5000), // 5 seconds
+            execution_timeout: Some(5000),        // 5 seconds
             allow_io: false,
             allow_network: false,
             sandbox_mode: true,
@@ -60,126 +60,43 @@ impl Default for RuntimeConfig {
 }
 
 impl EmbeddedRuntime {
-    pub fn new(config: RuntimeConfig) -> Result<Self, String> {
-        let mut vm = NagariVM::new();
-
-        // Configure VM based on runtime config
-        if let Some(limit) = config.memory_limit {
-            vm.set_memory_limit(limit);
-        }
-
-        if let Some(timeout) = config.execution_timeout {
-            vm.set_execution_timeout(timeout);
-        }
-
-        // Register built-in functions based on permissions
-        if config.allow_io {
-            vm.register_function("read_file", |args| {
-                // File reading implementation
-                NagariValue::String("File content".to_string())
-            });
-
-            vm.register_function("write_file", |args| {
-                // File writing implementation
-                NagariValue::Bool(true)
-            });
-        }
-
-        if config.allow_network {
-            vm.register_function("http_get", |args| {
-                // HTTP GET implementation
-                NagariValue::String("Response".to_string())
-            });
-        }
-
-        Ok(Self {
-            vm: Arc::new(Mutex::new(vm)),
-            modules: HashMap::new(),
-            config,
-        })
+    pub fn new(_config: RuntimeConfig) -> Result<Self, String> {
+        unimplemented!("EmbeddedRuntime::new is not implemented yet");
     }
 
-    pub fn run_script(&mut self, script: &str) -> Result<EmbeddedValue, String> {
-        let mut vm = self.vm.lock().map_err(|_| "VM lock error")?;
-
-        match vm.run(script) {
-            Ok(value) => Ok(EmbeddedValue::from_nagari(value)),
-            Err(e) => Err(format!("Script execution error: {:?}", e)),
-        }
+    pub fn run_script(&mut self, _script: &str) -> Result<EmbeddedValue, String> {
+        unimplemented!("EmbeddedRuntime::run_script is not implemented yet");
     }
 
-    pub fn call_function(&mut self, name: &str, args: Vec<EmbeddedValue>) -> Result<EmbeddedValue, String> {
-        let mut vm = self.vm.lock().map_err(|_| "VM lock error")?;
-
-        let nagari_args: Vec<NagariValue> = args.into_iter()
-            .map(|v| v.to_nagari())
-            .collect();
-
-        match vm.call(name, nagari_args) {
-            Ok(value) => Ok(EmbeddedValue::from_nagari(value)),
-            Err(e) => Err(format!("Function call error: {:?}", e)),
-        }
+    pub fn call_function(
+        &mut self,
+        _name: &str,
+        _args: Vec<EmbeddedValue>,
+    ) -> Result<EmbeddedValue, String> {
+        unimplemented!("EmbeddedRuntime::call_function is not implemented yet");
     }
 
-    pub fn load_module(&mut self, name: &str, code: &str) -> Result<(), String> {
-        let mut vm = self.vm.lock().map_err(|_| "VM lock error")?;
-
-        match vm.load_module(name, code) {
-            Ok(_) => {
-                self.modules.insert(name.to_string(), code.to_string());
-                Ok(())
-            }
-            Err(e) => Err(format!("Module load error: {:?}", e)),
-        }
+    pub fn load_module(&mut self, _name: &str, _code: &str) -> Result<(), String> {
+        unimplemented!("EmbeddedRuntime::load_module is not implemented yet");
     }
 
-    pub fn register_host_function<F>(&mut self, name: &str, func: F) -> Result<(), String>
+    pub fn register_host_function<F>(&mut self, _name: &str, _func: F) -> Result<(), String>
     where
         F: Fn(Vec<EmbeddedValue>) -> EmbeddedValue + Send + Sync + 'static,
     {
-        let mut vm = self.vm.lock().map_err(|_| "VM lock error")?;
-
-        vm.register_function(name, move |args| {
-            let embedded_args: Vec<EmbeddedValue> = args.into_iter()
-                .map(EmbeddedValue::from_nagari)
-                .collect();
-
-            let result = func(embedded_args);
-            result.to_nagari()
-        });
-
-        Ok(())
+        unimplemented!("EmbeddedRuntime::register_host_function is not implemented yet");
     }
 
-    pub fn set_global(&mut self, name: &str, value: EmbeddedValue) -> Result<(), String> {
-        let mut vm = self.vm.lock().map_err(|_| "VM lock error")?;
-
-        match vm.set_global(name, value.to_nagari()) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(format!("Set global error: {:?}", e)),
-        }
+    pub fn set_global(&mut self, _name: &str, _value: EmbeddedValue) -> Result<(), String> {
+        unimplemented!("EmbeddedRuntime::set_global is not implemented yet");
     }
 
-    pub fn get_global(&self, name: &str) -> Result<Option<EmbeddedValue>, String> {
-        let vm = self.vm.lock().map_err(|_| "VM lock error")?;
-
-        match vm.get_global(name) {
-            Ok(Some(value)) => Ok(Some(EmbeddedValue::from_nagari(value))),
-            Ok(None) => Ok(None),
-            Err(e) => Err(format!("Get global error: {:?}", e)),
-        }
+    pub fn get_global(&self, _name: &str) -> Result<Option<EmbeddedValue>, String> {
+        unimplemented!("EmbeddedRuntime::get_global is not implemented yet");
     }
 
     pub fn reset(&mut self) -> Result<(), String> {
-        let mut vm = self.vm.lock().map_err(|_| "VM lock error")?;
-
-        match vm.reset() {
-            Ok(_) => {
-                self.modules.clear();
-                Ok(())
-            }
-            Err(e) => Err(format!("Reset error: {:?}", e)),
-        }
+        unimplemented!("EmbeddedRuntime::reset is not implemented yet");
     }
 }
 
@@ -203,16 +120,14 @@ impl EmbeddedValue {
             NagariValue::Int(i) => EmbeddedValue::Int(i),
             NagariValue::Float(f) => EmbeddedValue::Float(f),
             NagariValue::String(s) => EmbeddedValue::String(s),
-            NagariValue::Array(arr) => {
+            NagariValue::List(arr) => {
                 EmbeddedValue::Array(arr.into_iter().map(Self::from_nagari).collect())
             }
-            NagariValue::Object(obj) => {
-                EmbeddedValue::Object(
-                    obj.into_iter()
-                        .map(|(k, v)| (k, Self::from_nagari(v)))
-                        .collect()
-                )
-            }
+            NagariValue::Dict(obj) => EmbeddedValue::Object(
+                obj.into_iter()
+                    .map(|(k, v)| (k, Self::from_nagari(v)))
+                    .collect(),
+            ),
             _ => EmbeddedValue::None,
         }
     }
@@ -225,14 +140,10 @@ impl EmbeddedValue {
             EmbeddedValue::Float(f) => NagariValue::Float(f),
             EmbeddedValue::String(s) => NagariValue::String(s),
             EmbeddedValue::Array(arr) => {
-                NagariValue::Array(arr.into_iter().map(|v| v.to_nagari()).collect())
+                NagariValue::List(arr.into_iter().map(|v| v.to_nagari()).collect())
             }
             EmbeddedValue::Object(obj) => {
-                NagariValue::Object(
-                    obj.into_iter()
-                        .map(|(k, v)| (k, v.to_nagari()))
-                        .collect()
-                )
+                NagariValue::Dict(obj.into_iter().map(|(k, v)| (k, v.to_nagari())).collect())
             }
         }
     }
@@ -292,7 +203,7 @@ pub struct AsyncEmbeddedRuntime {
 #[cfg(feature = "async")]
 impl AsyncEmbeddedRuntime {
     pub async fn new(config: RuntimeConfig) -> Result<Self, String> {
-        let vm = NagariVM::new();
+        let vm = NagariVM::new(false); // debug = false
 
         Ok(Self {
             vm: Arc::new(AsyncRwLock::new(vm)),
@@ -301,30 +212,23 @@ impl AsyncEmbeddedRuntime {
         })
     }
 
-    pub async fn run_script(&self, script: &str) -> Result<EmbeddedValue, String> {
-        let mut vm = self.vm.write().await;
-
-        match vm.run(script) {
-            Ok(value) => Ok(EmbeddedValue::from_nagari(value)),
+    pub async fn run_script(&self, _script: &str) -> Result<EmbeddedValue, String> {
+        let mut vm = self.vm.write().await;        // TODO: The current VM only supports bytecode execution, not direct source code
+        // For now, return a placeholder until we integrate with the compiler
+        match vm.run().await {
+            Ok(()) => Ok(EmbeddedValue::None), // VM run returns (), not a value
             Err(e) => Err(format!("Script execution error: {:?}", e)),
         }
-    }
-
-    pub async fn call_function_async(
+    }    pub async fn call_function_async(
         &self,
-        name: &str,
-        args: Vec<EmbeddedValue>
+        _name: &str,
+        _args: Vec<EmbeddedValue>,
     ) -> Result<EmbeddedValue, String> {
-        let mut vm = self.vm.write().await;
+        let _vm = self.vm.write().await;
 
-        let nagari_args: Vec<NagariValue> = args.into_iter()
-            .map(|v| v.to_nagari())
-            .collect();
-
-        match vm.call_async(name, nagari_args).await {
-            Ok(value) => Ok(EmbeddedValue::from_nagari(value)),
-            Err(e) => Err(format!("Async function call error: {:?}", e)),
-        }
+        // TODO: The current VM doesn't support function calling API
+        // For now, return a placeholder until we implement function calls
+        Ok(EmbeddedValue::None)
     }
 }
 
@@ -345,12 +249,27 @@ where
 // Event system for runtime notifications
 #[derive(Debug, Clone)]
 pub enum RuntimeEvent {
-    ScriptStarted { script_name: String },
-    ScriptCompleted { script_name: String, duration_ms: u64 },
-    ScriptError { script_name: String, error: String },
-    FunctionCalled { function_name: String, args_count: usize },
-    MemoryUsageChanged { usage_bytes: usize },
-    ModuleLoaded { module_name: String },
+    ScriptStarted {
+        script_name: String,
+    },
+    ScriptCompleted {
+        script_name: String,
+        duration_ms: u64,
+    },
+    ScriptError {
+        script_name: String,
+        error: String,
+    },
+    FunctionCalled {
+        function_name: String,
+        args_count: usize,
+    },
+    MemoryUsageChanged {
+        usage_bytes: usize,
+    },
+    ModuleLoaded {
+        module_name: String,
+    },
 }
 
 pub trait EventHandler {
@@ -385,7 +304,11 @@ impl RuntimeWithEvents {
         }
     }
 
-    pub fn run_script_with_events(&mut self, script_name: &str, script: &str) -> Result<EmbeddedValue, String> {
+    pub fn run_script_with_events(
+        &mut self,
+        script_name: &str,
+        script: &str,
+    ) -> Result<EmbeddedValue, String> {
         self.emit_event(RuntimeEvent::ScriptStarted {
             script_name: script_name.to_string(),
         });

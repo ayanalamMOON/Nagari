@@ -3,12 +3,12 @@ use std::path::PathBuf;
 
 mod commands;
 mod config;
-mod repl;
 mod lsp;
-mod utils;
-mod tools;
 mod package;
+mod repl;
 mod repl_engine;
+mod tools;
+mod utils;
 
 use commands::*;
 use config::NagConfig;
@@ -136,12 +136,20 @@ pub enum Commands {
         #[arg(short, long)]
         watch: bool,
     },
-
     /// Interactive REPL
     Repl {
         /// Load script before starting REPL
         #[arg(short, long)]
         script: Option<PathBuf>,
+        /// Load session data
+        #[arg(long)]
+        load: Option<PathBuf>,
+        /// Save session data
+        #[arg(long)]
+        save: Option<PathBuf>,
+        /// Session file path
+        #[arg(long)]
+        session: Option<PathBuf>,
         /// Enable experimental features
         #[arg(long)]
         experimental: bool,
@@ -300,19 +308,71 @@ pub enum PackageCommands {
         #[arg(long)]
         dry_run: bool,
     },
-
     /// Pack package for distribution
     Pack {
         /// Output directory
         #[arg(short, long)]
         output: Option<PathBuf>,
     },
+
+    /// Uninstall packages
+    Uninstall {
+        /// Package names to remove
+        packages: Vec<String>,
+    },
+
+    /// Search for packages
+    Search {
+        /// Search query
+        query: String,
+    },
+
+    /// Show package information
+    Info {
+        /// Package name
+        package: String,
+    },
+
+    /// Unpublish package
+    Unpublish {
+        /// Package name
+        package: String,
+        /// Package version
+        version: Option<String>,
+        /// Force unpublish
+        #[arg(long)]
+        force: bool,
+    },
+
+    /// Login to registry
+    Login {
+        /// Registry URL
+        registry: Option<String>,
+    },
+
+    /// Logout from registry
+    Logout,
+
+    /// Manage package cache
+    Cache {
+        /// Cache command
+        #[command(subcommand)]
+        command: CacheCommands,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum CacheCommands {
+    /// Clear cache
+    Clear,
+    /// Show cache info
+    Info,
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
-      // Load configuration
+    // Load configuration
     let mut config = NagConfig::load(cli.config.as_deref())?;
 
     // Override config with CLI flags
@@ -329,43 +389,58 @@ async fn main() -> anyhow::Result<()> {
 
     // Execute command
     match cli.command {
-        Commands::Run { file, args, watch } => {
-            run_command(file, args, watch, &config).await
-        }
-        Commands::Build { input, output, target, release, sourcemap } => {
-            build_command(input, output, target, release, sourcemap, &config).await
-        }
-        Commands::Transpile { input, output, format, minify, declarations } => {
-            transpile_command(input, output, format, minify, declarations, &config).await
-        }
-        Commands::Bundle { entry, output, format, treeshake, external } => {
-            bundle_command(entry, output, format, treeshake, external, &config).await
-        }
+        Commands::Run { file, args, watch } => run_command(file, args, watch, &config).await,
+        Commands::Build {
+            input,
+            output,
+            target,
+            release,
+            sourcemap,
+        } => build_command(input, output, target, release, sourcemap, &config).await,
+        Commands::Transpile {
+            input,
+            output,
+            format,
+            minify,
+            declarations,
+        } => transpile_command(input, output, format, minify, declarations, &config).await,
+        Commands::Bundle {
+            entry,
+            output,
+            format,
+            treeshake,
+            external,
+        } => bundle_command(entry, output, format, treeshake, external, &config).await,
         Commands::Format { paths, check, diff } => {
             format_command(paths, check, diff, &config).await
         }
-        Commands::Lint { paths, fix, format } => {
-            lint_command(paths, fix, format, &config).await
-        }
-        Commands::Test { paths, pattern, coverage, watch } => {
-            test_command(paths, pattern, coverage, watch, &config).await
-        }        Commands::Repl { script, experimental } => {
-            handle_repl_command(script, experimental, &config).await
-        }
-        Commands::Doc { command } => {
-            doc_command(command, &config).await
-        }
-        Commands::Package { command } => {
-            handle_package_command(command, &config).await
-        }
-        Commands::Lsp { mode, port } => {
-            lsp_command(mode, port, &config).await
-        }
-        Commands::Init { name, template, yes } => {
-            init_command(name, template, yes, &config).await
-        }
-        Commands::Serve { entry, port, https, public } => {
-            serve_command(entry, port, https, public, &config).await
-        }
+        Commands::Lint { paths, fix, format } => lint_command(paths, fix, format, &config).await,
+        Commands::Test {
+            paths,
+            pattern,
+            coverage,
+            watch,
+        } => test_command(paths, pattern, coverage, watch, &config).await,
+        Commands::Repl {
+            script,
+            load,
+            save,
+            session,
+            experimental: _,
+        } => handle_repl_command(script, load, save, session, &config).await,
+        Commands::Doc { command } => doc_command(command, &config).await,
+        Commands::Package { command } => handle_package_command(command, &config).await,
+        Commands::Lsp { mode, port } => lsp_command(mode, port, &config).await,
+        Commands::Init {
+            name,
+            template,
+            yes,
+        } => init_command(name, template, yes, &config).await,
+        Commands::Serve {
+            entry,
+            port,
+            https,
+            public,
+        } => serve_command(entry, port, https, public, &config).await,
     }
 }

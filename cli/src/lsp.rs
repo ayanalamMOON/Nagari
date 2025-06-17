@@ -8,7 +8,6 @@ use tokio::net::TcpListener;
 
 pub struct NagLspServer {
     config: NagConfig,
-    client: Client,
     documents: Arc<DashMap<Url, String>>,
     compiler: nagari_compiler::Compiler,
 }
@@ -17,7 +16,6 @@ impl NagLspServer {
     pub fn new(config: NagConfig) -> Self {
         Self {
             config,
-            client: Client::new(),
             documents: Arc::new(DashMap::new()),
             compiler: nagari_compiler::Compiler::new(),
         }
@@ -95,12 +93,12 @@ impl LanguageServer for NagLanguageServer {
                 rename_provider: Some(OneOf::Left(true)),
                 document_formatting_provider: Some(OneOf::Left(true)),
                 document_range_formatting_provider: Some(OneOf::Left(true)),
-                code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
-                diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
+                code_action_provider: Some(CodeActionProviderCapability::Simple(true)),                diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
                     DiagnosticOptions {
                         identifier: Some("nagari".to_string()),
                         inter_file_dependencies: true,
                         workspace_diagnostics: false,
+                        work_done_progress_options: WorkDoneProgressOptions::default(),
                     }
                 )),
                 ..Default::default()
@@ -384,33 +382,30 @@ impl NagLanguageServer {
         let mut diagnostics = Vec::new();
 
         // Try to compile the document and collect errors
-        match self.compiler.parse_string(text) {
-            Ok(_ast) => {
-                // No syntax errors, could run semantic analysis here
+        match self.compiler.compile_string(text, Some(uri.as_str())) {            Ok(_result) => {
+                // No compilation errors
             }
-            Err(errors) => {
-                for error in errors {
-                    // Convert compiler errors to LSP diagnostics
-                    let diagnostic = Diagnostic {
-                        range: Range {
-                            start: Position {
-                                line: error.line.saturating_sub(1),
-                                character: error.column,
-                            },
-                            end: Position {
-                                line: error.line.saturating_sub(1),
-                                character: error.column + error.length.unwrap_or(1),
-                            },
+            Err(error) => {
+                // Convert compiler error to LSP diagnostic
+                let diagnostic = Diagnostic {
+                    range: Range {
+                        start: Position {
+                            line: 0, // TODO: Extract line info from error
+                            character: 0,
                         },
-                        severity: Some(DiagnosticSeverity::ERROR),
-                        code: Some(NumberOrString::String(error.code)),
-                        source: Some("nagari".to_string()),
-                        message: error.message,
-                        ..Default::default()
-                    };
+                        end: Position {
+                            line: 0,
+                            character: 1,
+                        },
+                    },
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: None,
+                    source: Some("nagari".to_string()),
+                    message: error.to_string(),
+                    ..Default::default()
+                };
 
-                    diagnostics.push(diagnostic);
-                }
+                diagnostics.push(diagnostic);
             }
         }
 

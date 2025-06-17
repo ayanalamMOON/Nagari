@@ -468,7 +468,7 @@ impl DocGenerator {
                     if include_private || !name.starts_with('_') {
                         let property = DocProperty {
                         name,
-                        prop_type: self.extract_property_type(prop_line),
+                        prop_type: Some(self.extract_property_type(prop_line)),
                         description: self.extract_property_description(lines, j).unwrap_or_default(),
                         readonly: true, // @property is readonly by default
                         };
@@ -487,7 +487,7 @@ impl DocGenerator {
                 if include_private || !var_part.starts_with('_') {
                     let property = DocProperty {
                     name: var_part.to_string(),
-                    prop_type: self.infer_type_from_assignment(&trimmed[eq_pos + 1..].trim()),
+                    prop_type: Some(self.infer_type_from_assignment(&trimmed[eq_pos + 1..].trim())),
                     description: self.extract_property_description(lines, i).unwrap_or_default(),
                     readonly: false,
                     };
@@ -791,12 +791,67 @@ impl DocGenerator {
         md.push_str(&format!("{}\n\n", class.description));
 
         Ok(md)
-    }
-
-    fn generate_json(&self, modules: &[DocModule], output_dir: &Path) -> Result<()> {
+    }    fn generate_json(&self, modules: &[DocModule], output_dir: &Path) -> Result<()> {
         let json_content = serde_json::to_string_pretty(modules)?;
         std::fs::write(output_dir.join("documentation.json"), json_content)?;
 
         Ok(())
+    }
+
+    // Helper methods for property extraction
+    fn extract_property_name(&self, line: &str) -> String {
+        // Extract property name from a line
+        if let Some(colon_pos) = line.find(':') {
+            line[..colon_pos].trim().to_string()
+        } else {
+            "unknown".to_string()
+        }
+    }
+
+    fn extract_property_type(&self, line: &str) -> String {
+        // Extract type annotation from a property line
+        if let Some(colon_pos) = line.find(':') {
+            let type_part = &line[colon_pos + 1..];
+            if let Some(equals_pos) = type_part.find('=') {
+                type_part[..equals_pos].trim().to_string()
+            } else {
+                type_part.trim().to_string()
+            }
+        } else {
+            "Any".to_string()
+        }
+    }
+
+    fn extract_property_description(&self, lines: &[String], start_index: usize) -> Option<String> {
+        // Look for docstring or comment after the property
+        for i in (start_index + 1)..(start_index + 3).min(lines.len()) {
+            let line = lines[i].trim();
+            if line.starts_with('#') {
+                return Some(line.trim_start_matches('#').trim().to_string());
+            } else if line.starts_with("\"\"\"") || line.starts_with("'''") {
+                return Some(line.trim_start_matches("\"\"\"").trim_start_matches("'''").trim().to_string());
+            }
+        }
+        None
+    }
+
+    fn infer_type_from_assignment(&self, assignment: &str) -> String {
+        // Infer type from assignment value
+        let assignment = assignment.trim();
+        if assignment.starts_with('"') || assignment.starts_with('\'') {
+            "str".to_string()
+        } else if assignment == "True" || assignment == "False" {
+            "bool".to_string()
+        } else if assignment.chars().all(|c| c.is_ascii_digit()) {
+            "int".to_string()
+        } else if assignment.chars().any(|c| c == '.') && assignment.chars().filter(|c| !c.is_ascii_digit() && *c != '.').count() == 0 {
+            "float".to_string()
+        } else if assignment.starts_with('[') {
+            "list".to_string()
+        } else if assignment.starts_with('{') {
+            "dict".to_string()
+        } else {
+            "Any".to_string()
+        }
     }
 }

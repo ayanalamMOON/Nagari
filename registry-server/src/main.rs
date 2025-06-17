@@ -1,10 +1,4 @@
-use axum::{
-    extract::{Path, Query, State},
-    http::StatusCode,
-    response::Json,
-    routing::{get, post, put, delete},
-    Router,
-};
+use axum::{routing::{get, post, put, delete}, Router};
 use clap::Parser;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
@@ -16,17 +10,15 @@ mod api;
 mod auth;
 mod config;
 mod db;
-mod models;
 mod services;
 mod storage;
-mod handlers;
 mod middleware;
-mod error;
 
 use config::Config;
 use db::Database;
-use services::{PackageService, UserService, AuthService};
 use storage::StorageBackend;
+use services::{package_service::PackageService, user_service::UserService, auth_service::AuthService};
+use api::handlers;
 
 #[derive(Parser)]
 #[command(name = "nagari-registry")]
@@ -88,11 +80,9 @@ async fn main() -> anyhow::Result<()> {
     db.migrate().await?;
 
     // Initialize storage backend
-    let storage = StorageBackend::new(&config.storage).await?;
-
-    // Initialize services
-    let package_service = PackageService::new(db.clone(), storage.clone());
-    let user_service = UserService::new(db.clone());
+    let storage = StorageBackend::new(&config.storage).await?;    // Initialize services
+    let package_service = PackageService::new(db.pool.clone());
+    let user_service = UserService::new(db.pool.clone());
     let auth_service = AuthService::new(config.auth.clone());
 
     // Create application state

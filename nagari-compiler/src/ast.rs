@@ -25,6 +25,18 @@ pub enum Statement {
     TypeAlias(TypeAliasStatement),
     Yield(YieldStatement),
     YieldFrom(YieldFromStatement),
+    // Add missing statement types used in parser
+    ClassDef(ClassDef),
+    DestructuringAssignment(DestructuringAssignment),
+    ArrayDestructuringAssignment(ArrayDestructuringAssignment),
+    ImportDefault(ImportDefaultStatement),
+    ImportNamed(ImportNamedStatement),
+    ImportNamespace(ImportNamespaceStatement),
+    ImportSideEffect(ImportSideEffectStatement),
+    ExportDefault(ExportDefaultStatement),
+    ExportNamed(ExportNamedStatement),
+    ExportAll(ExportAllStatement),
+    ExportDeclaration(ExportDeclarationStatement),
 }
 
 #[derive(Debug, Clone)]
@@ -136,6 +148,13 @@ pub enum Expression {
     Set(Vec<Expression>),
     Unary(UnaryExpression),
     NamedExpr(NamedExpression), // Walrus operator :=
+    // Add missing expression types used in parser
+    Dictionary(Vec<(Expression, Expression)>),
+    Subscript(SubscriptExpression),
+    FunctionExpr(FunctionExpr),
+    Async(Box<Expression>),
+    Spread(Box<Expression>),
+    TemplateLiteral(TemplateLiteral),
 }
 
 #[derive(Debug, Clone)]
@@ -179,12 +198,16 @@ pub enum BinaryOperator {
     Greater,
     LessEqual,
     GreaterEqual,
+    // Add missing logical operators
+    And,
+    Or,
 }
 
 #[derive(Debug, Clone)]
 pub struct CallExpression {
     pub function: Box<Expression>,
     pub arguments: Vec<Expression>,
+    pub keyword_args: Vec<(String, Expression)>,
 }
 
 #[derive(Debug, Clone)]
@@ -349,4 +372,88 @@ pub enum UnaryOperator {
 pub struct NamedExpression {
     pub target: String,
     pub value: Box<Expression>,
+}
+
+// Missing struct definitions that are referenced in the parser
+#[derive(Debug, Clone)]
+pub struct SubscriptExpression {
+    pub object: Box<Expression>,
+    pub index: Box<Expression>,
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionExpr {
+    pub parameters: Vec<Parameter>,
+    pub body: Vec<Statement>,
+    pub is_async: bool,
+    pub is_generator: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct TemplateLiteral {
+    pub parts: Vec<String>,
+    pub expressions: Vec<Expression>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ClassDef {
+    pub name: String,
+    pub superclass: Option<String>,
+    pub body: Vec<Statement>,
+}
+
+#[derive(Debug, Clone)]
+pub struct DestructuringAssignment {
+    pub target: Expression,
+    pub value: Expression,
+}
+
+#[derive(Debug, Clone)]
+pub struct ArrayDestructuringAssignment {
+    pub targets: Vec<String>,
+    pub value: Expression,
+}
+
+#[derive(Debug, Clone)]
+pub struct ImportDefaultStatement {
+    pub name: String,
+    pub module: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct ImportNamedStatement {
+    pub imports: Vec<String>,
+    pub module: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct ImportNamespaceStatement {
+    pub alias: String,
+    pub module: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct ImportSideEffectStatement {
+    pub module: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExportDefaultStatement {
+    pub value: Expression,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExportNamedStatement {
+    pub exports: Vec<String>,
+    pub module: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExportAllStatement {
+    pub module: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExportDeclarationStatement {
+    pub declaration: Box<Statement>,
 }

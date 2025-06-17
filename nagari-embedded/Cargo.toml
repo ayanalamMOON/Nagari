@@ -36,7 +36,3 @@ unity = ["cxx"]
 [lib]
 name = "nagari_embedded"
 crate-type = ["cdylib", "rlib"]
-
-[[bin]]
-name = "nagari_c_example"
-required-features = ["c-bindings"]

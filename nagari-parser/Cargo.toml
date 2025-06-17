@@ -1,0 +1,26 @@
+[package]
+name = "nagari-parser"
+version = "0.1.0"
+edition = "2021"
+description = "Parser for the Nagari programming language"
+authors = ["Nagari Team"]
+license = "MIT"
+repository = "https://github.com/nagari-lang/nagari"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "1.0"
+logos = "0.13"
+lalrpop-util = { version = "0.20", optional = true }
+tree-sitter = { version = "0.20", optional = true }
+
+[build-dependencies]
+lalrpop = { version = "0.20", optional = true }
+
+[features]
+default = ["tree-sitter"]
+lalrpop = ["dep:lalrpop", "dep:lalrpop-util"]
+tree-sitter = ["dep:tree-sitter"]
+
+[dev-dependencies]
+criterion = "0.5"

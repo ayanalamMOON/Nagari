@@ -81,6 +81,21 @@ pub enum Token {    // Keywords
     JSXSelfClose,   // />
     JSXText(String),
 
+    // Additional missing tokens referenced in parser
+    LessThan,
+    GreaterThan,
+    Slash,
+    BitAnd,
+    BitOr,
+    BitXor,
+    LeftShift,
+    RightShift,
+    Spread,             // ...
+    TemplateStart,      // `
+    TemplateEnd,        // `
+    TemplateExprStart,  // ${
+    TemplateExprEnd,    // }
+
     // Special
     Newline,
     Indent,

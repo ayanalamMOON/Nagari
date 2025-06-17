@@ -214,12 +214,17 @@ impl DependencyResolver {
         let version_info = package_info.version_info.get(&suitable_version)
             .ok_or_else(|| anyhow::anyhow!("Version info not found for {} {}", name, suitable_version))?;
 
+        // Clone dependencies to avoid borrow checker issues
+        let deps_to_resolve: Vec<_> = version_info.dependencies.iter()
+            .map(|(name, version)| (name.clone(), version.clone()))
+            .collect();
+
         // Recursively resolve dependencies
         let mut dependencies = HashMap::new();
-        for (dep_name, dep_version_req) in &version_info.dependencies {
-            let dep_spec = DependencySpec::Version(dep_version_req.clone());
-            let resolved_dep = self.resolve_dependency_tree(dep_name, &dep_spec, context, resolution_graph).await?;
-            dependencies.insert(dep_name.clone(), resolved_dep.version);
+        for (dep_name, dep_version_req) in deps_to_resolve {
+            let dep_spec = DependencySpec::Version(dep_version_req);
+            let resolved_dep = self.resolve_dependency_tree(&dep_name, &dep_spec, context, resolution_graph).await?;
+            dependencies.insert(dep_name, resolved_dep.version);
         }
 
         Ok(ResolvedDependency {

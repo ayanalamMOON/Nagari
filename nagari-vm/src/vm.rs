@@ -1,7 +1,7 @@
-use crate::value::Value;
+use crate::builtins::{call_builtin, setup_builtins};
 use crate::bytecode::{BytecodeFile, Instruction, Opcode};
 use crate::env::Environment;
-use crate::builtins::{setup_builtins, call_builtin};
+use crate::value::Value;
 
 pub struct VM {
     stack: Vec<Value>,
@@ -34,35 +34,42 @@ impl VM {
         self.instruction_pointer = 0;
         Ok(())
     }
-
     pub async fn run(&mut self) -> Result<(), String> {
-        let bytecode = self.bytecode.as_ref()
-            .ok_or("No bytecode loaded")?;
+        let bytecode_len = if let Some(bytecode) = &self.bytecode {
+            if self.debug {
+                println!("🐛 Debug mode enabled");
+                println!("📊 Constants: {}", bytecode.constants.len());
+                println!("📛 Names: {}", bytecode.names.len());
+                println!("📋 Instructions: {}", bytecode.instructions.len());
+                println!();
+            }
+            bytecode.instructions.len()
+        } else {
+            return Err("No bytecode loaded".to_string());
+        };
 
-        if self.debug {
-            println!("🐛 Debug mode enabled");
-            println!("📊 Constants: {}", bytecode.constants.len());
-            println!("📛 Names: {}", bytecode.names.len());
-            println!("📋 Instructions: {}", bytecode.instructions.len());
-            println!();
-        }
-
-        while self.instruction_pointer < bytecode.instructions.len() {
-            let instruction = &bytecode.instructions[self.instruction_pointer];
+        while self.instruction_pointer < bytecode_len {
+            let instruction = if let Some(bytecode) = &self.bytecode {
+                bytecode.instructions[self.instruction_pointer].clone()
+            } else {
+                return Err("Bytecode disappeared during execution".to_string());
+            };
 
             if self.debug {
-                self.debug_instruction(instruction);
+                self.debug_instruction(&instruction);
             }
 
-            match self.execute_instruction(instruction).await {
+            match self.execute_instruction(&instruction).await {
                 Ok(should_continue) => {
                     if !should_continue {
                         break;
                     }
                 }
                 Err(e) => {
-                    return Err(format!("Runtime error at instruction {}: {}",
-                                     self.instruction_pointer, e));
+                    return Err(format!(
+                        "Runtime error at instruction {}: {}",
+                        self.instruction_pointer, e
+                    ));
                 }
             }
 
@@ -153,7 +160,10 @@ impl VM {
                         self.stack.push(result);
                     }
                     _ => {
-                        return Err(format!("Cannot call non-function value: {}", function.type_name()));
+                        return Err(format!(
+                            "Cannot call non-function value: {}",
+                            function.type_name()
+                        ));
                     }
                 }
             }

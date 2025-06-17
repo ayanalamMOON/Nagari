@@ -1,37 +1,63 @@
 # Nagari Language Project
 
+# OS generated files
 .DS_Store
 Thumbs.db
-
+ehthumbs.db
+Icon?
+Desktop.ini
+.vs/
 # Rust
 target/
 Cargo.lock
 *.rs.bk
 
-# IDE
+# IDE and Editor folders/files
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+*.bak
+*.orig
+*.sublime-workspace
+*.sublime-project
 
 # Nagari compiled files
 *.nac
 
 # Logs
 *.log
-
-# OS
-.DS_Store
-Thumbs.db
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Temporary files
 *.tmp
 *.temp
+*.cache
 
 # Test output
 test-output/
+coverage/
 
 # Build artifacts
 dist/
 build/
+out/
+release/
+bin/
+obj/
+
+# Dependency directories
+node_modules/
+vendor/
+
+# Misc
+.env
+.env.*
+!.env.example
+*.pid
+*.seed
+*.pid.lock

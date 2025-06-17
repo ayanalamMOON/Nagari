@@ -35,7 +35,6 @@ similar = "2.0"
 
 # Nagari-specific dependencies
 nagari-compiler = { path = "../nagari-compiler" }
-nagari-parser = { path = "../nagari-parser" }
 
 [dev-dependencies]
 tokio-test = "0.4"

@@ -196,16 +196,15 @@ impl CompletionProvider {
             .collect()
     }
 
-    async fn get_workspace_completions(&self, prefix: &str) -> Vec<CompletionItem> {
-        let symbols = self.workspace_manager.get_workspace_symbols(prefix).await;
+    async fn get_workspace_completions(&self, prefix: &str) -> Vec<CompletionItem> {        let symbols = self.workspace_manager.get_workspace_symbols(prefix).await;
 
         symbols
             .into_iter()
-            .map(|symbol| CompletionItem {
-                label: symbol.name.clone(),
-                kind: Some(completion_kind_from_symbol_kind(symbol.kind)),
-                detail: Some(format!("From {}", symbol.location.uri.path())),
-                insert_text: Some(symbol.name),
+            .map(|symbol_name| CompletionItem {
+                label: symbol_name.clone(),
+                kind: Some(CompletionItemKind::VARIABLE),
+                detail: Some("From workspace".to_string()),
+                insert_text: Some(symbol_name),
                 ..Default::default()
             })
             .collect()

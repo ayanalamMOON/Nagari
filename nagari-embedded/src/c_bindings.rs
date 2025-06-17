@@ -381,6 +381,63 @@ pub extern "C" fn nagari_value_destroy(value: *mut CNagariValue) {
     }
 }
 
+// Global runtime instance for simple C API
+static mut GLOBAL_RUNTIME: Option<EmbeddedRuntime> = None;
+
+/// Initialize the global Nagari runtime
+#[no_mangle]
+pub unsafe extern "C" fn nagari_init() -> c_int {
+    match RuntimeBuilder::new().build() {
+        Ok(runtime) => {
+            GLOBAL_RUNTIME = Some(runtime);
+            0 // Success
+        }
+        Err(_) => -1 // Error
+    }
+}
+
+/// Execute Nagari code and return the result as a C string
+#[no_mangle]
+pub unsafe extern "C" fn nagari_execute(code: *const c_char) -> *mut c_char {
+    if code.is_null() {
+        return ptr::null_mut();
+    }
+
+    let code_str = match CStr::from_ptr(code).to_str() {
+        Ok(s) => s,
+        Err(_) => return ptr::null_mut(),
+    };
+
+    if let Some(ref mut runtime) = GLOBAL_RUNTIME {
+        match runtime.execute(code_str) {
+            Ok(result) => {
+                let result_str = format!("{:?}", result);
+                match CString::new(result_str) {
+                    Ok(c_string) => c_string.into_raw(),
+                    Err(_) => ptr::null_mut(),
+                }
+            }
+            Err(_) => ptr::null_mut(),
+        }
+    } else {
+        ptr::null_mut()
+    }
+}
+
+/// Free a string allocated by the Nagari runtime
+#[no_mangle]
+pub unsafe extern "C" fn nagari_free_string(ptr: *mut c_char) {
+    if !ptr.is_null() {
+        let _ = CString::from_raw(ptr);
+    }
+}
+
+/// Cleanup the global Nagari runtime
+#[no_mangle]
+pub unsafe extern "C" fn nagari_cleanup() {
+    GLOBAL_RUNTIME = None;
+}
+
 // Helper functions
 #[cfg(feature = "c-bindings")]
 fn create_null_value() -> CNagariValue {

@@ -44,7 +44,7 @@ impl NagFormatter {
 
     pub fn format_string(&self, content: &str) -> Result<String> {
         let mut formatted = String::new();
-        let mut indent_level = 0;
+        let mut indent_level: usize = 0;
         let mut in_string = false;
         let mut string_char = '\0';
         let mut escape_next = false;

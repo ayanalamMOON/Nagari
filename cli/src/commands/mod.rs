@@ -6,7 +6,7 @@ use anyhow::{Result, Context};
 use colored::*;
 use std::path::PathBuf;
 use tokio::process::Command;
-use notify::{Watcher, RecursiveMode, watcher};
+use notify::{Watcher, RecursiveMode, recommended_watcher};
 use std::sync::mpsc::channel;
 use std::time::Duration;
 
@@ -19,10 +19,8 @@ pub async fn run_command(
     println!("{} Running {}", "✓".green().bold(), file.display());
 
     if watch {
-        println!("{} Watch mode enabled - file changes will trigger restart", "👀".yellow());
-
-        let (tx, rx) = channel();
-        let mut watcher = watcher(tx, Duration::from_secs(1))
+        println!("{} Watch mode enabled - file changes will trigger restart", "👀".yellow());        let (tx, rx) = channel();
+        let mut watcher = recommended_watcher(tx)
             .context("Failed to create file watcher")?;
 
         watcher.watch(&file, RecursiveMode::NonRecursive)
@@ -406,10 +404,45 @@ pub async fn package_command(command: PackageCommands, config: &NagConfig) -> Re
         PackageCommands::Publish { registry, dry_run } => {
             println!("{} Publishing package...", "📦".cyan());
             crate::tools::package_manager::publish_package(registry, dry_run, config).await?;
-        }
-        PackageCommands::Pack { output } => {
+        }        PackageCommands::Pack { output } => {
             println!("{} Packing package...", "📦".cyan());
             crate::tools::package_manager::pack_package(output, config).await?;
+        }
+        PackageCommands::Uninstall { packages } => {
+            println!("{} Uninstalling packages...", "📦".cyan());
+            crate::tools::package_manager::remove_packages(packages, config).await?;
+        }
+        PackageCommands::Search { query } => {
+            println!("{} Searching packages: {}", "📦".cyan(), query);
+            // TODO: Implement package search
+        }
+        PackageCommands::Info { package } => {
+            println!("{} Package info: {}", "📦".cyan(), package);
+            // TODO: Implement package info
+        }
+        PackageCommands::Unpublish { package: _, version: _, force: _ } => {
+            println!("{} Unpublishing package...", "📦".cyan());
+            // TODO: Implement package unpublish
+        }
+        PackageCommands::Login { registry: _ } => {
+            println!("{} Logging in to registry...", "📦".cyan());
+            // TODO: Implement registry login
+        }
+        PackageCommands::Logout => {
+            println!("{} Logging out from registry...", "📦".cyan());
+            // TODO: Implement registry logout
+        }
+        PackageCommands::Cache { command } => {
+            match command {
+                crate::CacheCommands::Clear => {
+                    println!("{} Clearing package cache...", "📦".cyan());
+                    // TODO: Implement cache clear
+                }
+                crate::CacheCommands::Info => {
+                    println!("{} Package cache info...", "📦".cyan());
+                    // TODO: Implement cache info
+                }
+            }
         }
     }
 
@@ -423,11 +456,10 @@ pub async fn handle_package_command(
 ) -> Result<()> {
     let mut package_manager = PackageManager::new(config.clone())?;
 
-    match package_command {
-        PackageCommands::Init { name, yes } => {
-            package_manager.init_package(name, yes).await?;
+    match package_command {        PackageCommands::Init { yes } => {
+            package_manager.init_package(None, yes).await?;
         }
-        PackageCommands::Install { packages, dev } => {
+        PackageCommands::Install { packages, dev, global: _, exact: _ } => {
             if packages.is_empty() {
                 // Install from manifest
                 package_manager.install(vec![], false).await?;
@@ -437,11 +469,9 @@ pub async fn handle_package_command(
         }
         PackageCommands::Uninstall { packages } => {
             package_manager.uninstall(packages).await?;
-        }
-        PackageCommands::Update { packages } => {
-            package_manager.update(packages).await?;
-        }
-        PackageCommands::List => {
+        }        PackageCommands::Update { packages } => {
+            package_manager.update(Some(packages)).await?;
+        }        PackageCommands::List { tree: _, outdated: _ } => {
             package_manager.list().await?;
         }
         PackageCommands::Search { query } => {
@@ -461,19 +491,29 @@ pub async fn handle_package_command(
         }
         PackageCommands::Logout => {
             println!("{} Registry logout not yet implemented", "⚠️".yellow());
-        }
-        PackageCommands::Cache { command } => {
-            match command.as_str() {
-                "info" => {
+        }        PackageCommands::Cache { command } => {
+            match command {
+                crate::CacheCommands::Info => {
                     package_manager.cache_info().await?;
                 }
-                "clean" => {
+                crate::CacheCommands::Clear => {
                     package_manager.cache_clean().await?;
                 }
-                _ => {
-                    println!("{} Unknown cache command: {}", "❌".red(), command);
-                }
             }
+        }
+        PackageCommands::Add { package, version, dev } => {
+            let pkg_with_version = if let Some(v) = version {
+                format!("{}@{}", package, v)
+            } else {
+                package
+            };
+            package_manager.install(vec![pkg_with_version], dev).await?;
+        }
+        PackageCommands::Remove { packages } => {
+            package_manager.uninstall(packages).await?;
+        }
+        PackageCommands::Pack { output: _ } => {
+            println!("{} Package packing not yet implemented", "⚠️".yellow());
         }
     }
 

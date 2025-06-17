@@ -24,12 +24,13 @@ impl PackageManager {
             .unwrap_or("https://registry.nagari.dev");
 
         let registry = RegistryClient::new(registry_url)?;
-        let resolver = DependencyResolver::new(registry.clone());
-
-        let cache_dir = config.package.cache_dir.clone()
-            .unwrap_or_else(|| dirs::cache_dir()
+        let resolver = DependencyResolver::new(registry.clone());        let cache_dir = if config.package.cache_dir.is_empty() {
+            dirs::cache_dir()
                 .unwrap_or_else(|| PathBuf::from(".nagari-cache"))
-                .join("nagari"));
+                .join("nagari")
+        } else {
+            PathBuf::from(&config.package.cache_dir)
+        };
 
         let cache = PackageCache::new(cache_dir)?;
 
@@ -52,15 +53,15 @@ impl PackageManager {
                 println!("Aborted.");
                 return Ok(());
             }
-        }
-
-        let package_name = name.unwrap_or_else(|| {
-            std::env::current_dir()
-                .ok()
-                .and_then(|path| path.file_name())
-                .and_then(|name| name.to_str())
-                .unwrap_or("my-nagari-package")
-                .to_string()
+        }        let package_name = name.unwrap_or_else(|| {
+            if let Ok(current_dir) = std::env::current_dir() {
+                if let Some(dir_name) = current_dir.file_name() {
+                    if let Some(name_str) = dir_name.to_str() {
+                        return name_str.to_string();
+                    }
+                }
+            }
+            "my-nagari-package".to_string()
         });
 
         let manifest = PackageManifest::new(package_name, "1.0.0".to_string());
