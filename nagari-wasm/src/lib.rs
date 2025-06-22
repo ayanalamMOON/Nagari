@@ -1,7 +1,7 @@
-use wasm_bindgen::prelude::*;
 use js_sys::Array;
+use nagari_vm::{Value as NagariValue, VM as NagariVM};
 use std::collections::HashMap;
-use nagari_vm::{VM as NagariVM, Value as NagariValue};
+use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global allocator.
 #[cfg(feature = "wee_alloc")]
@@ -129,7 +129,11 @@ impl NagariWasmVM {
     }
 
     #[wasm_bindgen]
-    pub fn register_js_function(&mut self, _name: &str, _func: &js_sys::Function) -> Result<(), JsValue> {
+    pub fn register_js_function(
+        &mut self,
+        _name: &str,
+        _func: &js_sys::Function,
+    ) -> Result<(), JsValue> {
         // TODO: register_function method not available in current VM
         Ok(())
     }
@@ -146,16 +150,19 @@ impl NagariWasmVM {
         // TODO: reset method not available in current VM
         self.globals.clear();
         Ok(())
-    }    
+    }
     #[wasm_bindgen]
     pub fn load_and_run_bytecode(&mut self, bytecode: Vec<u8>) -> Result<JSValue, JsValue> {
-        self.vm.load_bytecode(&bytecode)
+        self.vm
+            .load_bytecode(&bytecode)
             .map_err(|e| JsValue::from_str(&format!("Failed to load bytecode: {}", e)))?;
-        
+
         // For now, we'll return success status since the VM doesn't return values from run()
-        Ok(JSValue::new(nagari_value_to_js(&NagariValue::String("Bytecode loaded successfully".to_string()))))
+        Ok(JSValue::new(nagari_value_to_js(&NagariValue::String(
+            "Bytecode loaded successfully".to_string(),
+        ))))
     }
-    
+
     #[wasm_bindgen]
     pub fn set_global_variable(&mut self, name: &str, value: &str) -> Result<(), JsValue> {
         // Convert string value to NagariValue for now
@@ -163,25 +170,31 @@ impl NagariWasmVM {
         self.vm.define_global(name, nagari_value);
         Ok(())
     }
-    
+
     #[wasm_bindgen]
     pub fn get_global_variable(&self, name: &str) -> Result<JSValue, JsValue> {
         match self.vm.get_global(name) {
             Some(value) => Ok(JSValue::new(nagari_value_to_js(value))),
-            None => Err(JsValue::from_str(&format!("Global variable '{}' not found", name))),
+            None => Err(JsValue::from_str(&format!(
+                "Global variable '{}' not found",
+                name
+            ))),
         }
     }
-    
+
     #[wasm_bindgen]
     pub fn reset_vm(&mut self) -> Result<(), JsValue> {
         self.vm.clear_globals();
         self.globals.clear();
         Ok(())
     }
-    
+
     #[wasm_bindgen]
     pub fn get_vm_state(&self) -> Result<String, JsValue> {
-        Ok(format!("VM initialized with {} global variables", self.globals.len()))
+        Ok(format!(
+            "VM initialized with {} global variables",
+            self.globals.len()
+        ))
     }
 }
 
@@ -276,8 +289,12 @@ pub fn get_user_agent() -> String {
 pub fn get_window_dimensions() -> Array {
     let array = Array::new();
     if let Some(window) = web_sys::window() {
-        array.push(&JsValue::from_f64(window.inner_width().unwrap().as_f64().unwrap()));
-        array.push(&JsValue::from_f64(window.inner_height().unwrap().as_f64().unwrap()));
+        array.push(&JsValue::from_f64(
+            window.inner_width().unwrap().as_f64().unwrap(),
+        ));
+        array.push(&JsValue::from_f64(
+            window.inner_height().unwrap().as_f64().unwrap(),
+        ));
     }
     array
 }

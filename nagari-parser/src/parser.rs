@@ -14,11 +14,10 @@ impl Parser {
 
     pub fn parse_program(&mut self) -> Result<Program, ParseError> {
         let mut statements = Vec::new();
-
         while !self.is_at_end() {
             // Skip newlines at the top level
             if self.check(&Token::Newline) {
-                self.advance();
+                let _ = self.advance();
                 continue;
             }
 
@@ -82,7 +81,7 @@ impl Parser {
 
     fn parse_function_statement(&mut self) -> Result<Statement, ParseError> {
         let is_async = if self.check(&Token::Async) {
-            self.advance();
+            let _ = self.advance();
             true
         } else {
             false
@@ -203,10 +202,9 @@ impl Parser {
 
     fn parse_block(&mut self) -> Result<Vec<Statement>, ParseError> {
         let mut statements = Vec::new();
-
         while !self.check(&Token::RightBrace) && !self.is_at_end() {
             if self.check(&Token::Newline) {
-                self.advance();
+                let _ = self.advance();
                 continue;
             }
             statements.push(self.parse_statement()?);

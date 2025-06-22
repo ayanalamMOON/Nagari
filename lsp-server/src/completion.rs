@@ -252,19 +252,19 @@ impl CompletionProvider {
 
     /// Send completion capabilities to client
     pub async fn notify_completion_capabilities(&self) -> Result<(), tower_lsp::jsonrpc::Error> {
-        let message = format!("Completion provider initialized with {} capabilities", 
+        let message = format!("Completion provider initialized with {} capabilities",
                              if self.matcher.fuzzy_match("test", "test").is_some() { "fuzzy matching" } else { "basic" });
         self.client.log_message(MessageType::INFO, message).await;
         Ok(())
     }
-    
+
     /// Show completion statistics to client
     pub async fn show_completion_stats(&self, uri: &Url) -> Result<(), tower_lsp::jsonrpc::Error> {
         let stats = format!("Completion stats for {}: Available completions generated", uri);
         self.client.show_message(MessageType::INFO, stats).await;
         Ok(())
     }
-    
+
     /// Send diagnostic message about completion to client
     pub async fn send_completion_diagnostic(&self, message: &str) -> Result<(), tower_lsp::jsonrpc::Error> {
         self.client.log_message(MessageType::WARNING, format!("Completion: {}", message)).await;

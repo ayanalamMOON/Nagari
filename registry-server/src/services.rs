@@ -165,7 +165,7 @@ impl<T> ServiceResponse<T> {
             message: "Operation completed successfully".to_string(),
         }
     }
-    
+
     pub fn error(message: String) -> Self {
         Self {
             success: false,
@@ -193,7 +193,7 @@ impl ServiceConfig {
     }
 }
 
-/// Registry services manager that uses all service imports  
+/// Registry services manager that uses all service imports
 pub struct RegistryServices {
     config: ServiceConfig,
 }
@@ -204,18 +204,17 @@ impl RegistryServices {
             config,
         })
     }
-    
+
     pub fn create_package_service(&self, db_pool: crate::db::DatabasePool) -> PackageService {
         PackageService::new(db_pool)
     }
-    
+
     pub fn create_user_service(&self, db_pool: crate::db::DatabasePool) -> UserService {
         UserService::new(db_pool)
-    }
-      pub fn create_auth_service(&self, auth_config: auth_service::AuthConfig) -> AuthService {
+    }      pub fn create_auth_service(&self, auth_config: crate::config::AuthConfig) -> AuthService {
         AuthService::new(auth_config)
     }
-    
+
     pub fn config(&self) -> &ServiceConfig {
         &self.config
     }

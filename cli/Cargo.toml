@@ -46,6 +46,7 @@ chrono = { version = "0.4", features = ["serde"] }
 env_logger = "0.10"
 log = "0.4"
 nagari-compiler = { path = "../nagari-compiler" }
+nagari-vm = { path = "../nagari-vm" }
 
 [dev-dependencies]
 assert_cmd = "2.0"

@@ -67,7 +67,7 @@ pub struct ToolsManager {
 impl ToolsManager {    pub fn new() -> Result<Self> {
         // Create default configs
         let nag_config = crate::config::NagConfig::default();
-        
+
         Ok(Self {
             formatter: NagFormatter::new(&nag_config.format),
             linter: NagLinter::new(&nag_config.lint),
@@ -117,7 +117,7 @@ impl ToolsManager {    pub fn new() -> Result<Self> {
         }
         Ok(changes)
     }
-    
+
     pub fn generate_docs(&self, source_dir: &PathBuf, output_dir: &PathBuf) -> Result<Vec<FileChange>> {
         match self.doc_generator.generate(source_dir, output_dir, "html", false) {
             Ok(_) => Ok(vec![FileChange {

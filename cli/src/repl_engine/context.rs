@@ -326,15 +326,127 @@ impl ExecutionContext {
         };
 
         self.current_scope = new_scope;
-    }
-
-    pub fn exit_scope(&mut self) {
+    }    pub fn exit_scope(&mut self) {
         if let Some(parent_name) = &self.current_scope.parent {
             // In a real implementation, we'd restore the parent scope
             // For now, just reset to global scope
             if parent_name == "global" {
                 self.current_scope = self.global_scope.clone();
             }
+        }
+    }    // VM integration methods for global variable management
+    pub fn sync_with_vm(&mut self, vm: &mut nagari_vm::VM) {
+        // Sync all global variables to the VM
+        for (var_id, variable) in &self.variables {
+            if matches!(variable.var_type, VariableType::Global) {
+                // Convert ReplValue to VM Value and sync
+                if let Ok(vm_value) = self.repl_value_to_vm_value(&variable.value) {
+                    vm.define_global(&variable.name, vm_value);
+                }
+            }
+        }
+    }
+
+    pub fn sync_global_from_vm(&mut self, vm: &nagari_vm::VM, name: &str) -> Option<ReplValue> {
+        // Get a global variable from the VM and sync it to our context
+        if let Some(vm_value) = vm.get_global(name) {
+            let repl_value = self.vm_value_to_repl_value(vm_value);
+
+            // Update or create the variable in our context
+            let var_id = format!("var_{}_{}", name, Utc::now().timestamp_millis());
+            let variable = Variable {
+                name: name.to_string(),
+                value: repl_value.clone(),
+                var_type: VariableType::Global,
+                scope: "global".to_string(),
+                mutable: true,
+                created_at: Utc::now(),
+                last_modified: Utc::now(),
+            };
+
+            self.variables.insert(var_id.clone(), variable);
+            self.global_scope.variables.insert(name.to_string(), var_id);
+
+            Some(repl_value)
+        } else {
+            None
+        }
+    }
+
+    pub fn set_global_in_vm(&mut self, vm: &mut nagari_vm::VM, name: &str, value: ReplValue) -> Result<(), String> {
+        // Set a global variable in both the VM and our context
+        let vm_value = self.repl_value_to_vm_value(&value)?;
+        vm.set_global(name, vm_value)?;
+
+        // Also update in our context
+        let var_id = format!("var_{}_{}", name, Utc::now().timestamp_millis());
+        let variable = Variable {
+            name: name.to_string(),
+            value,
+            var_type: VariableType::Global,
+            scope: "global".to_string(),
+            mutable: true,
+            created_at: Utc::now(),
+            last_modified: Utc::now(),
+        };
+
+        self.variables.insert(var_id.clone(), variable);
+        self.global_scope.variables.insert(name.to_string(), var_id);
+
+        Ok(())
+    }
+
+    pub fn clear_vm_globals(&mut self, vm: &mut nagari_vm::VM) {
+        // Clear VM globals and remove global variables from our context
+        vm.clear_globals();
+
+        // Remove global variables from our context
+        let global_var_ids: Vec<String> = self.global_scope.variables.values().cloned().collect();
+        for var_id in global_var_ids {
+            self.variables.remove(&var_id);
+        }
+        self.global_scope.variables.clear();
+    }    // Helper methods for value conversion between REPL and VM
+    pub fn repl_value_to_vm_value(&self, value: &ReplValue) -> Result<nagari_vm::Value, String> {
+        match value {
+            ReplValue::Number(n) => {
+                if n.fract() == 0.0 {
+                    Ok(nagari_vm::Value::Int(*n as i64))
+                } else {
+                    Ok(nagari_vm::Value::Float(*n))
+                }
+            }
+            ReplValue::String(s) => Ok(nagari_vm::Value::String(s.clone())),
+            ReplValue::Boolean(b) => Ok(nagari_vm::Value::Bool(*b)),
+            ReplValue::List(items) => {
+                let vm_items: Result<Vec<_>, _> = items
+                    .iter()
+                    .map(|item| self.repl_value_to_vm_value(item))
+                    .collect();
+                Ok(nagari_vm::Value::List(vm_items?))
+            }
+            ReplValue::Null | ReplValue::Undefined => Ok(nagari_vm::Value::None),
+            ReplValue::Object(_) | ReplValue::Function(_) => {
+                Err("Complex types not yet supported for VM sync".to_string())
+            }
+        }
+    }
+
+    pub fn vm_value_to_repl_value(&self, value: &nagari_vm::Value) -> ReplValue {
+        match value {
+            nagari_vm::Value::Int(i) => ReplValue::Number(*i as f64),
+            nagari_vm::Value::Float(f) => ReplValue::Number(*f),
+            nagari_vm::Value::String(s) => ReplValue::String(s.clone()),
+            nagari_vm::Value::Bool(b) => ReplValue::Boolean(*b),
+            nagari_vm::Value::List(items) => {
+                let repl_items: Vec<_> = items
+                    .iter()
+                    .map(|item| self.vm_value_to_repl_value(item))
+                    .collect();
+                ReplValue::List(repl_items)
+            }
+            nagari_vm::Value::None => ReplValue::Null,
+            _ => ReplValue::Undefined, // For unsupported types
         }
     }
 }

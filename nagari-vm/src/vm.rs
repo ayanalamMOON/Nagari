@@ -289,21 +289,23 @@ impl VM {
 
         println!();
         println!("  Stack: {:?}", self.stack);
-    }
-
-    // Public methods for external access
+    } // Public methods for external access
+    #[allow(dead_code)] // Used by WASM, embedded, and REPL modules
     pub fn define_global(&mut self, name: &str, value: Value) {
         self.environment.define_global(name, value);
     }
 
+    #[allow(dead_code)] // Used by WASM, embedded, and REPL modules
     pub fn get_global(&self, name: &str) -> Option<&Value> {
         self.environment.get(name)
     }
 
+    #[allow(dead_code)] // Used by WASM, embedded, and REPL modules
     pub fn set_global(&mut self, name: &str, value: Value) -> Result<(), String> {
         self.environment.set(name, value)
     }
 
+    #[allow(dead_code)] // Used by WASM, embedded, and REPL modules
     pub fn clear_globals(&mut self) {
         self.environment = Environment::new();
         // Re-setup built-ins after clearing

@@ -20,6 +20,7 @@ pub struct ReplEngine {
     session: ReplSession,
     builtin_commands: BuiltinCommands,
     state: ReplState,
+    vm: nagari_vm::VM,
 }
 
 #[derive(Debug, Clone)]
@@ -88,7 +89,6 @@ impl ReplEngine {
         let completer = CodeCompleter::new();
         let highlighter = SyntaxHighlighter::new();
         let builtin_commands = BuiltinCommands::new();
-
         let state = ReplState {
             running: false,
             should_exit: false,
@@ -101,6 +101,9 @@ impl ReplEngine {
             command_count: 0,
         };
 
+        // Initialize VM for code execution
+        let vm = nagari_vm::VM::new(false); // debug = false for production
+
         Ok(Self {
             config,
             editor,
@@ -112,12 +115,19 @@ impl ReplEngine {
             session,
             builtin_commands,
             state,
+            vm,
         })
     }
-
     pub async fn run(&mut self) -> Result<()> {
         self.state.running = true;
         self.print_welcome();
+
+        // Initialize some built-in global variables
+        self.define_global_variable(
+            "__version__",
+            ReplValue::String(env!("CARGO_PKG_VERSION").to_string()),
+        )?;
+        self.define_global_variable("__repl__", ReplValue::Boolean(true))?;
 
         while self.state.running {
             match self.read_input().await {
@@ -197,71 +207,21 @@ impl ReplEngine {
 
         Ok(())
     }
-
     async fn handle_builtin_command(&mut self, command: &str) -> Result<()> {
         let parts: Vec<&str> = command[1..].split_whitespace().collect();
         if parts.is_empty() {
             return Ok(());
         }
 
-        let cmd_name = parts[0];
-        let args = &parts[1..];        // Note: cmd_name and args are used directly in match below
+        let cmd_name = parts[0].to_string();
+        let args: Vec<String> = parts[1..].iter().map(|s| s.to_string()).collect();
+        let args_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
 
-        // Handle commands without borrowing self
-        let result: Result<String> = match cmd_name {
-            "help" | "h" | "?" => {
-                if args.is_empty() {
-                    Ok("Available commands:\n.help - Show this help\n.exit - Exit the REPL\n.clear - Clear screen\n.history - Show history\n.vars - Show variables\n.reset - Reset context".to_string())
-                } else {
-                    Ok(format!("Help for specific command: {}", args[0]))
-                }
-            }
-            "exit" | "quit" | "q" => {
-                self.state.running = false;
-                Ok("Goodbye!".to_string())
-            }
-            "clear" | "cls" => {
-                print!("\x1B[2J\x1B[1;1H");
-                Ok(String::new())
-            }
-            "history" | "hist" => {
-                Ok("Command history functionality not yet implemented.".to_string())
-            }
-            "vars" | "variables" => {
-                Ok("Variable listing functionality not yet implemented.".to_string())
-            }
-            "funcs" | "functions" => {
-                Ok("Function listing functionality not yet implemented.".to_string())
-            }
-            "reset" | "restart" => {
-                self.context = ExecutionContext::new();
-                Ok("REPL context reset.".to_string())
-            }
-            "load" | "source" => {
-                if args.is_empty() {
-                    Ok("Usage: .load <filename>".to_string())
-                } else {
-                    Ok(format!(
-                        "Loading file '{}' functionality not yet implemented.",
-                        args[0]
-                    ))
-                }
-            }
-            "save" => {
-                if args.is_empty() {
-                    Ok("Usage: .save <filename>".to_string())
-                } else {
-                    Ok(format!(
-                        "Saving to file '{}' functionality not yet implemented.",
-                        args[0]
-                    ))
-                }
-            }
-            _ => Ok(format!(
-                "Unknown command: {}. Type .help for available commands.",
-                cmd_name
-            )),
-        };
+        // Clone the command executor to avoid borrowing issues
+        let builtin_commands = self.builtin_commands.clone();
+
+        // Use the builtin_commands field to handle commands
+        let result = builtin_commands.execute(&cmd_name, &args_refs, self).await;
 
         match result {
             Ok(output) => {
@@ -500,19 +460,30 @@ impl ReplEngine {
     pub fn get_last_result(&self) -> Option<&ReplValue> {
         self.state.last_result.as_ref()
     }
-
     pub async fn load_script(&mut self, path: &PathBuf) -> Result<()> {
         let content = std::fs::read_to_string(path)?;
         println!("Loading script: {}", path.display());
+
+        // Set a global variable indicating the last loaded script
+        self.set_global_variable(
+            "__last_script__",
+            ReplValue::String(path.display().to_string()),
+        )?;
 
         match self.evaluator.evaluate(&content, &mut self.context).await {
             Ok(result) => {
                 println!("Script loaded successfully.");
                 self.state.last_result = Some(result);
+
+                // Set a global variable indicating script load was successful
+                self.set_global_variable("__script_loaded__", ReplValue::Boolean(true))?;
             }
             Err(e) => {
                 eprintln!("Error loading script: {}", e);
                 self.state.error_count += 1;
+
+                // Set a global variable indicating script load failed
+                self.set_global_variable("__script_loaded__", ReplValue::Boolean(false))?;
             }
         }
 
@@ -522,10 +493,63 @@ impl ReplEngine {
     pub fn save_session(&self, path: &PathBuf) -> Result<()> {
         self.session.save_to_file(path)
     }
-
     pub fn load_session(&mut self, path: &PathBuf) -> Result<()> {
         self.session = ReplSession::load_from_file(path)?;
         Ok(())
+    } // VM integration methods - these will use the VM's global methods
+    pub fn define_global_variable(&mut self, name: &str, value: ReplValue) -> Result<()> {
+        // Convert ReplValue to VM Value and define in VM
+        if let Ok(vm_value) = self.context.repl_value_to_vm_value(&value) {
+            self.vm.define_global(name, vm_value);
+        }
+
+        // Also store in the context
+        self.context.define_variable(
+            name.to_string(),
+            value,
+            true, // mutable
+        );
+
+        Ok(())
+    }
+
+    pub fn get_global_variable(&self, name: &str) -> Option<ReplValue> {
+        // First try to get from VM
+        if let Some(vm_value) = self.vm.get_global(name) {
+            Some(self.context.vm_value_to_repl_value(vm_value))
+        } else {
+            // Fall back to context
+            self.context.get_variable(name).map(|var| var.value.clone())
+        }
+    }
+
+    pub fn set_global_variable(&mut self, name: &str, value: ReplValue) -> Result<()> {
+        // Convert and set in VM
+        if let Ok(vm_value) = self.context.repl_value_to_vm_value(&value) {
+            if let Err(e) = self.vm.set_global(name, vm_value) {
+                return Err(anyhow::anyhow!("Failed to set global variable: {}", e));
+            }
+        }
+
+        // Update in context
+        self.context
+            .update_variable(name, value)
+            .map_err(|e| anyhow::anyhow!(e))?;
+
+        Ok(())
+    }
+
+    pub fn clear_all_globals(&mut self) {
+        // Clear VM globals
+        self.vm.clear_globals();
+
+        // Clear context globals
+        self.context.clear_vm_globals(&mut self.vm);
+    }
+
+    pub fn sync_globals_with_vm(&mut self) {
+        // Sync all global variables from context to VM
+        self.context.sync_with_vm(&mut self.vm);
     }
 }
 

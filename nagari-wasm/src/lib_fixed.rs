@@ -110,18 +110,19 @@ impl NagariWasmVM {
     pub fn load_module(&mut self, _module_name: &str, _code: &str) -> Result<(), JsValue> {
         // TODO: load_module method not available in current VM
         Ok(())
-    }
-
-    #[wasm_bindgen]
+    }    #[wasm_bindgen]
     pub fn set_global(&mut self, name: &str, value: JsValue) -> Result<(), JsValue> {
         let nagari_value = js_value_to_nagari(&value)?;
-        self.globals.insert(name.to_string(), nagari_value);
+        self.globals.insert(name.to_string(), nagari_value.clone());
+        // Also set in the VM's global environment
+        self.vm.define_global(name, nagari_value);
         Ok(())
-    }
-
-    #[wasm_bindgen]
+    }    #[wasm_bindgen]
     pub fn get_global(&self, name: &str) -> Result<JSValue, JsValue> {
-        if let Some(value) = self.globals.get(name) {
+        // First check the VM's global environment
+        if let Some(value) = self.vm.get_global(name) {
+            Ok(JSValue::new(nagari_value_to_js(value)))
+        } else if let Some(value) = self.globals.get(name) {
             Ok(JSValue::new(nagari_value_to_js(value)))
         } else {
             Ok(JSValue::new(JsValue::undefined()))
@@ -143,12 +144,11 @@ impl NagariWasmVM {
         // TODO: get_performance_stats method not available in current VM
         let stats = js_sys::Object::new();
         stats.into()
-    }
-
-    #[wasm_bindgen]
+    }    #[wasm_bindgen]
     pub fn reset(&mut self) -> Result<(), JsValue> {
-        // TODO: reset method not available in current VM
+        // Clear both local globals and VM globals
         self.globals.clear();
+        self.vm.clear_globals();
         Ok(())
     }
 }

@@ -27,9 +27,7 @@ impl Parser {
         }
 
         Ok(Program { statements })
-    }
-
-    fn statement(&mut self) -> Result<Statement, NagariError> {
+    }    fn statement(&mut self) -> Result<Statement, NagariError> {
         // Check for decorators first
         if self.check(&Token::At) {
             return self.decorated_statement();
@@ -37,6 +35,8 @@ impl Parser {
 
         if self.match_token(&Token::Def) || self.check(&Token::Async) {
             self.function_definition()
+        } else if self.check(&Token::Class) {
+            self.class_definition()
         } else if self.check(&Token::If) {
             self.if_statement()
         } else if self.check(&Token::While) {
@@ -48,7 +48,10 @@ impl Parser {
         } else if self.check(&Token::Return) {
             self.return_statement()
         } else if self.check(&Token::Import) || self.check(&Token::From) {
-            self.import_statement()
+            // Use enhanced import statement for better module support
+            self.enhanced_import_statement()
+        } else if self.check(&Token::Export) {
+            self.export_statement()
         } else if self.check(&Token::Break) {
             self.advance();
             self.consume_newline()?;
@@ -72,6 +75,24 @@ impl Parser {
             } else {
                 self.yield_statement()
             }
+        } else if self.check(&Token::LeftBrace) {
+            // Could be object destructuring assignment
+            let checkpoint = self.current;
+            if let Ok(stmt) = self.parse_destructuring_assignment() {
+                return Ok(stmt);
+            }
+            // Reset if not destructuring and parse normally
+            self.current = checkpoint;
+            self.assignment_or_expression()
+        } else if self.check(&Token::LeftBracket) {
+            // Could be array destructuring assignment
+            let checkpoint = self.current;
+            if let Ok(stmt) = self.parse_array_destructuring() {
+                return Ok(stmt);
+            }
+            // Reset if not destructuring and parse normally
+            self.current = checkpoint;
+            self.assignment_or_expression()
         } else {
             self.assignment_or_expression()
         }
@@ -285,62 +306,6 @@ impl Parser {
         Ok(Statement::Return(value))
     }
 
-    fn import_statement(&mut self) -> Result<Statement, NagariError> {
-        if self.match_token(&Token::Import) {
-            let module = match self.advance() {
-                Token::Identifier(name) => name,
-                _ => {
-                    return Err(NagariError::ParseError(
-                        "Expected module name after 'import'".to_string(),
-                    ))
-                }
-            };
-
-            self.consume_newline()?;
-            Ok(Statement::Import(ImportStatement {
-                module,
-                items: None,
-            }))
-        } else {
-            self.consume(&Token::From, "Expected 'from'")?;
-            let module = match self.advance() {
-                Token::Identifier(name) => name,
-                _ => {
-                    return Err(NagariError::ParseError(
-                        "Expected module name after 'from'".to_string(),
-                    ))
-                }
-            };
-
-            self.consume(&Token::Import, "Expected 'import' after module name")?;
-
-            let mut items = Vec::new();
-
-            loop {
-                let item = match self.advance() {
-                    Token::Identifier(name) => name,
-                    _ => {
-                        return Err(NagariError::ParseError(
-                            "Expected import item name".to_string(),
-                        ))
-                    }
-                };
-
-                items.push(item);
-
-                if !self.match_token(&Token::Comma) {
-                    break;
-                }
-            }
-
-            self.consume_newline()?;
-            Ok(Statement::Import(ImportStatement {
-                module,
-                items: Some(items),
-            }))
-        }
-    }
-
     fn assignment_or_expression(&mut self) -> Result<Statement, NagariError> {
         // Look ahead to see if this is an assignment
         if let Token::Identifier(_) = self.peek() {
@@ -547,61 +512,107 @@ impl Parser {
         } else {
             self.call()
         }
-    }
-
-    fn call(&mut self) -> Result<Expression, NagariError> {
-        let mut expr = self.primary()?;
-
-        while self.match_token(&Token::LeftParen) {
-            let mut arguments = Vec::new();
-
-            if !self.check(&Token::RightParen) {
-                loop {
-                    arguments.push(self.expression()?);
-                    if !self.match_token(&Token::Comma) {
-                        break;
-                    }
+    }    fn call(&mut self) -> Result<Expression, NagariError> {
+        // Use enhanced_call for better method/attribute support
+        self.enhanced_call()
+    }    fn primary(&mut self) -> Result<Expression, NagariError> {
+        match self.peek() {
+            Token::IntLiteral(_) => {
+                if let Token::IntLiteral(n) = self.advance() {
+                    Ok(Expression::Literal(Literal::Int(n)))
+                } else {
+                    unreachable!()
                 }
             }
-
-            self.consume(&Token::RightParen, "Expected ')' after arguments")?;
-            expr = Expression::Call(CallExpression {
-                function: Box::new(expr),
-                arguments,
-                keyword_args: Vec::new(),
-            });
-        }
-
-        Ok(expr)
-    }
-
-    fn primary(&mut self) -> Result<Expression, NagariError> {
-        match self.advance() {
-            Token::IntLiteral(n) => Ok(Expression::Literal(Literal::Int(n))),
-            Token::FloatLiteral(f) => Ok(Expression::Literal(Literal::Float(f))),
-            Token::StringLiteral(s) => Ok(Expression::Literal(Literal::String(s))),
-            Token::BoolLiteral(b) => Ok(Expression::Literal(Literal::Bool(b))),
-            Token::None => Ok(Expression::Literal(Literal::None)),
-            Token::Identifier(name) => Ok(Expression::Identifier(name)),
+            Token::FloatLiteral(_) => {
+                if let Token::FloatLiteral(f) = self.advance() {
+                    Ok(Expression::Literal(Literal::Float(f)))
+                } else {
+                    unreachable!()
+                }
+            }
+            Token::StringLiteral(_) => {
+                if let Token::StringLiteral(s) = self.advance() {
+                    Ok(Expression::Literal(Literal::String(s)))
+                } else {
+                    unreachable!()
+                }
+            }
+            Token::BoolLiteral(_) => {
+                if let Token::BoolLiteral(b) = self.advance() {
+                    Ok(Expression::Literal(Literal::Bool(b)))
+                } else {
+                    unreachable!()
+                }
+            }
+            Token::None => {
+                self.advance();
+                Ok(Expression::Literal(Literal::None))
+            }
+            Token::Identifier(_) => {
+                if let Token::Identifier(name) = self.advance() {
+                    Ok(Expression::Identifier(name))
+                } else {
+                    unreachable!()
+                }
+            }
             Token::LeftParen => {
+                self.advance();
                 let expr = self.expression()?;
                 self.consume(&Token::RightParen, "Expected ')' after expression")?;
                 Ok(expr)
             }
             Token::LeftBracket => {
+                self.advance();
                 let mut elements = Vec::new();
 
                 if !self.check(&Token::RightBracket) {
-                    loop {
-                        elements.push(self.expression()?);
-                        if !self.match_token(&Token::Comma) {
-                            break;
+                    // Check for list comprehension
+                    let first_element = self.expression()?;
+
+                    if self.check(&Token::For) {
+                        // This is a list comprehension
+                        self.advance(); // consume 'for'
+                        return self.comprehension(first_element);
+                    } else {
+                        // Regular list
+                        elements.push(first_element);
+
+                        while self.match_token(&Token::Comma) {
+                            if self.check(&Token::RightBracket) {
+                                break; // trailing comma
+                            }
+                            elements.push(self.expression()?);
                         }
                     }
                 }
 
                 self.consume(&Token::RightBracket, "Expected ']' after list elements")?;
                 Ok(Expression::List(elements))
+            }
+            Token::LeftBrace => {
+                // Dictionary literal
+                self.dictionary_literal()
+            }
+            Token::LessThan => {
+                // JSX element
+                self.jsx_element()
+            }
+            Token::Lambda => {
+                // Lambda expression
+                self.lambda_expression()
+            }
+            Token::Async => {
+                // Async expression
+                self.async_expression()
+            }
+            Token::TemplateStart => {
+                // Template literal
+                self.parse_template_literal()
+            }
+            Token::Spread => {
+                // Spread element
+                self.parse_spread_element()
             }
             _ => Err(NagariError::ParseError("Expected expression".to_string())),
         }
@@ -631,11 +642,9 @@ impl Parser {
                 .ok_or_else(|| NagariError::ParseError(format!("Unknown type: {}", type_name))),
             _ => Err(NagariError::ParseError("Expected type name".to_string())),
         }
-    }
-
-    fn match_binary_op(&mut self, ops: &[Token]) -> Option<BinaryOperator> {
+    }    fn match_binary_op(&mut self, ops: &[Token]) -> Option<BinaryOperator> {
         for op in ops {
-            if self.check(op) {
+            if self.check(op) && self.is_binary_op(op) {
                 self.advance();
                 return Some(match op {
                     Token::Plus => BinaryOperator::Add,
@@ -1447,30 +1456,6 @@ impl Parser {
                 }],
             },
         ))
-    }
-
-    // Update statement method to include class definitions
-    fn updated_statement(&mut self) -> Result<Statement, NagariError> {
-        // Check for decorators first
-        if self.check(&Token::At) {
-            return self.decorated_statement();
-        }
-
-        if self.match_token(&Token::Class) {
-            // Reset position and delegate to class_definition
-            self.current -= 1;
-            return self.class_definition();
-        } else if self.match_token(&Token::Def) || self.check(&Token::Async) {
-            // Reset position and delegate to function_definition
-            self.current -= 1;
-            return self.function_definition();
-        } else {
-            // Return a simple expression statement for now
-            return Ok(Statement::Expression(Expression::Literal(Literal::None)));
-        }
-
-        // Continue with existing statement parsing...
-        // ...
     }
 
     // Helper method for determining if a token is a binary operator

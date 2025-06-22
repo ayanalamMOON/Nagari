@@ -158,9 +158,8 @@ fn compile_file(cli: &Cli) -> Result<String, NagariError> {
         let input_path = Path::new(&cli.input);
         let filename = input_path.file_stem().unwrap().to_str().unwrap();
         format!("{}/{}.js", outdir, filename)
-    } else {
-        let input_path = Path::new(&cli.input);
-        let mut output_path = input_path.with_extension("js");
+    } else {        let input_path = Path::new(&cli.input);
+        let output_path = input_path.with_extension("js");
         output_path.to_string_lossy().to_string()
     };
 
