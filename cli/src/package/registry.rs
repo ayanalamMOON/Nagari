@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use anyhow::Result;
@@ -76,7 +78,8 @@ pub struct SearchResult {
 pub struct SearchObject {
     pub package: SearchPackage,
     pub score: SearchScore,
-    pub searchScore: f64,
+    #[serde(rename = "searchScore")]
+    pub search_score: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

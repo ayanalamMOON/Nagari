@@ -1,10 +1,10 @@
 use crate::config::NagConfig;
-use reedline::{Reedline, Signal, DefaultPrompt, DefaultCompleter, DefaultHinter, DefaultValidator};
-use crossterm::style::{Color, Attribute};
+use reedline::{Reedline, Signal, DefaultPrompt};
 use anyhow::Result;
 use std::path::PathBuf;
 use std::collections::HashMap;
 
+#[allow(dead_code)]
 pub struct NagRepl {
     config: NagConfig,
     variables: HashMap<String, String>,
@@ -12,6 +12,7 @@ pub struct NagRepl {
     compiler: nagari_compiler::Compiler,
 }
 
+#[allow(dead_code)]
 impl NagRepl {
     pub fn new(config: NagConfig) -> Self {
         Self {
@@ -168,6 +169,7 @@ pub struct NagCompleter {
     builtins: Vec<String>,
 }
 
+#[allow(dead_code)]
 impl NagCompleter {
     pub fn new() -> Self {
         Self {

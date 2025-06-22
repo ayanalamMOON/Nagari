@@ -11,7 +11,7 @@ pub mod session;
 #[cfg(test)]
 pub mod tests;
 
-pub use commands::{BuiltinCommands, ReplCommand};
+pub use commands::BuiltinCommands;
 pub use completer::CodeCompleter;
 pub use context::ExecutionContext;
 pub use editor::ReplEditor;
@@ -19,4 +19,4 @@ pub use engine::{ReplConfig, ReplEngine, ReplValue};
 pub use evaluator::CodeEvaluator;
 pub use highlighter::SyntaxHighlighter;
 pub use history::CommandHistory;
-pub use session::{ReplSession, SessionManager};
+pub use session::ReplSession;

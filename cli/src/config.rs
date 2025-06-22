@@ -211,8 +211,7 @@ impl NagConfig {
         };
 
         Ok(config)
-    }
-
+    }    #[allow(dead_code)]
     pub fn save(&self, path: &Path) -> Result<()> {
         let content = if path.extension().and_then(|s| s.to_str()) == Some("json") {
             serde_json::to_string_pretty(self)?
@@ -224,6 +223,7 @@ impl NagConfig {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn merge_with_defaults(mut self) -> Self {
         let defaults = Self::default();
 

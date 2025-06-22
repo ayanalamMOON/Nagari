@@ -31,6 +31,7 @@ pub struct CachedPackageInfo {
     pub last_accessed: u64,
 }
 
+#[allow(dead_code)]
 impl PackageCache {
     pub fn new<P: AsRef<Path>>(cache_dir: P) -> Result<Self> {
         let cache_dir = cache_dir.as_ref().to_path_buf();
@@ -50,6 +51,7 @@ impl PackageCache {
         })
     }
 
+    #[allow(dead_code)]
     pub fn get_package(&mut self, name: &str, version: &str) -> Option<&CachedPackageInfo> {
         let cache_key = self.generate_cache_key(name, version);
 
@@ -218,10 +220,8 @@ impl PackageCache {
                 candidates_for_removal.push((cache_key.clone(), info.clone()));
                 size_to_remove = size_to_remove.saturating_sub(info.size);
             }
-        }
-
-        // Remove the packages
-        for (cache_key, info) in candidates_for_removal {
+        }        // Remove the packages
+        for (_cache_key, info) in candidates_for_removal {
             if self.remove_package(&info.name, &info.version)? {
                 removed.push(format!("{}@{}", info.name, info.version));
             }

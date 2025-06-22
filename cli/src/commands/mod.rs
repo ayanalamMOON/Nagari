@@ -1,14 +1,14 @@
 use crate::config::NagConfig;
-use crate::{DocCommands, PackageCommands};
 use crate::package::PackageManager;
 use crate::repl_engine::ReplEngine;
-use anyhow::{Result, Context};
+use crate::{DocCommands, PackageCommands};
+use anyhow::{Context, Result};
 use colored::*;
+use notify::{recommended_watcher, RecursiveMode, Watcher};
 use std::path::PathBuf;
-use tokio::process::Command;
-use notify::{Watcher, RecursiveMode, recommended_watcher};
 use std::sync::mpsc::channel;
 use std::time::Duration;
+use tokio::process::Command;
 
 pub async fn run_command(
     file: PathBuf,
@@ -19,11 +19,15 @@ pub async fn run_command(
     println!("{} Running {}", "✓".green().bold(), file.display());
 
     if watch {
-        println!("{} Watch mode enabled - file changes will trigger restart", "👀".yellow());        let (tx, rx) = channel();
-        let mut watcher = recommended_watcher(tx)
-            .context("Failed to create file watcher")?;
+        println!(
+            "{} Watch mode enabled - file changes will trigger restart",
+            "👀".yellow()
+        );
+        let (tx, rx) = channel();
+        let mut watcher = recommended_watcher(tx).context("Failed to create file watcher")?;
 
-        watcher.watch(&file, RecursiveMode::NonRecursive)
+        watcher
+            .watch(&file, RecursiveMode::NonRecursive)
             .context("Failed to watch file")?;
 
         loop {
@@ -102,7 +106,13 @@ pub async fn build_command(
     sourcemap: bool,
     config: &NagConfig,
 ) -> Result<()> {
-    println!("{} Building {} (target: {})", "🔨".yellow(), input.display(), target);    let output_dir = output.unwrap_or_else(|| PathBuf::from(&config.project.output_dir));
+    println!(
+        "{} Building {} (target: {})",
+        "🔨".yellow(),
+        input.display(),
+        target
+    );
+    let output_dir = output.unwrap_or_else(|| PathBuf::from(&config.project.output_dir));
     std::fs::create_dir_all(&output_dir)?;
 
     // Create compiler with configuration
@@ -118,16 +128,18 @@ pub async fn build_command(
     match target.as_str() {
         "js" => {
             if input.is_file() {
-                let output_file = output_dir.join(input.file_stem().unwrap()).with_extension("js");
+                let output_file = output_dir
+                    .join(input.file_stem().unwrap())
+                    .with_extension("js");
                 compiler.compile_to_file(&input, &output_file)?;
                 println!("{} Generated {}", "✓".green(), output_file.display());
             } else {
                 // Process directory recursively
                 for entry in walkdir::WalkDir::new(&input) {
                     let entry = entry?;
-                    if entry.file_type().is_file() &&
-                       entry.path().extension().and_then(|s| s.to_str()) == Some("nag") {
-
+                    if entry.file_type().is_file()
+                        && entry.path().extension().and_then(|s| s.to_str()) == Some("nag")
+                    {
                         let relative_path = entry.path().strip_prefix(&input)?;
                         let output_file = output_dir.join(relative_path).with_extension("js");
 
@@ -160,17 +172,33 @@ pub async fn transpile_command(
     input: PathBuf,
     output: Option<PathBuf>,
     format: String,
-    minify: bool,
+    _minify: bool,
     declarations: bool,
     config: &NagConfig,
 ) -> Result<()> {
-    println!("{} Transpiling {} (format: {})", "🔄".cyan(), input.display(), format);
+    println!(
+        "{} Transpiling {} (format: {})",
+        "🔄".cyan(),
+        input.display(),
+        format
+    );
 
     let output_dir = output.unwrap_or_else(|| PathBuf::from(&config.project.output_dir));
-    build_command(input, Some(output_dir), "js".to_string(), false, true, config).await?;
+    build_command(
+        input,
+        Some(output_dir),
+        "js".to_string(),
+        false,
+        true,
+        config,
+    )
+    .await?;
 
     if declarations {
-        println!("{} TypeScript declarations not yet implemented", "⚠️".yellow());
+        println!(
+            "{} TypeScript declarations not yet implemented",
+            "⚠️".yellow()
+        );
     }
 
     Ok(())
@@ -180,15 +208,28 @@ pub async fn bundle_command(
     entry: PathBuf,
     output: Option<PathBuf>,
     format: String,
-    treeshake: bool,
-    external: Vec<String>,
+    _treeshake: bool,
+    _external: Vec<String>,
     config: &NagConfig,
 ) -> Result<()> {
-    println!("{} Bundling {} (format: {})", "📦".cyan(), entry.display(), format);
+    println!(
+        "{} Bundling {} (format: {})",
+        "📦".cyan(),
+        entry.display(),
+        format
+    );
 
     // For now, just transpile the entry point
     let output_file = output.unwrap_or_else(|| PathBuf::from("bundle.js"));
-    transpile_command(entry, Some(output_file.parent().unwrap().to_path_buf()), format, false, false, config).await?;
+    transpile_command(
+        entry,
+        Some(output_file.parent().unwrap().to_path_buf()),
+        format,
+        false,
+        false,
+        config,
+    )
+    .await?;
 
     println!("{} Bundle created: {}", "✓".green(), output_file.display());
     Ok(())
@@ -226,9 +267,9 @@ pub async fn format_command(
         } else {
             for entry in walkdir::WalkDir::new(&path) {
                 let entry = entry?;
-                if entry.file_type().is_file() &&
-                   entry.path().extension().and_then(|s| s.to_str()) == Some("nag") {
-
+                if entry.file_type().is_file()
+                    && entry.path().extension().and_then(|s| s.to_str()) == Some("nag")
+                {
                     let result = formatter.format_file(entry.path(), check, diff)?;
                     total_files += 1;
                     if result.changed {
@@ -251,7 +292,12 @@ pub async fn format_command(
             println!("{} All files are properly formatted", "✓".green());
         }
     } else {
-        println!("{} Formatted {} files ({} changed)", "✓".green(), total_files, changed_files);
+        println!(
+            "{} Formatted {} files ({} changed)",
+            "✓".green(),
+            total_files,
+            changed_files
+        );
     }
 
     Ok(())
@@ -289,7 +335,12 @@ pub async fn lint_command(
 
     if stats.total > 0 {
         if stats.has_errors() {
-            println!("{} Found {} issues ({} errors)", "❌".red(), stats.total, stats.errors);
+            println!(
+                "{} Found {} issues ({} errors)",
+                "❌".red(),
+                stats.total,
+                stats.errors
+            );
             if !fix {
                 println!("Run with --fix to automatically fix issues where possible");
             }
@@ -298,7 +349,10 @@ pub async fn lint_command(
         } else {
             println!("{} Found {} issues", "⚠️".yellow(), stats.total);
             if !fix && stats.fixable > 0 {
-                println!("Run with --fix to automatically fix {} issues", stats.fixable);
+                println!(
+                    "Run with --fix to automatically fix {} issues",
+                    stats.fixable
+                );
             }
         }
     } else {
@@ -309,11 +363,11 @@ pub async fn lint_command(
 }
 
 pub async fn test_command(
-    paths: Vec<PathBuf>,
-    pattern: Option<String>,
+    _paths: Vec<PathBuf>,
+    _pattern: Option<String>,
     coverage: bool,
     watch: bool,
-    config: &NagConfig,
+    _config: &NagConfig,
 ) -> Result<()> {
     println!("{} Running tests...", "🧪".cyan());
 
@@ -331,6 +385,7 @@ pub async fn test_command(
     Ok(())
 }
 
+#[allow(dead_code)]
 pub async fn repl_command(
     script: Option<PathBuf>,
     experimental: bool,
@@ -355,19 +410,32 @@ pub async fn repl_command(
 
 pub async fn doc_command(command: DocCommands, config: &NagConfig) -> Result<()> {
     match command {
-        DocCommands::Generate { source, output, format, private } => {
+        DocCommands::Generate {
+            source,
+            output,
+            format,
+            private,
+        } => {
             println!("{} Generating documentation...", "📚".cyan());
 
             let doc_gen = crate::tools::doc_generator::DocGenerator::new(config);
             doc_gen.generate(&source, &output, &format, private)?;
 
-            println!("{} Documentation generated in {}", "✓".green(), output.display());
+            println!(
+                "{} Documentation generated in {}",
+                "✓".green(),
+                output.display()
+            );
         }
-        DocCommands::Serve { docs_dir, port } => {
-            println!("{} Serving documentation on http://localhost:{}", "🌐".cyan(), port);
+        DocCommands::Serve { docs_dir: _, port } => {
+            println!(
+                "{} Serving documentation on http://localhost:{}",
+                "🌐".cyan(),
+                port
+            );
             // TODO: Implement doc server
         }
-        DocCommands::Check { docs_dir } => {
+        DocCommands::Check { docs_dir: _ } => {
             println!("{} Checking documentation...", "🔍".cyan());
             // TODO: Implement doc checker
         }
@@ -376,17 +444,28 @@ pub async fn doc_command(command: DocCommands, config: &NagConfig) -> Result<()>
     Ok(())
 }
 
+#[allow(dead_code)]
 pub async fn package_command(command: PackageCommands, config: &NagConfig) -> Result<()> {
     match command {
         PackageCommands::Init { yes } => {
             println!("{} Initializing package...", "📦".cyan());
             crate::tools::package_manager::init_package(yes, config).await?;
         }
-        PackageCommands::Install { packages, dev, global, exact } => {
+        PackageCommands::Install {
+            packages,
+            dev,
+            global,
+            exact,
+        } => {
             println!("{} Installing packages...", "📦".cyan());
-            crate::tools::package_manager::install_packages(packages, dev, global, exact, config).await?;
+            crate::tools::package_manager::install_packages(packages, dev, global, exact, config)
+                .await?;
         }
-        PackageCommands::Add { package, version, dev } => {
+        PackageCommands::Add {
+            package,
+            version,
+            dev,
+        } => {
             println!("{} Adding package: {}", "📦".cyan(), package);
             crate::tools::package_manager::add_package(package, version, dev, config).await?;
         }
@@ -404,7 +483,8 @@ pub async fn package_command(command: PackageCommands, config: &NagConfig) -> Re
         PackageCommands::Publish { registry, dry_run } => {
             println!("{} Publishing package...", "📦".cyan());
             crate::tools::package_manager::publish_package(registry, dry_run, config).await?;
-        }        PackageCommands::Pack { output } => {
+        }
+        PackageCommands::Pack { output } => {
             println!("{} Packing package...", "📦".cyan());
             crate::tools::package_manager::pack_package(output, config).await?;
         }
@@ -420,7 +500,11 @@ pub async fn package_command(command: PackageCommands, config: &NagConfig) -> Re
             println!("{} Package info: {}", "📦".cyan(), package);
             // TODO: Implement package info
         }
-        PackageCommands::Unpublish { package: _, version: _, force: _ } => {
+        PackageCommands::Unpublish {
+            package: _,
+            version: _,
+            force: _,
+        } => {
             println!("{} Unpublishing package...", "📦".cyan());
             // TODO: Implement package unpublish
         }
@@ -456,10 +540,16 @@ pub async fn handle_package_command(
 ) -> Result<()> {
     let mut package_manager = PackageManager::new(config.clone())?;
 
-    match package_command {        PackageCommands::Init { yes } => {
+    match package_command {
+        PackageCommands::Init { yes } => {
             package_manager.init_package(None, yes).await?;
         }
-        PackageCommands::Install { packages, dev, global: _, exact: _ } => {
+        PackageCommands::Install {
+            packages,
+            dev,
+            global: _,
+            exact: _,
+        } => {
             if packages.is_empty() {
                 // Install from manifest
                 package_manager.install(vec![], false).await?;
@@ -469,9 +559,14 @@ pub async fn handle_package_command(
         }
         PackageCommands::Uninstall { packages } => {
             package_manager.uninstall(packages).await?;
-        }        PackageCommands::Update { packages } => {
+        }
+        PackageCommands::Update { packages } => {
             package_manager.update(Some(packages)).await?;
-        }        PackageCommands::List { tree: _, outdated: _ } => {
+        }
+        PackageCommands::List {
+            tree: _,
+            outdated: _,
+        } => {
             package_manager.list().await?;
         }
         PackageCommands::Search { query } => {
@@ -487,21 +582,28 @@ pub async fn handle_package_command(
             println!("{} Package unpublishing not yet implemented", "⚠️".yellow());
         }
         PackageCommands::Login { registry } => {
-            println!("{} Registry login not yet implemented (registry: {:?})", "⚠️".yellow(), registry);
+            println!(
+                "{} Registry login not yet implemented (registry: {:?})",
+                "⚠️".yellow(),
+                registry
+            );
         }
         PackageCommands::Logout => {
             println!("{} Registry logout not yet implemented", "⚠️".yellow());
-        }        PackageCommands::Cache { command } => {
-            match command {
-                crate::CacheCommands::Info => {
-                    package_manager.cache_info().await?;
-                }
-                crate::CacheCommands::Clear => {
-                    package_manager.cache_clean().await?;
-                }
-            }
         }
-        PackageCommands::Add { package, version, dev } => {
+        PackageCommands::Cache { command } => match command {
+            crate::CacheCommands::Info => {
+                package_manager.cache_info().await?;
+            }
+            crate::CacheCommands::Clear => {
+                package_manager.cache_clean().await?;
+            }
+        },
+        PackageCommands::Add {
+            package,
+            version,
+            dev,
+        } => {
             let pkg_with_version = if let Some(v) = version {
                 format!("{}@{}", package, v)
             } else {
@@ -557,7 +659,11 @@ pub async fn handle_repl_command(
 }
 
 pub async fn lsp_command(mode: String, port: Option<u16>, config: &NagConfig) -> Result<()> {
-    println!("{} Starting Nagari Language Server (mode: {})", "🔧".cyan(), mode);
+    println!(
+        "{} Starting Nagari Language Server (mode: {})",
+        "🔧".cyan(),
+        mode
+    );
 
     let lsp_server = crate::lsp::NagLspServer::new(config.clone());
 
@@ -584,12 +690,16 @@ pub async fn lsp_command(mode: String, port: Option<u16>, config: &NagConfig) ->
 pub async fn init_command(
     name: Option<String>,
     template: String,
-    yes: bool,
-    config: &NagConfig,
+    _yes: bool,
+    _config: &NagConfig,
 ) -> Result<()> {
     let project_name = name.unwrap_or_else(|| "nagari-project".to_string());
 
-    println!("{} Initializing new Nagari project: {}", "🚀".cyan(), project_name);
+    println!(
+        "{} Initializing new Nagari project: {}",
+        "🚀".cyan(),
+        project_name
+    );
     println!("Template: {}", template);
 
     let project_dir = PathBuf::from(&project_name);
@@ -617,7 +727,7 @@ pub async fn serve_command(
     port: u16,
     https: bool,
     public: Option<PathBuf>,
-    config: &NagConfig,
+    _config: &NagConfig,
 ) -> Result<()> {
     let entry_file = entry.unwrap_or_else(|| PathBuf::from("main.nag"));
 
@@ -656,7 +766,8 @@ if __name__ == "__main__":
     std::fs::write(dir.join("main.nag"), main_content)?;
 
     // Create nagari.toml
-    let config_content = format!(r#"[project]
+    let config_content = format!(
+        r#"[project]
 name = "{}"
 version = "0.1.0"
 description = "A Nagari project"
@@ -666,7 +777,9 @@ main = "main.nag"
 target = "js"
 optimization = false
 sourcemap = true
-"#, name);
+"#,
+        name
+    );
 
     std::fs::write(dir.join("nagari.toml"), config_content)?;
 

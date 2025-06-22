@@ -57,9 +57,7 @@ impl NagLspServer {
                 server.serve(service).await;
             });
         }
-    }
-
-    pub async fn run_websocket(self, port: u16) -> anyhow::Result<()> {
+    }    pub async fn run_websocket(self, _port: u16) -> anyhow::Result<()> {
         println!("WebSocket LSP server not yet implemented");
         Ok(())
     }
@@ -74,7 +72,7 @@ pub struct NagLanguageServer {
 
 #[tower_lsp::async_trait]
 impl LanguageServer for NagLanguageServer {
-    async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
+    async fn initialize(&self, _params: InitializeParams) -> Result<InitializeResult> {
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
@@ -227,18 +225,16 @@ impl LanguageServer for NagLanguageServer {
         ];
 
         Ok(Some(CompletionResponse::Array(completions)))
-    }
-
-    async fn goto_definition(
+    }    async fn goto_definition(
         &self,
-        params: GotoDefinitionParams,
+        _params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
         // TODO: Implement go-to-definition
         // This would require symbol tracking and cross-reference analysis
         Ok(None)
     }
 
-    async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
+    async fn references(&self, _params: ReferenceParams) -> Result<Option<Vec<Location>>> {
         // TODO: Implement find references
         Ok(None)
     }
@@ -280,12 +276,12 @@ impl LanguageServer for NagLanguageServer {
                                         character: (name_start + 4) as u32,
                                     },
                                     end: Position {
-                                        line: line_num as u32,
-                                        character: (name_start + 4 + name_end) as u32,
+                                        line: line_num as u32,                                        character: (name_start + 4 + name_end) as u32,
                                     },
                                 },
                                 children: None,
                                 tags: None,
+                                #[allow(deprecated)]
                                 deprecated: None,
                             });
                         }
@@ -315,14 +311,14 @@ impl LanguageServer for NagLanguageServer {
                                     start: Position {
                                         line: line_num as u32,
                                         character: (name_start + 6) as u32,
-                                    },
-                                    end: Position {
+                                    },                                    end: Position {
                                         line: line_num as u32,
                                         character: (name_start + 6 + name_end) as u32,
                                     },
                                 },
                                 children: None,
                                 tags: None,
+                                #[allow(deprecated)]
                                 deprecated: None,
                             });
                         }
@@ -371,7 +367,7 @@ impl LanguageServer for NagLanguageServer {
         Ok(None)
     }
 
-    async fn code_action(&self, params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
+    async fn code_action(&self, _params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
         // TODO: Implement code actions (auto-fixes, refactoring suggestions, etc.)
         Ok(None)
     }

@@ -11,6 +11,7 @@ use std::fs;
 use std::path::PathBuf;
 
 pub struct PackageManager {
+    #[allow(dead_code)]
     config: NagConfig,
     registry: RegistryClient,
     resolver: DependencyResolver,
@@ -319,10 +320,9 @@ impl PackageManager {
             println!("📦 {}", package.name);
             if let Some(ref description) = package.description {
                 println!("   {}", description);
-            }
-            println!(
+            }            println!(
                 "   Latest: {} | Score: {:.2}",
-                package.version, result.searchScore
+                package.version, result.search_score
             );
             if !package.keywords.is_empty() {
                 println!("   Keywords: {}", package.keywords.join(", "));

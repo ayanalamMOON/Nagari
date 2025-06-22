@@ -1,7 +1,6 @@
 use crate::config::NagConfig;
 use crate::package::{
-    DependencyResolver, DependencySpec, LockFile, LockedDependency, PackageCache, PackageManager,
-    PackageManifest,
+    DependencySpec, PackageManager, PackageManifest,
 };
 use std::collections::HashMap;
 use tempfile::TempDir;
@@ -9,12 +8,11 @@ use tokio;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    #[tokio::test]
+    use super::*;    #[tokio::test]
     async fn test_package_manager_new() {
         let temp_dir = TempDir::new().unwrap();
         let config = NagConfig::load(Some(temp_dir.path())).unwrap();
-        let manager = PackageManager::new(config).unwrap();
+        let _manager = PackageManager::new(config).unwrap();
 
         // Note: PackageManager doesn't expose get_cache_dir method
         // We can test that the manager was created successfully
@@ -339,52 +337,57 @@ mod cache_tests {
     #[tokio::test]
     async fn test_cache_operations() {
         let temp_dir = TempDir::new().unwrap();
-        let cache = PackageCache::new(temp_dir.path().to_path_buf()).unwrap();
+        let mut cache = PackageCache::new(temp_dir.path().to_path_buf()).unwrap();
 
         let package_name = "test-package";
         let version = "1.0.0";
         let package_data = b"mock package data";
+        let metadata = serde_json::json!({
+            "name": package_name,
+            "version": version,
+            "description": "Test package"
+        });
 
         // Test storing package
         cache
-            .store_package(package_name, version, package_data)
+            .cache_package(package_name, version, package_data, metadata)
             .await
             .unwrap();
 
         // Test checking if package exists
-        assert!(cache.has_package(package_name, version).await);
-
-        // Test retrieving package
-        let retrieved_data = cache.get_package(package_name, version).await.unwrap();
-        assert_eq!(retrieved_data, package_data);
+        assert!(cache.get_package(package_name, version).is_some());
 
         // Test removing package
-        cache.remove_package(package_name, version).await.unwrap();
-        assert!(!cache.has_package(package_name, version).await);
+        cache.remove_package(package_name, version).unwrap();
+        assert!(cache.get_package(package_name, version).is_none());
     }
 
     #[tokio::test]
     async fn test_cache_cleanup() {
         let temp_dir = TempDir::new().unwrap();
-        let cache = PackageCache::new(temp_dir.path().to_path_buf()).unwrap();
-
-        // Store multiple packages
+        let mut cache = PackageCache::new(temp_dir.path().to_path_buf()).unwrap();        // Store multiple packages
         for i in 0..5 {
             let package_name = format!("package-{}", i);
             let version = "1.0.0";
-            let package_data = format!("data for package {}", i).as_bytes();
+            let package_data_string = format!("data for package {}", i);
+            let package_data = package_data_string.as_bytes();
+            let metadata = serde_json::json!({
+                "name": package_name,
+                "version": version,
+                "description": format!("Test package {}", i)
+            });
 
             cache
-                .store_package(&package_name, version, package_data)
+                .cache_package(&package_name, version, package_data, metadata)
                 .await
                 .unwrap();
         }
 
         // Test cleanup functionality
-        cache.cleanup().await.unwrap();
+        cache.clear_cache().unwrap();
 
-        // Verify cache directory structure is maintained
-        assert!(cache.get_cache_root().exists());
+        // Verify cache is empty after cleanup
+        assert_eq!(cache.list_packages().len(), 0);
     }
 }
 

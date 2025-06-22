@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::config::NagConfig;
 use crate::repl_engine::{
     BuiltinCommands, CodeCompleter, CodeEvaluator, CommandHistory, ExecutionContext, ReplEditor,
@@ -78,6 +80,32 @@ pub enum OutputFormat {
 }
 
 impl ReplEngine {
+    /// Creates a new REPL engine instance with configuration
+    pub fn new(config: &crate::config::NagConfig) -> Self {
+        // Initialize with default state
+        let state = ReplState::default();
+        let evaluator = CodeEvaluator::new(config.clone());
+        let session = ReplSession::new();
+        ReplEngine { config: config.clone(), state, evaluator, session }
+    }
+
+    /// Runs the REPL loop (basic stub)
+    pub async fn run(&mut self) -> Result<()> {
+        println!("Starting Nagari REPL. Type 'exit' or Ctrl+C to quit.");
+        loop {
+            // Prompt and read line
+            let input = self.session.readline()?;
+            if input.trim() == "exit" {
+                break;
+            }
+            match self.evaluator.execute(&input) {
+                Ok(val) => println!("=> {:?}", val),
+                Err(err) => eprintln!("Error: {}", err),
+            }
+        }
+        Ok(())
+    }
+
     pub fn new(config: NagConfig) -> Result<Self> {
         let repl_config = ReplConfig::default();
 

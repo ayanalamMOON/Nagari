@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use anyhow::Result;
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
@@ -209,10 +211,9 @@ impl DependencyResolver {
         context: &'a ResolutionContext,
         resolution_graph: &'a mut HashMap<String, ResolvedDependency>,
     ) -> Pin<Box<dyn Future<Output = Result<ResolvedDependency>> + Send + 'a>> {
-        Box::pin(async move {
-            // Handle local path dependencies
+        Box::pin(async move {            // Handle local path dependencies
             if let DependencySpec::Detailed {
-                path: Some(path), ..
+                path: Some(_path), ..
             } = spec
             {
                 return self.resolve_git_dependency(name, "", None, None).await;
@@ -354,11 +355,10 @@ impl DependencyResolver {
         let version = Version::parse(&manifest.version)?;
 
         // Collect dependencies (only names and version requirements)
-        let dependencies = manifest
-            .dependencies
+        let dependencies = manifest            .dependencies
             .iter()
             .map(|(dep_name, dep_spec)| {
-                let req = match dep_spec {
+                let _req = match dep_spec {
                     DependencySpec::Version(v) => VersionReq::parse(v).unwrap_or(VersionReq::STAR),
                     DependencySpec::Detailed {
                         version: Some(v), ..

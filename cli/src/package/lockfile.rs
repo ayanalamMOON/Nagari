@@ -1,6 +1,8 @@
+#![allow(dead_code)]
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::fs;
 use anyhow::Result;
 use semver::Version;
@@ -151,10 +153,8 @@ impl LockFile {
     }
 
     pub fn validate_integrity(&self) -> Result<Vec<String>> {
-        let mut errors = Vec::new();
-
-        // Check that all required dependencies exist
-        for (name, dep_ref) in &self.dependencies {
+        let mut errors = Vec::new();        // Check that all required dependencies exist
+        for (name, _dep_ref) in &self.dependencies {
             if !self.packages.contains_key(name) {
                 errors.push(format!("Missing package: {}", name));
             }
