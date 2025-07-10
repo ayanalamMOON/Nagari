@@ -140,7 +140,7 @@ impl JSTranspiler {
                 self.output.push_str(", ");
             }
             self.output.push_str(&param.name);
-            
+
             // Mark parameter as declared
             self.declared_variables.insert(param.name.clone());
 
@@ -175,7 +175,7 @@ impl JSTranspiler {
 
         // Check if this variable has been declared before
         let is_declaration = !self.declared_variables.contains(&assign.name);
-        
+
         if is_declaration {
             // First time seeing this variable - declare it with let (not const, in case it's reassigned)
             self.output.push_str("let ");
@@ -235,7 +235,8 @@ impl JSTranspiler {
                 }
                 self.output.push('}');
                 Ok(())
-            }            Expression::JSXElement(jsx) => self.transpile_jsx_element(jsx),
+            }
+            Expression::JSXElement(jsx) => self.transpile_jsx_element(jsx),
             Expression::Lambda(lambda) => {
                 self.output.push('(');
                 for (i, param) in lambda.parameters.iter().enumerate() {
@@ -259,7 +260,8 @@ impl JSTranspiler {
             }
             Expression::SetComprehension(_) => {
                 // TODO: Implement set comprehension transpilation
-                self.output.push_str("/* TODO: Set comprehension */new Set()");
+                self.output
+                    .push_str("/* TODO: Set comprehension */new Set()");
                 Ok(())
             }
             Expression::Generator(_) => {
@@ -304,7 +306,8 @@ impl JSTranspiler {
             }
             // Add catch-all for any remaining expression types
             _ => {
-                self.output.push_str("/* TODO: Implement this expression type */");
+                self.output
+                    .push_str("/* TODO: Implement this expression type */");
                 Ok(())
             }
         }
@@ -426,7 +429,8 @@ impl JSTranspiler {
             }
         }
         Ok(())
-    }    fn transpile_call(&mut self, call: &CallExpression) -> Result<(), NagariError> {
+    }
+    fn transpile_call(&mut self, call: &CallExpression) -> Result<(), NagariError> {
         if let Expression::Identifier(func_name) = call.function.as_ref() {
             // Check if this is a builtin function that needs special handling
             // Clone the mapping to avoid borrow checker issues
@@ -491,7 +495,8 @@ impl JSTranspiler {
         }
 
         Ok(())
-    }    fn transpile_binary(&mut self, binary: &BinaryExpression) -> Result<(), NagariError> {
+    }
+    fn transpile_binary(&mut self, binary: &BinaryExpression) -> Result<(), NagariError> {
         self.output.push('(');
         self.transpile_expression(&binary.left)?;
 
@@ -589,7 +594,8 @@ impl JSTranspiler {
         self.output.push_str("switch (");
         self.transpile_expression(&match_stmt.expression)?;
         self.output.push_str(") {\n");
-        self.indent_level += 1;        for case in &match_stmt.cases {
+        self.indent_level += 1;
+        for case in &match_stmt.cases {
             self.add_indent();
             self.output.push_str("case ");
             self.transpile_pattern(&case.pattern)?;

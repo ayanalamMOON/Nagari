@@ -10,7 +10,7 @@ def fibonacci_iterative(n):
         return 0
     if n == 1:
         return 1
-    
+
     a = 0
     b = 1
     i = 2
@@ -19,13 +19,13 @@ def fibonacci_iterative(n):
         a = b
         b = temp
         i = i + 1
-    
+
     return b
 
 def main():
     print("Fibonacci Series Test - Comparing Recursive vs Iterative")
     print("=" * 55)
-    
+
     # Test small numbers
     print("Testing small numbers (0-10):")
     i = 0
@@ -38,20 +38,20 @@ def main():
             match = "✗"
         print("n =", i, "| Recursive:", rec_result, "| Iterative:", iter_result, "|", match)
         i = i + 1
-    
+
     print()
     print("Testing larger numbers:")
-    
+
     # Test larger numbers where recursive becomes slow
     test_values = [15, 20, 25]
     j = 0
     while j < 3:
         n = test_values[j]
         print("Computing fibonacci(" + str(n) + ")...")
-        
+
         iter_result = fibonacci_iterative(n)
         print("  Iterative result:", iter_result)
-        
+
         if n <= 20:
             rec_result = fibonacci_recursive(n)
             print("  Recursive result:", rec_result)
@@ -62,10 +62,10 @@ def main():
             print("  Match:", match)
         else:
             print("  (Skipping recursive for n >20 due to performance)")
-        
+
         print()
         j = j + 1
-    
+
     print("Fibonacci sequence verification (first 15 numbers):")
     sequence_str = ""
     k = 0
@@ -75,7 +75,7 @@ def main():
         sequence_str = sequence_str + str(fibonacci_iterative(k))
         k = k + 1
     print(sequence_str)
-    
+
     print()
     print("Test completed successfully! ✓")
 

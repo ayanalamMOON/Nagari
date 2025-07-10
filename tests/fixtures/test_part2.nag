@@ -3,7 +3,7 @@ def fibonacci_iterative(n):
         return 0
     if n == 1:
         return 1
-    
+
     a = 0
     b = 1
     i = 2
@@ -12,7 +12,7 @@ def fibonacci_iterative(n):
         a = b
         b = temp
         i = i + 1
-    
+
     return b
 
 def main():
