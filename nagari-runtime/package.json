@@ -1,24 +1,51 @@
 {
     "name": "nagari-runtime",
-    "version": "0.1.0",
+    "version": "0.1.2",
     "description": "Runtime utilities and polyfills for Nagari language",
     "type": "module",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs",
+            "types": "./dist/index.d.ts"
+        }
+    },
     "scripts": {
         "build": "tsc",
         "dev": "tsc --watch",
         "test": "jest",
-        "prepublish": "npm run build"
+        "prepublishOnly": "npm run build",
+        "prepare": "npm run build"
     },
     "keywords": [
         "nagari",
         "runtime",
         "transpiler",
-        "javascript"
+        "javascript",
+        "programming-language",
+        "interop",
+        "polyfill"
     ],
-    "author": "Nagari Team",
+    "author": {
+        "name": "Nagari Team",
+        "email": "contact@nagari.dev",
+        "url": "https://github.com/ayanalamMOON/Nagari"
+    },
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ayanalamMOON/Nagari.git",
+        "directory": "nagari-runtime"
+    },
+    "bugs": {
+        "url": "https://github.com/ayanalamMOON/Nagari/issues"
+    },
+    "homepage": "https://github.com/ayanalamMOON/Nagari#readme",
+    "engines": {
+        "node": ">=14.0.0"
+    },
     "devDependencies": {
         "typescript": "^5.0.0",
         "@types/node": "^20.0.0",
@@ -26,7 +53,8 @@
         "@types/jest": "^29.0.0"
     },
     "files": [
-        "dist",
-        "README.md"
+        "dist/**/*",
+        "README.md",
+        "LICENSE"
     ]
 }
