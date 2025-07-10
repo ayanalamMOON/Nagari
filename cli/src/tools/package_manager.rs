@@ -2,7 +2,7 @@ use crate::config::NagConfig;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PackageJson {
@@ -42,7 +42,7 @@ pub struct LockedDependency {
     pub dependencies: Option<HashMap<String, String>>,
 }
 
-pub async fn init_package(yes: bool, config: &NagConfig) -> Result<()> {
+pub async fn init_package(yes: bool, _config: &NagConfig) -> Result<()> {
     let package_file = PathBuf::from("nagari.json");
 
     if package_file.exists() && !yes {
@@ -119,8 +119,8 @@ pub async fn install_packages(
     packages: Vec<String>,
     dev: bool,
     global: bool,
-    exact: bool,
-    config: &NagConfig,
+    _exact: bool,
+    _config: &NagConfig,
 ) -> Result<()> {
     if global {
         println!("Global package installation not yet implemented");
@@ -163,7 +163,7 @@ pub async fn add_package(
     install_packages(vec![format!("{}@{}", package, version)], dev, false, false, config).await
 }
 
-pub async fn remove_packages(packages: Vec<String>, config: &NagConfig) -> Result<()> {
+pub async fn remove_packages(packages: Vec<String>, _config: &NagConfig) -> Result<()> {
     let mut package = load_package_json()?;
 
     for pkg_name in packages {
@@ -190,8 +190,8 @@ pub async fn remove_packages(packages: Vec<String>, config: &NagConfig) -> Resul
     Ok(())
 }
 
-pub async fn update_packages(packages: Vec<String>, config: &NagConfig) -> Result<()> {
-    let package = load_package_json()?;
+pub async fn update_packages(packages: Vec<String>, _config: &NagConfig) -> Result<()> {
+    let _package = load_package_json()?;
 
     if packages.is_empty() {
         println!("Updating all packages...");
@@ -207,7 +207,7 @@ pub async fn update_packages(packages: Vec<String>, config: &NagConfig) -> Resul
     Ok(())
 }
 
-pub async fn list_packages(tree: bool, outdated: bool, config: &NagConfig) -> Result<()> {
+pub async fn list_packages(tree: bool, outdated: bool, _config: &NagConfig) -> Result<()> {
     let package = load_package_json()?;
 
     if outdated {
@@ -269,7 +269,7 @@ pub async fn publish_package(
     Ok(())
 }
 
-pub async fn pack_package(output: Option<PathBuf>, config: &NagConfig) -> Result<()> {
+pub async fn pack_package(output: Option<PathBuf>, _config: &NagConfig) -> Result<()> {
     let package = load_package_json()?;
     let output_file = output.unwrap_or_else(|| {
         PathBuf::from(format!("{}-{}.tgz", package.name, package.version))
@@ -303,7 +303,7 @@ fn save_package_json(package: &PackageJson) -> Result<()> {
     Ok(())
 }
 
-async fn update_lock_file(package: &PackageJson) -> Result<()> {
+async fn update_lock_file(_package: &PackageJson) -> Result<()> {
     // TODO: Implement lock file generation
     // This would resolve all dependencies and create a lock file
     // with exact versions and integrity hashes

@@ -15,10 +15,12 @@ impl Environment {
         }
     }
 
+    #[allow(dead_code)]
     pub fn push_scope(&mut self) {
         self.locals.push(HashMap::new());
     }
 
+    #[allow(dead_code)]
     pub fn pop_scope(&mut self) {
         self.locals.pop();
     }

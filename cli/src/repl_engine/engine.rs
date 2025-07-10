@@ -80,31 +80,6 @@ pub enum OutputFormat {
 }
 
 impl ReplEngine {
-    /// Creates a new REPL engine instance with configuration
-    pub fn new(config: &crate::config::NagConfig) -> Self {
-        // Initialize with default state
-        let state = ReplState::default();
-        let evaluator = CodeEvaluator::new(config.clone());
-        let session = ReplSession::new();
-        ReplEngine { config: config.clone(), state, evaluator, session }
-    }
-
-    /// Runs the REPL loop (basic stub)
-    pub async fn run(&mut self) -> Result<()> {
-        println!("Starting Nagari REPL. Type 'exit' or Ctrl+C to quit.");
-        loop {
-            // Prompt and read line
-            let input = self.session.readline()?;
-            if input.trim() == "exit" {
-                break;
-            }
-            match self.evaluator.execute(&input) {
-                Ok(val) => println!("=> {:?}", val),
-                Err(err) => eprintln!("Error: {}", err),
-            }
-        }
-        Ok(())
-    }
 
     pub fn new(config: NagConfig) -> Result<Self> {
         let repl_config = ReplConfig::default();
@@ -117,17 +92,7 @@ impl ReplEngine {
         let completer = CodeCompleter::new();
         let highlighter = SyntaxHighlighter::new();
         let builtin_commands = BuiltinCommands::new();
-        let state = ReplState {
-            running: false,
-            should_exit: false,
-            current_input: String::new(),
-            multiline_buffer: Vec::new(),
-            in_multiline: false,
-            indent_level: 0,
-            last_result: None,
-            error_count: 0,
-            command_count: 0,
-        };
+        let state = ReplState::default();
 
         // Initialize VM for code execution
         let vm = nagari_vm::VM::new(false); // debug = false for production
@@ -596,4 +561,24 @@ impl Default for ReplConfig {
             output_format: OutputFormat::Pretty,
         }
     }
+}
+
+impl Default for ReplState {
+    fn default() -> Self {
+        Self {
+            running: false,
+            should_exit: false,
+            current_input: String::new(),
+            multiline_buffer: Vec::new(),
+            in_multiline: false,
+            indent_level: 0,
+            last_result: None,
+            error_count: 0,
+            command_count: 0,
+        }
+    }
+}
+
+impl ReplEngine {
+    // ... existing methods ...
 }

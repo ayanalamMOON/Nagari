@@ -19,14 +19,17 @@ impl CodeCompleter {
         }
     }
 
+    #[allow(dead_code)]
     pub fn is_enabled(&self) -> bool {
         self.enabled
     }
 
+    #[allow(dead_code)]
     pub fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
     }
 
+    #[allow(dead_code)]
     pub fn update_from_context(&mut self, context: &ExecutionContext) {
         self.user_definitions.clear();
 

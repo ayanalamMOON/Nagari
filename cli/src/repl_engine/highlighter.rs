@@ -1,5 +1,7 @@
-use reedline::{Highlighter, StyledText};
+#![allow(dead_code)]
+
 use crossterm::style::Color;
+use reedline::{Highlighter, StyledText};
 
 #[derive(Debug, Clone)]
 pub struct SyntaxHighlighter {
@@ -49,7 +51,7 @@ impl SyntaxHighlighter {
         let tokens = tokenize_simple(code);
 
         for token in tokens {
-            let color = match token.token_type {
+            let _color = match token.token_type {
                 TokenType::Keyword => self.color_scheme.keyword,
                 TokenType::String => self.color_scheme.string,
                 TokenType::Number => self.color_scheme.number,
@@ -192,16 +194,31 @@ fn tokenize_simple(input: &str) -> Vec<Token> {
             }
 
             // Operators and punctuation
-            '+' | '-' | '*' | '/' | '%' | '=' | '!' | '<' | '>' | '&' | '|' | '^' | '~' |
-            '(' | ')' | '[' | ']' | '{' | '}' | ',' | '.' | ':' | ';' | '?' => {
+            '+' | '-' | '*' | '/' | '%' | '=' | '!' | '<' | '>' | '&' | '|' | '^' | '~' | '('
+            | ')' | '[' | ']' | '{' | '}' | ',' | '.' | ':' | ';' | '?' => {
                 let mut end = start + ch.len_utf8();
 
                 // Handle multi-character operators
                 if let Some((next_pos, next_ch)) = chars.peek() {
                     let two_char = format!("{}{}", ch, next_ch);
-                    if matches!(two_char.as_str(),
-                        "==" | "!=" | "<=" | ">=" | "&&" | "||" | "++" | "--" |
-                        "+=" | "-=" | "*=" | "/=" | "%=" | "<<" | ">>" | "->" | "::"
+                    if matches!(
+                        two_char.as_str(),
+                        "==" | "!="
+                            | "<="
+                            | ">="
+                            | "&&"
+                            | "||"
+                            | "++"
+                            | "--"
+                            | "+="
+                            | "-="
+                            | "*="
+                            | "/="
+                            | "%="
+                            | "<<"
+                            | ">>"
+                            | "->"
+                            | "::"
                     ) {
                         end = next_pos + next_ch.len_utf8();
                         chars.next();
@@ -256,26 +273,102 @@ fn tokenize_simple(input: &str) -> Vec<Token> {
 
 fn classify_identifier(text: &str) -> TokenType {
     // Keywords
-    if matches!(text,
-        "let" | "const" | "mut" | "fn" | "class" | "if" | "else" | "elif" |
-        "for" | "while" | "match" | "when" | "try" | "catch" | "finally" |
-        "import" | "from" | "export" | "return" | "break" | "continue" |
-        "true" | "false" | "null" | "undefined" | "this" | "super" |
-        "async" | "await" | "yield" | "and" | "or" | "not" | "in" | "is" |
-        "public" | "private" | "protected" | "static" | "abstract" |
-        "interface" | "enum" | "type" | "as" | "new" | "delete"
+    if matches!(
+        text,
+        "let"
+            | "const"
+            | "mut"
+            | "fn"
+            | "class"
+            | "if"
+            | "else"
+            | "elif"
+            | "for"
+            | "while"
+            | "match"
+            | "when"
+            | "try"
+            | "catch"
+            | "finally"
+            | "import"
+            | "from"
+            | "export"
+            | "return"
+            | "break"
+            | "continue"
+            | "true"
+            | "false"
+            | "null"
+            | "undefined"
+            | "this"
+            | "super"
+            | "async"
+            | "await"
+            | "yield"
+            | "and"
+            | "or"
+            | "not"
+            | "in"
+            | "is"
+            | "public"
+            | "private"
+            | "protected"
+            | "static"
+            | "abstract"
+            | "interface"
+            | "enum"
+            | "type"
+            | "as"
+            | "new"
+            | "delete"
     ) {
         TokenType::Keyword
     }
     // Builtins
-    else if matches!(text,
-        "print" | "println" | "input" | "len" | "range" | "enumerate" |
-        "map" | "filter" | "reduce" | "zip" | "sum" | "min" | "max" |
-        "sort" | "reverse" | "join" | "split" | "replace" | "find" |
-        "substr" | "upper" | "lower" | "trim" | "parse" | "string" |
-        "number" | "boolean" | "list" | "dict" | "set" | "tuple" |
-        "type" | "isinstance" | "hasattr" | "getattr" | "setattr" |
-        "dir" | "vars" | "globals" | "locals" | "eval" | "exec"
+    else if matches!(
+        text,
+        "print"
+            | "println"
+            | "input"
+            | "len"
+            | "range"
+            | "enumerate"
+            | "map"
+            | "filter"
+            | "reduce"
+            | "zip"
+            | "sum"
+            | "min"
+            | "max"
+            | "sort"
+            | "reverse"
+            | "join"
+            | "split"
+            | "replace"
+            | "find"
+            | "substr"
+            | "upper"
+            | "lower"
+            | "trim"
+            | "parse"
+            | "string"
+            | "number"
+            | "boolean"
+            | "list"
+            | "dict"
+            | "set"
+            | "tuple"
+            | "type"
+            | "isinstance"
+            | "hasattr"
+            | "getattr"
+            | "setattr"
+            | "dir"
+            | "vars"
+            | "globals"
+            | "locals"
+            | "eval"
+            | "exec"
     ) {
         TokenType::Builtin
     }

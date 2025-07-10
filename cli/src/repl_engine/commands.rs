@@ -14,6 +14,7 @@ pub struct CommandInfo {
     pub aliases: Vec<String>,
 }
 
+#[allow(dead_code)]
 pub trait ReplCommand {
     async fn execute(&self, args: &[&str], repl: &mut ReplEngine) -> Result<String>;
     fn get_help(&self) -> String;
@@ -349,6 +350,7 @@ impl BuiltinCommands {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_command_names(&self) -> Vec<String> {
         let mut names = Vec::new();
 

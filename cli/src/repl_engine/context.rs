@@ -1,8 +1,11 @@
+#![allow(dead_code)]
+
 use crate::repl_engine::ReplValue;
 use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ExecutionContext {
     pub variables: HashMap<String, Variable>,
     pub imports: HashMap<String, ImportInfo>,
@@ -15,6 +18,7 @@ pub struct ExecutionContext {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct Variable {
     pub name: String,
     pub value: ReplValue,
@@ -26,6 +30,7 @@ pub struct Variable {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum VariableType {
     Local,
     Global,
@@ -36,6 +41,7 @@ pub enum VariableType {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ImportInfo {
     pub module_name: String,
     pub imported_names: Vec<String>,
@@ -45,6 +51,7 @@ pub struct ImportInfo {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct FunctionInfo {
     pub name: String,
     pub parameters: Vec<Parameter>,
@@ -55,6 +62,7 @@ pub struct FunctionInfo {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct Parameter {
     pub name: String,
     pub param_type: Option<String>,
@@ -63,6 +71,7 @@ pub struct Parameter {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ClassInfo {
     pub name: String,
     pub methods: HashMap<String, FunctionInfo>,
@@ -73,6 +82,7 @@ pub struct ClassInfo {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ScopeInfo {
     pub name: String,
     pub parent: Option<String>,
@@ -337,7 +347,7 @@ impl ExecutionContext {
     }    // VM integration methods for global variable management
     pub fn sync_with_vm(&mut self, vm: &mut nagari_vm::VM) {
         // Sync all global variables to the VM
-        for (var_id, variable) in &self.variables {
+        for (_var_id, variable) in &self.variables {
             if matches!(variable.var_type, VariableType::Global) {
                 // Convert ReplValue to VM Value and sync
                 if let Ok(vm_value) = self.repl_value_to_vm_value(&variable.value) {

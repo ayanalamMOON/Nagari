@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 use tower_lsp::lsp_types::*;
 use dashmap::DashMap;
 use ropey::Rope;

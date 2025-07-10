@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::config::LintConfig;
 use crate::tools::{LintIssue, Severity};
 use anyhow::Result;

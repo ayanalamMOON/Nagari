@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs)]
+
 use js_sys::Array;
 use nagari_vm::{Value as NagariValue, VM as NagariVM};
 use std::collections::HashMap;

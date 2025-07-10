@@ -316,18 +316,22 @@ impl ModuleResolver {
 }
 
 impl BuiltinModule {
+    #[allow(dead_code)]
     pub fn get_source_path(&self) -> &PathBuf {
         &self.path
     }
 
+    #[allow(dead_code)]
     pub fn get_compiled_path(&self) -> Option<&PathBuf> {
         self.js_path.as_ref()
     }
 
+    #[allow(dead_code)]
     pub fn has_precompiled_js(&self) -> bool {
         self.js_path.is_some()
     }
 
+    #[allow(dead_code)]
     pub fn get_effective_path(&self) -> &PathBuf {
         self.js_path.as_ref().unwrap_or(&self.path)
     }

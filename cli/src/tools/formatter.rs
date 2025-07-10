@@ -1,5 +1,5 @@
 use crate::config::FormatConfig;
-use crate::tools::{FileChange, Severity};
+use crate::tools::FileChange;
 use anyhow::Result;
 use std::path::Path;
 
@@ -45,9 +45,9 @@ impl NagFormatter {
     pub fn format_string(&self, content: &str) -> Result<String> {
         let mut formatted = String::new();
         let mut indent_level: usize = 0;
-        let mut in_string = false;
-        let mut string_char = '\0';
-        let mut escape_next = false;
+        let _in_string = false;
+        let _string_char = '\0';
+        let _escape_next = false;
 
         for line in content.lines() {
             let trimmed = line.trim();

@@ -7,6 +7,7 @@ pub struct BuiltinMapper {
 }
 
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct BuiltinMapping {
     pub js_equivalent: String,
     pub requires_import: Option<String>,
@@ -461,10 +462,12 @@ impl BuiltinMapper {
         self.mappings.get(name)
     }
 
+    #[allow(dead_code)]
     pub fn is_builtin(&self, name: &str) -> bool {
         self.mappings.contains_key(name)
     }
 
+    #[allow(dead_code)]
     pub fn requires_helper(&self, name: &str) -> bool {
         self.mappings
             .get(name)
@@ -472,6 +475,7 @@ impl BuiltinMapper {
             .unwrap_or(false)
     }
 
+    #[allow(dead_code)]
     pub fn get_all_required_helpers(&self) -> Vec<String> {
         self.mappings
             .iter()

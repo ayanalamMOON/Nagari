@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use reedline::{Reedline, Signal, Prompt, PromptEditMode, PromptHistorySearch, PromptHistorySearchStatus};
 use anyhow::Result;
 

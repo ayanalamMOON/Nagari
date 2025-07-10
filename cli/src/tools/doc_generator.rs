@@ -1,11 +1,10 @@
 use crate::config::NagConfig;
 use anyhow::Result;
-use std::path::{Path, PathBuf};
-use std::collections::HashMap;
+use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 pub struct DocGenerator {
-    config: NagConfig,
+    _config: NagConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,7 +68,7 @@ pub struct DocConstant {
 impl DocGenerator {
     pub fn new(config: &NagConfig) -> Self {
         Self {
-            config: config.clone(),
+            _config: config.clone(),
         }
     }
 
@@ -301,7 +300,7 @@ impl DocGenerator {
         examples: &mut Vec<String>,
     ) {
         let mut current_section = "description";
-        let mut current_param: Option<DocParameter> = None;
+        let mut _current_param: Option<DocParameter> = None;
 
         for line in lines {
             let trimmed = line.trim();
@@ -411,7 +410,7 @@ impl DocGenerator {
         // Extract methods and properties
         let mut methods = Vec::new();
         let mut properties = Vec::new();
-        let mut inheritance = Vec::new();
+        let mut _inheritance = Vec::new();
 
         // Extract inheritance from class definition
         if let Some(colon_pos) = class_part.find(':') {
@@ -420,7 +419,7 @@ impl DocGenerator {
                 let inherit_part = &class_part[paren_pos + 1..colon_pos];
                 if let Some(close_paren) = inherit_part.rfind(')') {
                 let inherit_list = &inherit_part[..close_paren];
-                inheritance = inherit_list
+                _inheritance = inherit_list
                     .split(',')
                     .map(|s| s.trim().to_string())
                     .filter(|s| !s.is_empty())
@@ -431,9 +430,9 @@ impl DocGenerator {
         }
 
         // Find class body and extract methods/properties
-        let mut brace_level = 0;
+        let _brace_level = 0;
         let mut in_class_body = false;
-        let mut class_end_line = lines.len();
+        let _class_end_line = lines.len();
 
         for (i, line) in lines.iter().enumerate().skip(start_line) {
             let trimmed = line.trim();
@@ -445,11 +444,11 @@ impl DocGenerator {
 
             // Track indentation to determine class body boundaries
             if in_class_body && !line.is_empty() && !line.starts_with(' ') && !line.starts_with('\t') {
-            class_end_line = i;
+            let _class_end_line = i;
             break;
             }
 
-            if in_class_body && i < class_end_line {
+            if in_class_body {
             // Extract methods (def statements within class)
             if trimmed.starts_with("def ") || trimmed.starts_with("async def ") {
                 if let Some(method) = self.parse_function(lines, i, include_private)? {

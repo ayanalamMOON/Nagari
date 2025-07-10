@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::ast::*;
 use crate::error::ParseError;
 use crate::token::{Token, TokenWithPosition};

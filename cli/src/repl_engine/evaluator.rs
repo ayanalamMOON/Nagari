@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::config::NagConfig;
 use crate::repl_engine::{ExecutionContext, ReplValue};
 use anyhow::Result;
@@ -36,16 +38,22 @@ impl CodeEvaluator {
         })
     }
 
-    pub async fn evaluate(&mut self, code: &str, context: &mut ExecutionContext) -> Result<ReplValue> {
+    pub async fn evaluate(
+        &mut self,
+        code: &str,
+        context: &mut ExecutionContext,
+    ) -> Result<ReplValue> {
         let start_time = std::time::Instant::now();
 
         // First, try to compile the Nagari code
         let compiled_result = self.compile_nagari_code(code)?;
 
         // Then execute the JavaScript
-        let result = self.execute_javascript(&compiled_result.javascript, context).await?;
+        let result = self
+            .execute_javascript(&compiled_result.javascript, context)
+            .await?;
 
-        let execution_time = start_time.elapsed();
+        let _execution_time = start_time.elapsed();
 
         // Update context with any new bindings
         self.update_context_from_result(&result, context);
@@ -53,15 +61,24 @@ impl CodeEvaluator {
         Ok(result)
     }
 
-    pub async fn evaluate_expression(&mut self, expr: &str, context: &mut ExecutionContext) -> Result<ReplValue> {
+    pub async fn evaluate_expression(
+        &mut self,
+        expr: &str,
+        context: &mut ExecutionContext,
+    ) -> Result<ReplValue> {
         // For expressions, wrap in a return statement
         let code = format!("return ({})", expr);
         self.evaluate(&code, context).await
     }
 
-    pub async fn evaluate_statement(&mut self, stmt: &str, context: &mut ExecutionContext) -> Result<ReplValue> {
+    pub async fn evaluate_statement(
+        &mut self,
+        stmt: &str,
+        context: &mut ExecutionContext,
+    ) -> Result<ReplValue> {
         self.evaluate(stmt, context).await
-    }    fn compile_nagari_code(&mut self, code: &str) -> Result<CompilationResult> {
+    }
+    fn compile_nagari_code(&mut self, code: &str) -> Result<CompilationResult> {
         // Compile the code
         let result = self.compiler.compile_string(code, None)?;
 
@@ -75,7 +92,11 @@ impl CodeEvaluator {
         })
     }
 
-    async fn execute_javascript(&mut self, js_code: &str, context: &ExecutionContext) -> Result<ReplValue> {
+    async fn execute_javascript(
+        &mut self,
+        js_code: &str,
+        _context: &ExecutionContext,
+    ) -> Result<ReplValue> {
         // In a real implementation, this would use a JavaScript engine like V8 or QuickJS
         // For now, we'll simulate some basic evaluation
 
@@ -119,13 +140,14 @@ impl CodeEvaluator {
 
         // Default to undefined for unknown expressions
         Ok(ReplValue::Undefined)
-    }    fn is_expression(&self, _code: &str) -> bool {
+    }
+    fn is_expression(&self, _code: &str) -> bool {
         // In a real implementation, this would check the AST structure
         // For now, we'll use simple heuristics
         true // Assume everything is an expression for simplicity
     }
 
-    fn update_context_from_result(&self, result: &ReplValue, context: &mut ExecutionContext) {
+    fn update_context_from_result(&self, _result: &ReplValue, _context: &mut ExecutionContext) {
         // Update the execution context with any new variables or functions
         // This would extract bindings from the evaluation result
     }
@@ -160,7 +182,7 @@ impl JavaScriptRuntime {
         Self { globals }
     }
 
-    pub fn execute(&mut self, code: &str) -> Result<ReplValue> {
+    pub fn execute(&mut self, _code: &str) -> Result<ReplValue> {
         // Simulate JavaScript execution
         // In a real implementation, this would use a proper JS engine
         Ok(ReplValue::Undefined)

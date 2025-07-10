@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
 use tower_lsp::lsp_types::*;
 use tower_lsp::Client;
 use std::sync::Arc;
