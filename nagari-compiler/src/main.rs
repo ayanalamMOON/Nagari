@@ -254,7 +254,7 @@ fn bundle_output(output_path: &str, cli: &Cli) -> Result<(), String> {
 
     // Use rollup for bundling
     let mut cmd = Command::new("npx");
-    cmd.args(&["rollup", output_path, "-f", "iife", "-o"]);
+    cmd.args(["rollup", output_path, "-f", "iife", "-o"]);
 
     let bundled_path = output_path.replace(".js", ".bundle.js");
     cmd.arg(&bundled_path);
@@ -276,11 +276,11 @@ fn bundle_output(output_path: &str, cli: &Cli) -> Result<(), String> {
 fn minify_output(output_path: &str) -> Result<(), String> {
     // Use terser for minification
     let mut cmd = Command::new("npx");
-    cmd.args(&["terser", output_path, "-o"]);
+    cmd.args(["terser", output_path, "-o"]);
 
     let minified_path = output_path.replace(".js", ".min.js");
     cmd.arg(&minified_path);
-    cmd.args(&["-c", "-m"]);
+    cmd.args(["-c", "-m"]);
 
     let output = cmd.output()
         .map_err(|e| format!("Failed to run terser: {}", e))?;

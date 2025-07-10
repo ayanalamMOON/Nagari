@@ -267,6 +267,11 @@ Nagari/
 │   │   ├── transpiler.rs       # JavaScript code generation
 │   │   └── types.rs            # Type system implementation
 ├── nagari-runtime/              # Runtime utilities and polyfills
+│   └── src/                    # TypeScript runtime implementation
+├── nagari-vm/                   # Virtual machine for execution
+├── nagari-parser/               # Alternative parser implementation
+├── nagari-embedded/             # Embedded systems support
+├── nagari-wasm/                 # WebAssembly compilation target
 ├── registry-server/             # Production registry server
 │   ├── src/
 │   │   ├── handlers/           # REST API endpoints
@@ -297,6 +302,14 @@ Nagari/
 │   ├── js_interop_demo.nag    # JavaScript interoperability
 │   ├── algorithms.nag         # Data structures and algorithms
 │   └── cli_demo.nag           # Command-line applications
+├── tests/                       # Test files and utilities
+│   ├── fixtures/               # Test Nagari source files
+│   ├── outputs/                # Generated JavaScript files
+│   ├── debug/                  # Debug utilities and tools
+│   └── README.md               # Testing documentation
+├── dev-tools/                   # Development utilities
+│   ├── test-*/                 # Temporary test projects
+│   └── README.md               # Development tools documentation
 ├── specs/                       # Enhanced language specification
 │   ├── grammar.bnf            # Complete BNF grammar
 │   └── language-spec.md       # Comprehensive language reference
@@ -313,7 +326,8 @@ Nagari/
 │   ├── build.sh              # Cross-platform build script
 │   ├── run-tests.sh          # Comprehensive test runner
 │   └── test-*.sh             # Specialized testing tools
-└── tests/                       # Integration and end-to-end tests
+└── assets/                      # Project assets and resources
+    └── docs.css               # Documentation styling
 ```
 
 ## 🚀 Installation & Setup

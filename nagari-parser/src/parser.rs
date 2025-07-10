@@ -29,6 +29,10 @@ impl Parser {
         Ok(Program { statements })
     }
 
+    pub fn parse(&mut self) -> Result<Program, ParseError> {
+        self.parse_program()
+    }
+
     fn parse_statement(&mut self) -> Result<Statement, ParseError> {
         match self.peek_token()?.map(|t| t.token.clone()) {
             Some(Token::ExportNamed) => {
@@ -48,6 +52,7 @@ impl Parser {
             Some(Token::Let) => self.parse_let_statement(),
             Some(Token::Const) => self.parse_const_statement(),
             Some(Token::Function) => self.parse_function_statement(),
+            Some(Token::Def) => self.parse_def_statement(),
             Some(Token::Return) => self.parse_return_statement(),
             Some(Token::If) => self.parse_if_statement(),
             Some(Token::While) => self.parse_while_statement(),
@@ -107,6 +112,62 @@ impl Parser {
         self.consume(&Token::LeftBrace, "Expected '{'")?;
 
         let body = self.parse_block()?;
+
+        Ok(Statement::Function {
+            name,
+            parameters,
+            body,
+            is_async,
+        })
+    }
+
+    fn parse_def_statement(&mut self) -> Result<Statement, ParseError> {
+        let is_async = if self.check(&Token::Async) {
+            let _ = self.advance();
+            true
+        } else {
+            false
+        };
+
+        self.consume(&Token::Def, "Expected 'def'")?;
+        let name = self.consume_identifier("Expected function name")?;
+        self.consume(&Token::LeftParen, "Expected '('")?;
+
+        let mut parameters = Vec::new();
+        if !self.check(&Token::RightParen) {
+            loop {
+                parameters.push(self.consume_identifier("Expected parameter name")?);
+                if !self.match_token(&Token::Comma) {
+                    break;
+                }
+            }
+        }
+
+        self.consume(&Token::RightParen, "Expected ')'")?;
+        self.consume(&Token::Colon, "Expected ':'")?;
+
+        // Expect a newline after the colon (Pythonic syntax)
+        self.consume(&Token::Newline, "Expected newline after ':'")?;
+
+        // Expect an INDENT token to start the function body
+        self.consume(&Token::Indent, "Expected indented block")?;
+
+        let mut body = Vec::new();
+
+        // Parse statements until we hit a DEDENT
+        while !self.check(&Token::Dedent) && !self.is_at_end() {
+            if self.check(&Token::Newline) {
+                let _ = self.advance();
+                continue;
+            }
+
+            body.push(self.parse_statement()?);
+        }
+
+        // Consume the DEDENT token
+        if self.check(&Token::Dedent) {
+            let _ = self.advance();
+        }
 
         Ok(Statement::Function {
             name,
@@ -221,31 +282,43 @@ impl Parser {
     }
 
     fn parse_assignment(&mut self) -> Result<Expression, ParseError> {
-        let left = self.parse_expression()?;
-        if !left.is_lvalue() {
-            return Err(ParseError::InvalidAssignmentTarget);
-        }
-        let token = self.consume_token()?.token.clone();
-        let operator = match token {
-            Token::Assign => AssignmentOperator::Assign,
-            Token::PlusAssign => AssignmentOperator::AddAssign,
-            Token::MinusAssign => AssignmentOperator::SubtractAssign,
-            Token::MultiplyAssign => AssignmentOperator::MultiplyAssign,
-            Token::DivideAssign => AssignmentOperator::DivideAssign,
-            _ => {
-                return Err(ParseError::UnexpectedToken {
-                    token: format!("{:?}", token),
-                    line: 0,
-                    column: 0,
-                })
+        let expr = self.parse_conditional()?;
+
+        // Check if this is an assignment expression
+        if let Ok(Some(token_with_pos)) = self.peek_token() {
+            match &token_with_pos.token {
+                Token::Assign | Token::PlusAssign | Token::MinusAssign |
+                Token::MultiplyAssign | Token::DivideAssign => {
+                    // Verify left side is a valid assignment target
+                    if !expr.is_lvalue() {
+                        return Err(ParseError::InvalidAssignmentTarget);
+                    }
+
+                    // Consume the assignment operator
+                    let op_token = self.advance()?.token.clone();
+                    let operator = match op_token {
+                        Token::Assign => AssignmentOperator::Assign,
+                        Token::PlusAssign => AssignmentOperator::AddAssign,
+                        Token::MinusAssign => AssignmentOperator::SubtractAssign,
+                        Token::MultiplyAssign => AssignmentOperator::MultiplyAssign,
+                        Token::DivideAssign => AssignmentOperator::DivideAssign,
+                        _ => unreachable!(),
+                    };
+
+                    // Parse the right side (assignments are right-associative)
+                    let right = self.parse_assignment()?;
+
+                    Ok(Expression::Assignment {
+                        left: Box::new(expr),
+                        operator,
+                        right: Box::new(right),
+                    })
+                }
+                _ => Ok(expr)
             }
-        };
-        let right = self.parse_expression()?;
-        Ok(Expression::Assignment {
-            left: Box::new(left),
-            operator,
-            right: Box::new(right),
-        })
+        } else {
+            Ok(expr)
+        }
     }
 
     fn parse_conditional(&mut self) -> Result<Expression, ParseError> {
@@ -414,7 +487,7 @@ impl Parser {
                 _ => {}
             }
         }
-        self.parse_primary()
+        self.parse_call()
     }
 
     fn parse_call(&mut self) -> Result<Expression, ParseError> {
@@ -591,7 +664,10 @@ impl Parser {
     }
 
     fn consume_statement_terminator(&mut self) -> Result<(), ParseError> {
-        if self.match_token(&Token::Semicolon) || self.match_token(&Token::Newline) {
+        if self.match_token(&Token::Semicolon)
+           || self.match_token(&Token::Newline)
+           || self.check(&Token::Dedent)
+           || self.check(&Token::Eof) {
             Ok(())
         } else {
             let found_token = self

@@ -154,7 +154,7 @@ impl LockFile {
 
     pub fn validate_integrity(&self) -> Result<Vec<String>> {
         let mut errors = Vec::new();        // Check that all required dependencies exist
-        for (name, _dep_ref) in &self.dependencies {
+        for name in self.dependencies.keys() {
             if !self.packages.contains_key(name) {
                 errors.push(format!("Missing package: {}", name));
             }
@@ -218,7 +218,7 @@ impl LockFile {
             let package_name = extract_package_name(full_name);
             package_versions
                 .entry(package_name)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(package.version.clone());
         }
 
@@ -355,8 +355,8 @@ fn version_satisfies(installed_version: &str, required_version: &str) -> bool {
 
 fn extract_package_name(full_name: &str) -> String {
     // Extract package name from full path (e.g., "node_modules/@scope/package" -> "@scope/package")
-    if full_name.starts_with("node_modules/") {
-        full_name[13..].to_string()
+    if let Some(stripped) = full_name.strip_prefix("node_modules/") {
+        stripped.to_string()
     } else {
         full_name.to_string()
     }

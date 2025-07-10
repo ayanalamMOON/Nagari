@@ -64,7 +64,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Starting Nagari Language Server");
 
     // Create the language server
-    let (service, socket) = LspService::new(|client| NagariLanguageServer::new(client));
+    let (service, socket) = LspService::new(NagariLanguageServer::new);
 
     // Start the server based on the communication method
     if let Some(port) = args.tcp {

@@ -269,7 +269,7 @@ impl VM {
         match instruction.opcode {
             Opcode::LoadConst => {
                 if let Some(constant) = bytecode.constants.get(instruction.operand as usize) {
-                    print!(" ({})", constant.to_string());
+                    print!(" ({})", constant);
                 }
             }
             Opcode::LoadName | Opcode::StoreName => {
@@ -310,7 +310,7 @@ impl VM {
         self.environment = Environment::new();
         // Re-setup built-ins after clearing
         for (name, value) in setup_builtins() {
-            self.environment.define_global(&name, value);
+            self.environment.define_global(name, value);
         }
     }
 }

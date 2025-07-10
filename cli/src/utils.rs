@@ -55,7 +55,7 @@ pub fn relative_path(from: &Path, to: &Path) -> PathBuf {
     let from = from.canonicalize().unwrap_or_else(|_| from.to_path_buf());
     let to = to.canonicalize().unwrap_or_else(|_| to.to_path_buf());
 
-    pathdiff::diff_paths(&to, &from).unwrap_or_else(|| to)
+    pathdiff::diff_paths(&to, &from).unwrap_or(to)
 }
 
 /// Recursively find all files with a specific extension

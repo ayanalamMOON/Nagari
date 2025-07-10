@@ -5,7 +5,7 @@ use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::future::Future;
-use std::path::PathBuf;
+use std::path::Path;
 use std::pin::Pin;
 use std::process::Command;
 
@@ -209,7 +209,7 @@ impl DependencyResolver {
         name: &'a str,
         spec: &'a DependencySpec,
         context: &'a ResolutionContext,
-        resolution_graph: &'a mut HashMap<String, ResolvedDependency>,
+        _resolution_graph: &'a mut HashMap<String, ResolvedDependency>,
     ) -> Pin<Box<dyn Future<Output = Result<ResolvedDependency>> + Send + 'a>> {
         Box::pin(async move {            // Handle local path dependencies
             if let DependencySpec::Detailed {
@@ -258,7 +258,7 @@ impl DependencyResolver {
             for (dep_name, dep_version_req) in deps_to_resolve {
                 let dep_spec = DependencySpec::Version(dep_version_req);
                 let resolved_dep = self
-                    .resolve_dependency_tree_boxed(&dep_name, &dep_spec, context, resolution_graph)
+                    .resolve_dependency_tree_boxed(&dep_name, &dep_spec, context, _resolution_graph)
                     .await?;
                 dependencies.insert(dep_name, resolved_dep.version);
             }
@@ -290,7 +290,7 @@ impl DependencyResolver {
     async fn resolve_local_dependency(
         &self,
         name: &str,
-        path: &PathBuf,
+        path: &Path,
     ) -> Result<ResolvedDependency> {
         let manifest_path = path.join("nagari.json");
         let manifest = PackageManifest::from_file(&manifest_path)?;
@@ -450,8 +450,8 @@ impl DependencyResolver {
         suitable_versions.sort();
 
         match context.update_strategy {
-            UpdateStrategy::Latest => Ok(suitable_versions.into_iter().last().unwrap()),
-            _ => Ok(suitable_versions.into_iter().last().unwrap()),
+            UpdateStrategy::Latest => Ok(suitable_versions.into_iter().next_back().unwrap()),
+            _ => Ok(suitable_versions.into_iter().next_back().unwrap()),
         }
     }
 

@@ -5,7 +5,7 @@ use crate::{DocCommands, PackageCommands};
 use anyhow::{Context, Result};
 use colored::*;
 use notify::{recommended_watcher, RecursiveMode, Watcher};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 use std::time::Duration;
 use tokio::process::Command;
@@ -747,7 +747,7 @@ pub async fn serve_command(
 }
 
 // Template creation functions
-fn create_basic_template(dir: &PathBuf, name: &str) -> Result<()> {
+fn create_basic_template(dir: &Path, name: &str) -> Result<()> {
     // Create basic project structure
     std::fs::create_dir_all(dir.join("src"))?;
 
@@ -806,7 +806,7 @@ Thumbs.db
     Ok(())
 }
 
-fn create_web_template(dir: &PathBuf, name: &str) -> Result<()> {
+fn create_web_template(dir: &Path, name: &str) -> Result<()> {
     create_basic_template(dir, name)?;
 
     // Add web-specific files
@@ -829,7 +829,7 @@ fn create_web_template(dir: &PathBuf, name: &str) -> Result<()> {
     Ok(())
 }
 
-fn create_cli_template(dir: &PathBuf, name: &str) -> Result<()> {
+fn create_cli_template(dir: &Path, name: &str) -> Result<()> {
     create_basic_template(dir, name)?;
 
     // Modify main.nag for CLI
@@ -862,7 +862,7 @@ if __name__ == "__main__":
     Ok(())
 }
 
-fn create_library_template(dir: &PathBuf, name: &str) -> Result<()> {
+fn create_library_template(dir: &Path, name: &str) -> Result<()> {
     create_basic_template(dir, name)?;
 
     // Create lib structure

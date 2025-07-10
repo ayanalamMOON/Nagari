@@ -1,0 +1,7 @@
+# Test 1: Basic arithmetic and variables
+x = 10
+y = 20
+result = x + y
+print("Sum:", result)
+print("Product:", x * y)
+print("Division:", y / x)

@@ -1,11 +1,15 @@
 use crate::error::ParseError;
 use crate::token::{Token, TokenWithPosition};
+use std::collections::VecDeque;
 
 pub struct Lexer {
     input: String,
     position: usize,
     line: usize,
     column: usize,
+    indent_stack: Vec<usize>,
+    pending_tokens: VecDeque<Token>,
+    at_line_start: bool,
 }
 
 impl Lexer {
@@ -15,19 +19,16 @@ impl Lexer {
             position: 0,
             line: 1,
             column: 1,
+            indent_stack: vec![0],
+            pending_tokens: VecDeque::new(),
+            at_line_start: true,
         }
     }
 
     pub fn tokenize(&mut self) -> Result<Vec<TokenWithPosition>, ParseError> {
         let mut tokens = Vec::new();
 
-        while !self.is_at_end() {
-            self.skip_whitespace();
-
-            if self.is_at_end() {
-                break;
-            }
-
+        while !self.is_at_end() || !self.pending_tokens.is_empty() {
             let start_line = self.line;
             let start_column = self.column;
             let start_offset = self.position;
@@ -42,6 +43,17 @@ impl Lexer {
             });
         }
 
+        // At EOF, emit any remaining DEDENT tokens
+        while self.indent_stack.len() > 1 {
+            self.indent_stack.pop();
+            tokens.push(TokenWithPosition {
+                token: Token::Dedent,
+                line: self.line,
+                column: self.column,
+                offset: self.position,
+            });
+        }
+
         tokens.push(TokenWithPosition {
             token: Token::Eof,
             line: self.line,
@@ -53,6 +65,57 @@ impl Lexer {
     }
 
     fn next_token(&mut self) -> Result<Token, ParseError> {
+        // If we have pending tokens (like DEDENT), return them first
+        if let Some(token) = self.pending_tokens.pop_front() {
+            return Ok(token);
+        }
+
+        // Handle indentation at the beginning of a line
+        if self.at_line_start {
+            self.at_line_start = false;
+            let indent_level = self.count_indentation();
+
+            // Skip empty lines and comments
+            if self.is_at_end() || self.peek() == '\n' || self.peek() == '#' {
+                self.skip_to_next_line()?;
+                return self.next_token();
+            }
+
+            let current_indent = *self.indent_stack.last().unwrap();
+
+            if indent_level > current_indent {
+                // Increase indentation
+                self.indent_stack.push(indent_level);
+                return Ok(Token::Indent);
+            } else if indent_level < current_indent {
+                // Decrease indentation - might need multiple DEDENT tokens
+                while let Some(&stack_indent) = self.indent_stack.last() {
+                    if stack_indent <= indent_level {
+                        break;
+                    }
+                    self.indent_stack.pop();
+                    self.pending_tokens.push_back(Token::Dedent);
+                }
+
+                // Check if we found a matching indentation level
+                if self.indent_stack.last() != Some(&indent_level) {
+                    return Err(ParseError::SyntaxError {
+                        message: "Indentation does not match any outer indentation level".to_string(),
+                        line: self.line,
+                        column: self.column,
+                    });
+                }
+
+                return self.next_token(); // This will return the first DEDENT
+            }
+        }
+
+        self.skip_whitespace();
+
+        if self.is_at_end() {
+            return Ok(Token::Eof);
+        }
+
         let ch = self.advance();
 
         match ch {
@@ -174,6 +237,7 @@ impl Lexer {
             '\n' => {
                 self.line += 1;
                 self.column = 1;
+                self.at_line_start = true;
                 Ok(Token::Newline)
             }
             '"' => self.string_literal(),
@@ -250,6 +314,7 @@ impl Lexer {
             "const" => Token::Const,
             "var" => Token::Var,
             "function" => Token::Function,
+            "def" => Token::Def,
             "return" => Token::Return,
             "if" => Token::If,
             "else" => Token::Else,
@@ -290,6 +355,38 @@ impl Lexer {
                 break;
             }
         }
+    }
+
+    fn count_indentation(&mut self) -> usize {
+        let mut indent = 0;
+
+        while !self.is_at_end() {
+            let ch = self.peek();
+            if ch == ' ' {
+                indent += 1;
+                self.advance();
+            } else if ch == '\t' {
+                indent += 8; // Tab counts as 8 spaces
+                self.advance();
+            } else {
+                break;
+            }
+        }
+
+        indent
+    }
+
+    fn skip_to_next_line(&mut self) -> Result<(), ParseError> {
+        while !self.is_at_end() && self.peek() != '\n' {
+            self.advance();
+        }
+        if !self.is_at_end() {
+            self.advance(); // consume newline
+            self.line += 1;
+            self.column = 1;
+            self.at_line_start = true;
+        }
+        Ok(())
     }
 
     fn skip_line_comment(&mut self) {

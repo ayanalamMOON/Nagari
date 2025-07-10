@@ -1,0 +1,13 @@
+# Test 2: Function definitions and calls
+def greet(name):
+    return "Hello, " + name + "!"
+
+def add_numbers(a, b):
+    return a + b
+
+# Test function calls
+message = greet("Nagari")
+print(message)
+
+sum_result = add_numbers(15, 25)
+print("Sum result:", sum_result)

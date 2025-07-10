@@ -129,15 +129,15 @@ impl Lexer {
         let mut tokens = Vec::new();
 
         while !self.is_at_end() {
+            // Handle indentation at start of line BEFORE skipping whitespace
+            if self.column == 1 {
+                self.handle_indentation(&mut tokens)?;
+            }
+
             self.skip_whitespace_and_comments();
 
             if self.is_at_end() {
                 break;
-            }
-
-            // Handle indentation at start of line
-            if self.column == 1 {
-                self.handle_indentation(&mut tokens)?;
             }
 
             let token = self.next_token()?;
@@ -264,8 +264,10 @@ impl Lexer {
                 }
             }
             '"' => self.string_literal(),
-            c if c.is_ascii_digit() => self.number_literal(),
-            c if c.is_ascii_alphabetic() || c == '_' => self.identifier_or_keyword(),
+            c if c.is_ascii_digit() => self.number_literal_with_first_char(c),
+            c if c.is_ascii_alphabetic() || c == '_' => {
+                self.identifier_or_keyword_with_first_char(c)
+            }
             _ => Err(NagariError::LexError(format!(
                 "Unexpected character '{}' at line {}, column {}",
                 c, self.line, self.column
@@ -308,8 +310,9 @@ impl Lexer {
         Ok(Token::StringLiteral(value))
     }
 
-    fn number_literal(&mut self) -> Result<Token, NagariError> {
+    fn number_literal_with_first_char(&mut self, first_char: char) -> Result<Token, NagariError> {
         let mut value = String::new();
+        value.push(first_char); // Include the first character that was already consumed
 
         while self.peek().map_or(false, |c| c.is_ascii_digit()) {
             value.push(self.advance());
@@ -336,8 +339,12 @@ impl Lexer {
         }
     }
 
-    fn identifier_or_keyword(&mut self) -> Result<Token, NagariError> {
+    fn identifier_or_keyword_with_first_char(
+        &mut self,
+        first_char: char,
+    ) -> Result<Token, NagariError> {
         let mut value = String::new();
+        value.push(first_char); // Include the first character that was already consumed
 
         while self
             .peek()

@@ -132,7 +132,7 @@ fn tokenize_simple(input: &str) -> Vec<Token> {
                 let mut end = start + ch.len_utf8();
                 let mut escaped = false;
 
-                while let Some((next_pos, next_ch)) = chars.next() {
+                for (next_pos, next_ch) in chars.by_ref() {
                     end = next_pos + next_ch.len_utf8();
 
                     if escaped {
@@ -178,7 +178,7 @@ fn tokenize_simple(input: &str) -> Vec<Token> {
             // Comments
             '#' => {
                 let mut end = input.len();
-                while let Some((next_pos, next_ch)) = chars.next() {
+                for (next_pos, next_ch) in chars.by_ref() {
                     if next_ch == '\n' {
                         end = next_pos;
                         break;

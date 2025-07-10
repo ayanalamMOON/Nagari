@@ -347,7 +347,7 @@ impl ExecutionContext {
     }    // VM integration methods for global variable management
     pub fn sync_with_vm(&mut self, vm: &mut nagari_vm::VM) {
         // Sync all global variables to the VM
-        for (_var_id, variable) in &self.variables {
+        for variable in self.variables.values() {
             if matches!(variable.var_type, VariableType::Global) {
                 // Convert ReplValue to VM Value and sync
                 if let Ok(vm_value) = self.repl_value_to_vm_value(&variable.value) {

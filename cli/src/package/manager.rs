@@ -80,7 +80,7 @@ impl PackageManager {
         if !PathBuf::from("README.md").exists() {
             fs::write(
                 "README.md",
-                &format!("# {}\n\nA Nagari package.\n", manifest.name),
+                format!("# {}\n\nA Nagari package.\n", manifest.name),
             )?;
         }
 

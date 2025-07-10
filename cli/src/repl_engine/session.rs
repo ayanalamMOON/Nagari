@@ -326,7 +326,7 @@ impl SessionValue {
             ReplValue::Boolean(b) => SessionValue::Boolean(*b),
             ReplValue::List(items) => {
                 let session_items = items.iter()
-                    .map(|item| SessionValue::from_repl_value(item))
+                    .map(SessionValue::from_repl_value)
                     .collect();
                 SessionValue::List(session_items)
             }

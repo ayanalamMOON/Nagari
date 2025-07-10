@@ -194,15 +194,13 @@ impl ModuleResolver {
                     builtin.name
                 )
             }
+        } else if import.module == "react" {
+            "const React = ReactInterop;".to_string()
         } else {
-            if import.module == "react" {
-                "const React = ReactInterop;".to_string()
-            } else {
-                format!(
-                    "const {} = InteropRegistry.getModule(\"{}\");",
-                    import.module, builtin.name
-                )
-            }
+            format!(
+                "const {} = InteropRegistry.getModule(\"{}\");",
+                import.module, builtin.name
+            )
         }
     }
     fn generate_standard_import(

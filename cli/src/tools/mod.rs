@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
@@ -120,15 +120,15 @@ impl ToolsManager {    pub fn new() -> Result<Self> {
         Ok(changes)
     }
 
-    pub fn generate_docs(&self, source_dir: &PathBuf, output_dir: &PathBuf) -> Result<Vec<FileChange>> {
+    pub fn generate_docs(&self, source_dir: &Path, output_dir: &Path) -> Result<Vec<FileChange>> {
         match self.doc_generator.generate(source_dir, output_dir, "html", false) {
             Ok(_) => Ok(vec![FileChange {
-                path: output_dir.clone(),
+                path: output_dir.to_path_buf(),
                 changed: true,
                 diff: None,
                 errors: Vec::new(),            }]),
             Err(e) => Ok(vec![FileChange {
-                path: output_dir.clone(),
+                path: output_dir.to_path_buf(),
                 changed: false,
                 diff: None,
                 errors: vec![e.to_string()],

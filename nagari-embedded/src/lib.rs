@@ -494,6 +494,12 @@ pub struct RuntimeBuilder {
     config: RuntimeConfig,
 }
 
+impl Default for RuntimeBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RuntimeBuilder {
     pub fn new() -> Self {
         Self {

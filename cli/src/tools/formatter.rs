@@ -174,10 +174,8 @@ impl NagFormatter {
                 }
                 ',' if !in_string => {
                     result.push(ch);
-                    if self.config.trailing_commas {
-                        if chars.peek().is_some() && chars.peek() != Some(&' ') {
-                            result.push(' ');
-                        }
+                    if self.config.trailing_commas && chars.peek().is_some() && chars.peek() != Some(&' ') {
+                        result.push(' ');
                     }
                 }
                 _ => result.push(ch),

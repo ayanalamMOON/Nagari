@@ -126,118 +126,6 @@ impl Type {
         }
     }
 
-    pub fn to_string(&self) -> String {
-        match self {
-            Type::Int => "int".to_string(),
-            Type::Float => "float".to_string(),
-            Type::Str => "str".to_string(),
-            Type::Bool => "bool".to_string(),
-            Type::List(inner) => format!("list[{}]", inner.to_string()),
-            Type::Dict(key, value) => format!("dict[{}, {}]", key.to_string(), value.to_string()),
-            Type::Function(args, ret) => {
-                let arg_types: Vec<String> = args.iter().map(|t| t.to_string()).collect();
-                format!("({}) -> {}", arg_types.join(", "), ret.to_string())
-            }
-            Type::String => "string".to_string(),
-            Type::Array(inner) => format!("array[{}]", inner.to_string()),
-            Type::Object(obj) => {
-                let fields: Vec<String> = obj
-                    .iter()
-                    .map(|(k, v)| format!("{}: {}", k, v.to_string()))
-                    .collect();
-                format!("{{ {} }}", fields.join(", "))
-            }
-            Type::Unknown => "unknown".to_string(),
-            Type::Never => "never".to_string(),
-            Type::Any => "any".to_string(),
-            Type::None => "none".to_string(),
-
-            Type::Generic(generic) => {
-                let param_types: Vec<String> =
-                    generic.parameters.iter().map(|t| t.to_string()).collect();
-                format!("{}<{}>", generic.base.to_string(), param_types.join(", "))
-            }
-
-            Type::TypeParameter(param) => {
-                let constraints: Vec<String> = param
-                    .constraints
-                    .iter()
-                    .map(|c| format!("{:?}", c))
-                    .collect();
-                format!("{}: {}", param.name, constraints.join(" + "))
-            }
-
-            Type::Union(union) => {
-                let inner_types: Vec<String> = union.types.iter().map(|t| t.to_string()).collect();
-                format!("({})", inner_types.join(" | "))
-            }
-
-            Type::Intersection(inter) => {
-                let inner_types: Vec<String> = inter.iter().map(|t| t.to_string()).collect();
-                format!("({})", inner_types.join(" & "))
-            }
-
-            Type::Conditional {
-                check,
-                extends,
-                true_type,
-                false_type,
-            } => {
-                format!(
-                    "{} extends {} ? {} : {}",
-                    check.to_string(),
-                    extends.to_string(),
-                    true_type.to_string(),
-                    false_type.to_string()
-                )
-            }
-            Type::Mapped {
-                key_type,
-                value_type,
-                optional,
-                readonly,
-            } => {
-                format!(
-                    "{{ [key: {}]: {}{}{} }}",
-                    key_type.to_string(),
-                    value_type.to_string(),
-                    if *optional { "?" } else { "" },
-                    if *readonly { " readonly" } else { "" }
-                )
-            }
-
-            Type::TemplateLiteral {
-                parts,
-                interpolations,
-            } => {
-                let mut result = String::new();
-                for (i, part) in parts.iter().enumerate() {
-                    result.push_str(part);
-                    if i < interpolations.len() {
-                        result.push_str(&interpolations[i].to_string());
-                    }
-                }
-                result
-            }
-
-            Type::Callable { overloads } => {
-                let overload_strs: Vec<String> = overloads.iter().map(|o| o.to_string()).collect();
-                format!("Callable({})", overload_strs.join(", "))
-            }
-
-            Type::IndexSignature {
-                key_type,
-                value_type,
-            } => {
-                format!(
-                    "[key: {}]: {}",
-                    key_type.to_string(),
-                    value_type.to_string()
-                )
-            }
-        }
-    }
-
     pub fn is_compatible(&self, other: &Type) -> bool {
         match (self, other) {
             (Type::Any, _) | (_, Type::Any) => true,
@@ -283,7 +171,7 @@ impl Type {
 
             // Structural compatibility for object types
             (Type::Object(obj1), Type::Object(obj2)) => obj2.iter().all(|(key, expected_type)| {
-                obj1.get(key).map_or(false, |actual_type| {
+                obj1.get(key).is_some_and(|actual_type| {
                     actual_type.is_assignable_to(expected_type)
                 })
             }),
@@ -398,6 +286,12 @@ pub struct TypeInferenceEngine {
 }
 
 #[allow(dead_code)]
+impl Default for TypeInferenceEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TypeInferenceEngine {
     pub fn new() -> Self {
         Self {
@@ -693,6 +587,12 @@ pub enum MacroExpansionType {
 
 pub struct MacroProcessor {
     macros: HashMap<String, MacroDefinition>,
+}
+
+impl Default for MacroProcessor {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MacroProcessor {

@@ -54,26 +54,6 @@ impl Value {
         }
     }
 
-    pub fn to_string(&self) -> String {
-        match self {
-            Value::Int(n) => n.to_string(),
-            Value::Float(f) => f.to_string(),
-            Value::String(s) => s.clone(),
-            Value::Bool(b) => if *b { "true".to_string() } else { "false".to_string() },
-            Value::List(l) => {
-                let items: Vec<String> = l.iter().map(|v| v.to_string()).collect();
-                format!("[{}]", items.join(", "))
-            }
-            Value::Dict(d) => {
-                let items: Vec<String> = d.iter().map(|(k, v)| format!("{}: {}", k, v.to_string())).collect();
-                format!("{{{}}}", items.join(", "))
-            }
-            Value::Function(f) => format!("<function {}>", f.name),
-            Value::Builtin(f) => format!("<builtin {}>", f.name),
-            Value::None => "none".to_string(),
-        }
-    }
-
     pub fn add(&self, other: &Value) -> Result<Value, String> {
         match (self, other) {
             (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a + b)),
@@ -86,7 +66,11 @@ impl Value {
                 result.extend(b.clone());
                 Ok(Value::List(result))
             }
-            _ => Err(format!("Cannot add {} and {}", self.type_name(), other.type_name())),
+            _ => Err(format!(
+                "Cannot add {} and {}",
+                self.type_name(),
+                other.type_name()
+            )),
         }
     }
 
@@ -96,7 +80,11 @@ impl Value {
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a - b)),
             (Value::Int(a), Value::Float(b)) => Ok(Value::Float(*a as f64 - b)),
             (Value::Float(a), Value::Int(b)) => Ok(Value::Float(a - *b as f64)),
-            _ => Err(format!("Cannot subtract {} and {}", self.type_name(), other.type_name())),
+            _ => Err(format!(
+                "Cannot subtract {} and {}",
+                self.type_name(),
+                other.type_name()
+            )),
         }
     }
 
@@ -120,7 +108,11 @@ impl Value {
                     Err("Cannot multiply string by negative number".to_string())
                 }
             }
-            _ => Err(format!("Cannot multiply {} and {}", self.type_name(), other.type_name())),
+            _ => Err(format!(
+                "Cannot multiply {} and {}",
+                self.type_name(),
+                other.type_name()
+            )),
         }
     }
 
@@ -154,7 +146,11 @@ impl Value {
                     Ok(Value::Float(a / *b as f64))
                 }
             }
-            _ => Err(format!("Cannot divide {} and {}", self.type_name(), other.type_name())),
+            _ => Err(format!(
+                "Cannot divide {} and {}",
+                self.type_name(),
+                other.type_name()
+            )),
         }
     }
 
@@ -174,7 +170,11 @@ impl Value {
                     Ok(Value::Float(a % b))
                 }
             }
-            _ => Err(format!("Cannot modulo {} and {}", self.type_name(), other.type_name())),
+            _ => Err(format!(
+                "Cannot modulo {} and {}",
+                self.type_name(),
+                other.type_name()
+            )),
         }
     }
 
@@ -193,7 +193,11 @@ impl Value {
             (Value::Int(a), Value::Float(b)) => Ok(Value::Bool((*a as f64) < *b)),
             (Value::Float(a), Value::Int(b)) => Ok(Value::Bool(*a < (*b as f64))),
             (Value::String(a), Value::String(b)) => Ok(Value::Bool(a < b)),
-            _ => Err(format!("Cannot compare {} and {}", self.type_name(), other.type_name())),
+            _ => Err(format!(
+                "Cannot compare {} and {}",
+                self.type_name(),
+                other.type_name()
+            )),
         }
     }
 
@@ -204,7 +208,11 @@ impl Value {
             (Value::Int(a), Value::Float(b)) => Ok(Value::Bool((*a as f64) > *b)),
             (Value::Float(a), Value::Int(b)) => Ok(Value::Bool(*a > (*b as f64))),
             (Value::String(a), Value::String(b)) => Ok(Value::Bool(a > b)),
-            _ => Err(format!("Cannot compare {} and {}", self.type_name(), other.type_name())),
+            _ => Err(format!(
+                "Cannot compare {} and {}",
+                self.type_name(),
+                other.type_name()
+            )),
         }
     }
 
@@ -215,7 +223,11 @@ impl Value {
             (Value::Int(a), Value::Float(b)) => Ok(Value::Bool((*a as f64) <= *b)),
             (Value::Float(a), Value::Int(b)) => Ok(Value::Bool(*a <= (*b as f64))),
             (Value::String(a), Value::String(b)) => Ok(Value::Bool(a <= b)),
-            _ => Err(format!("Cannot compare {} and {}", self.type_name(), other.type_name())),
+            _ => Err(format!(
+                "Cannot compare {} and {}",
+                self.type_name(),
+                other.type_name()
+            )),
         }
     }
 
@@ -226,7 +238,33 @@ impl Value {
             (Value::Int(a), Value::Float(b)) => Ok(Value::Bool((*a as f64) >= *b)),
             (Value::Float(a), Value::Int(b)) => Ok(Value::Bool(*a >= (*b as f64))),
             (Value::String(a), Value::String(b)) => Ok(Value::Bool(a >= b)),
-            _ => Err(format!("Cannot compare {} and {}", self.type_name(), other.type_name())),
+            _ => Err(format!(
+                "Cannot compare {} and {}",
+                self.type_name(),
+                other.type_name()
+            )),
+        }
+    }
+}
+
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Int(n) => write!(f, "{}", n),
+            Value::Float(float) => write!(f, "{}", float),
+            Value::String(s) => write!(f, "{}", s),
+            Value::Bool(b) => write!(f, "{}", if *b { "true" } else { "false" }),
+            Value::List(l) => {
+                let items: Vec<String> = l.iter().map(|v| v.to_string()).collect();
+                write!(f, "[{}]", items.join(", "))
+            }
+            Value::Dict(d) => {
+                let items: Vec<String> = d.iter().map(|(k, v)| format!("{}: {}", k, v)).collect();
+                write!(f, "{{{}}}", items.join(", "))
+            }
+            Value::Function(func) => write!(f, "<function {}>", func.name),
+            Value::Builtin(builtin) => write!(f, "<builtin {}>", builtin.name),
+            Value::None => write!(f, "none"),
         }
     }
 }

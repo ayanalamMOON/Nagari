@@ -164,12 +164,12 @@ pub struct NamedExport {
 // Implement is_lvalue method for Expression
 impl Expression {
     pub fn is_lvalue(&self) -> bool {
-        match self {
-            Expression::Identifier(_) => true,
-            Expression::Member { .. } => true,
-            Expression::Array(_) => true,
-            Expression::Object(_) => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            Expression::Identifier(_)
+                | Expression::Member { .. }
+                | Expression::Array(_)
+                | Expression::Object(_)
+        )
     }
 }

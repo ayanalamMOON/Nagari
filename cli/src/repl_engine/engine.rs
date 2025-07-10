@@ -26,6 +26,7 @@ pub struct ReplEngine {
 }
 
 #[derive(Debug, Clone)]
+#[derive(Default)]
 pub struct ReplState {
     pub running: bool,
     pub should_exit: bool,
@@ -563,21 +564,6 @@ impl Default for ReplConfig {
     }
 }
 
-impl Default for ReplState {
-    fn default() -> Self {
-        Self {
-            running: false,
-            should_exit: false,
-            current_input: String::new(),
-            multiline_buffer: Vec::new(),
-            in_multiline: false,
-            indent_level: 0,
-            last_result: None,
-            error_count: 0,
-            command_count: 0,
-        }
-    }
-}
 
 impl ReplEngine {
     // ... existing methods ...

@@ -9,6 +9,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Project Organization and Structure (July 2025)**
+  - Comprehensive test directory structure with logical file organization
+    - `tests/fixtures/` - Test Nagari source files for various language features (hello.nag, math_demo.nag, etc.)
+    - `tests/outputs/` - Generated JavaScript files and compilation artifacts (.js and .js.map files)
+    - `tests/debug/` - Debug utilities and development tools (debug_lexer.nag, debug lexer tests)
+  - Development tools organization in `dev-tools/` directory
+    - Temporary test projects and development scripts
+    - Isolated development environment for testing features
+  - Enhanced `.gitignore` patterns for test outputs and temporary files
+  - Updated project documentation to reflect new structure
+  - Comprehensive README files for test and development directories
+
+### Fixed
+
+- **Critical Lexer and Parser Issues (July 2025)**
+  - Fixed lexer number literal parsing where first digit was being consumed but not included in the token
+  - Corrected identifier parsing to include the first character in the token
+  - Fixed indentation handling in tokenizer to properly detect and generate `Indent`/`Dedent` tokens
+  - Resolved lexer method naming inconsistencies between `map_or` and `is_some_and` for Rust compatibility
+  - Fixed parser to properly handle Python-style indented function bodies and assignments
+  - Ensured proper tokenization of nested indented blocks
+
+- **Code Quality and Standards (July 2025)**
+  - **Comprehensive clippy warning fixes across all workspace packages:**
+    - `nagari-compiler`: Fixed lexer/parser issues, optimized iterators
+    - `cli`: Fixed linter patterns, command handling, package resolution
+    - `lsp-server`: Fixed completion logic, diagnostic handling, formatting
+    - `nagari-vm`: Fixed bytecode operations, execution optimizations
+    - `registry-server`: Fixed authentication, request handling, database operations
+  - **Applied systematic code improvements:**
+    - Converted match expressions to idiomatic `matches!` macro usage
+    - Replaced `&PathBuf` parameters with `&Path` for better performance and ergonomics
+    - Fixed manual string slicing with safer `strip_prefix` operations
+    - Optimized iterator usage (`.last()` → `.next_back()` for double-ended iterators)
+    - Added type aliases for complex return types to improve readability
+    - Simplified middleware patterns and loop structures
+    - Applied automatic clippy fixes with `cargo clippy --fix --allow-dirty`
+
+- **Compilation and Build Issues (July 2025)**
+  - Resolved all compilation errors across the workspace
+  - Fixed type compatibility issues between different Rust editions
+  - Ensured all packages compile cleanly with `cargo check`
+  - Addressed dependency version conflicts
+
+### Enhanced
+
+- **Development Experience (July 2025)**
+  - **Dramatically improved code quality:** Reduced clippy warnings from 50+ to just 9 minor stylistic issues
+  - **Clean project structure:** All loose files moved from root directory to appropriate subdirectories
+  - **Improved maintainability:** Logical separation of test files, debug utilities, and development tools
+  - **Better documentation:** Updated README files and project documentation to reflect new structure
+  - **Streamlined development workflow:** Organized test fixtures and outputs for easier debugging and testing
+
+### Known Issues
+
+- **Runtime Execution (July 2025)**
+  - CLI runtime integration needs refinement: compiled Nagari code execution may fail with "program not found" errors
+  - Nagari runtime (`nagari-runtime`) requires proper Node.js integration and packaging
+  - End-to-end execution from `.nag` source to JavaScript runtime needs testing and documentation
+
 - **Phase 5: Complete Ecosystem Implementation (June 2025)**
   - **Enhanced CLI Command Integration**
     - Advanced package manager (`nagpkg`) with manifest validation and dependency resolution
@@ -187,6 +247,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cross-platform compatibility testing
   - Security testing and vulnerability assessment
   - Automated test execution with CI/CD integration
+
+## [0.2.1] - 2025-07-10
+
+### Added
+
+- **Project Organization and Structure**
+  - Comprehensive test directory structure with logical file organization
+    - `tests/fixtures/` - Test Nagari source files for various language features
+    - `tests/outputs/` - Generated JavaScript files and compilation artifacts
+    - `tests/debug/` - Debug utilities and development tools
+  - Development tools organization in `dev-tools/` directory
+  - Enhanced `.gitignore` patterns for test outputs and temporary files
+  - Updated project documentation to reflect new structure
+  - Comprehensive README files for test and development directories
+
+### Fixed
+
+- **Critical Lexer and Parser Issues**
+  - Fixed lexer number literal parsing where first digit was being consumed but not included
+  - Corrected indentation handling in tokenizer to properly detect `Indent`/`Dedent` tokens
+  - Resolved lexer method naming inconsistencies between `map_or` and `is_some_and`
+  - Fixed parser to properly handle Python-style indented function bodies
+  - Added proper first character handling for number and identifier parsing
+
+- **Code Quality and Standards**
+  - Comprehensive clippy warning fixes across all packages
+  - Converted match expressions to idiomatic `matches!` macro usage
+  - Replaced `&PathBuf` parameters with `&Path` for better performance and ergonomics
+  - Fixed manual string slicing with safer `strip_prefix` operations
+  - Optimized iterator usage (`.last()` → `.next_back()` for double-ended iterators)
+  - Added type aliases for complex return types to improve readability
+  - Simplified middleware patterns and loop structures
+  - Applied automatic clippy fixes across all workspace packages
+
+### Enhanced
+
+- **Development Experience**
+  - Dramatically reduced clippy warnings from 50+ to just 9 minor stylistic issues
+  - Improved code organization with clean separation of test and debug files
+  - Enhanced project maintainability with logical directory structure
+  - Better documentation structure for development workflows
+  - All packages now compile successfully without errors
+  - Significantly improved code quality and adherence to Rust best practices
 
 ## [0.2.0] - 2025-06-15
 

@@ -170,7 +170,13 @@ impl NagLinter {
                     .collect::<Vec<_>>()
                     .join("\n"))
             }
-            "text" | _ => {
+            "text" => {
+                Ok(issues.iter()
+                    .map(|issue| issue.format_text())
+                    .collect::<Vec<_>>()
+                    .join("\n"))
+            }
+            _ => {
                 Ok(issues.iter()
                     .map(|issue| issue.format_text())
                     .collect::<Vec<_>>()
@@ -263,7 +269,7 @@ impl NagLinter {
 // Lint rule trait
 pub trait LintRule {
     fn name(&self) -> &str;
-    fn check(&self, content: &str, file_path: &PathBuf) -> Result<Vec<LintIssue>>;
+    fn check(&self, content: &str, file_path: &Path) -> Result<Vec<LintIssue>>;
     fn fix(&self, content: &str, issue: &LintIssue) -> Result<Option<String>>;
 }
 
@@ -283,7 +289,7 @@ impl UnusedVariableRule {
 impl LintRule for UnusedVariableRule {
     fn name(&self) -> &str {
         "unused-variables"
-    }    fn check(&self, content: &str, file_path: &PathBuf) -> Result<Vec<LintIssue>> {
+    }    fn check(&self, content: &str, file_path: &Path) -> Result<Vec<LintIssue>> {
         if self.allow_unused {
             return Ok(Vec::new());
         }
@@ -303,7 +309,7 @@ impl LintRule for UnusedVariableRule {
 
                 if !usage_regex.is_match(&remaining_content) {
                     issues.push(LintIssue {
-                        file: file_path.clone(),
+                        file: file_path.to_path_buf(),
                         line: (line_num + 1) as u32,
                         column: captures[1].len() as u32,
                         severity: Severity::Warning,
@@ -346,7 +352,7 @@ impl LintRule for UndefinedVariableRule {
         "undefined-variables"
     }
 
-    fn check(&self, content: &str, file_path: &PathBuf) -> Result<Vec<LintIssue>> {
+    fn check(&self, content: &str, file_path: &Path) -> Result<Vec<LintIssue>> {
         let mut issues = Vec::new();
 
         // This would require proper AST analysis in a real implementation
@@ -356,7 +362,7 @@ impl LintRule for UndefinedVariableRule {
         for (line_num, line) in content.lines().enumerate() {
             if undefined_regex.is_match(line) {
                 issues.push(LintIssue {
-                    file: file_path.clone(),
+                    file: file_path.to_path_buf(),
                     line: (line_num + 1) as u32,
                     column: 0,
                     severity: Severity::Error,
@@ -392,7 +398,7 @@ impl LintRule for UnusedImportRule {
         "unused-imports"
     }
 
-    fn check(&self, content: &str, file_path: &PathBuf) -> Result<Vec<LintIssue>> {
+    fn check(&self, content: &str, file_path: &Path) -> Result<Vec<LintIssue>> {
         let mut issues = Vec::new();
 
         let import_regex = Regex::new(r"^import\s+([a-zA-Z_][a-zA-Z0-9_]*)")?;
@@ -414,7 +420,7 @@ impl LintRule for UnusedImportRule {
 
                 if !usage_regex.is_match(&rest_of_file) {
                     issues.push(LintIssue {
-                        file: file_path.clone(),
+                        file: file_path.to_path_buf(),
                         line: (line_num + 1) as u32,
                         column: 0,
                         severity: Severity::Warning,
@@ -457,7 +463,7 @@ impl LintRule for ShadowingRule {
         "shadowing"
     }
 
-    fn check(&self, content: &str, file_path: &PathBuf) -> Result<Vec<LintIssue>> {
+    fn check(&self, content: &str, file_path: &Path) -> Result<Vec<LintIssue>> {
         let mut issues = Vec::new();
 
         // Check for variable shadowing (simplified)
@@ -470,7 +476,7 @@ impl LintRule for ShadowingRule {
 
                 if builtins.contains(&var_name) {
                     issues.push(LintIssue {
-                        file: file_path.clone(),
+                        file: file_path.to_path_buf(),
                         line: (line_num + 1) as u32,
                         column: 0,
                         severity: Severity::Warning,
@@ -503,7 +509,7 @@ impl LintRule for TypeErrorRule {
         "type-errors"
     }
 
-    fn check(&self, content: &str, file_path: &PathBuf) -> Result<Vec<LintIssue>> {
+    fn check(&self, content: &str, file_path: &Path) -> Result<Vec<LintIssue>> {
         let mut issues = Vec::new();
 
         // Simple type checking (would need full type inference in real implementation)
@@ -512,7 +518,7 @@ impl LintRule for TypeErrorRule {
         for (line_num, line) in content.lines().enumerate() {
             if type_mismatch_regex.is_match(line) {
                 issues.push(LintIssue {
-                    file: file_path.clone(),
+                    file: file_path.to_path_buf(),
                     line: (line_num + 1) as u32,
                     column: 0,
                     severity: Severity::Error,
@@ -546,13 +552,13 @@ impl LineLengthRule {
 impl LintRule for LineLengthRule {
     fn name(&self) -> &str {
         "line-length"
-    }    fn check(&self, content: &str, file_path: &PathBuf) -> Result<Vec<LintIssue>> {
+    }    fn check(&self, content: &str, file_path: &Path) -> Result<Vec<LintIssue>> {
         let mut issues = Vec::new();
 
         for (line_num, line) in content.lines().enumerate() {
             if line.len() > self.max_length as usize {
                 issues.push(LintIssue {
-                    file: file_path.clone(),
+                    file: file_path.to_path_buf(),
                     line: (line_num + 1) as u32,
                     column: self.max_length as u32,
                     severity: Severity::Warning,
@@ -584,7 +590,7 @@ impl LintRule for IndentationRule {
         "indentation"
     }
 
-    fn check(&self, content: &str, file_path: &PathBuf) -> Result<Vec<LintIssue>> {
+    fn check(&self, content: &str, file_path: &Path) -> Result<Vec<LintIssue>> {
         let mut issues = Vec::new();
 
         for (line_num, line) in content.lines().enumerate() {
@@ -597,7 +603,7 @@ impl LintRule for IndentationRule {
             // Check for tabs
             if line.starts_with('\t') {
                 issues.push(LintIssue {
-                    file: file_path.clone(),
+                    file: file_path.to_path_buf(),
                     line: (line_num + 1) as u32,
                     column: 0,
                     severity: Severity::Warning,
@@ -610,7 +616,7 @@ impl LintRule for IndentationRule {
             // Check for non-multiple of 4 spaces
             if leading_spaces % 4 != 0 && !line.trim().starts_with('#') {
                 issues.push(LintIssue {
-                    file: file_path.clone(),
+                    file: file_path.to_path_buf(),
                     line: (line_num + 1) as u32,
                     column: 0,
                     severity: Severity::Warning,
@@ -650,13 +656,13 @@ impl LintRule for TrailingWhitespaceRule {
         "trailing-whitespace"
     }
 
-    fn check(&self, content: &str, file_path: &PathBuf) -> Result<Vec<LintIssue>> {
+    fn check(&self, content: &str, file_path: &Path) -> Result<Vec<LintIssue>> {
         let mut issues = Vec::new();
 
         for (line_num, line) in content.lines().enumerate() {
             if line.ends_with(' ') || line.ends_with('\t') {
                 issues.push(LintIssue {
-                    file: file_path.clone(),
+                    file: file_path.to_path_buf(),
                     line: (line_num + 1) as u32,
                     column: line.trim_end().len() as u32,
                     severity: Severity::Info,

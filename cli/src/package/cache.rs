@@ -12,6 +12,7 @@ pub struct PackageCache {
 }
 
 #[derive(Debug, Clone)]
+#[derive(Default)]
 pub struct CacheMetadata {
     pub packages: HashMap<String, CachedPackageInfo>,
     pub integrity_checks: HashMap<String, String>,
@@ -331,15 +332,6 @@ impl CacheMetadata {
     }
 }
 
-impl Default for CacheMetadata {
-    fn default() -> Self {
-        Self {
-            packages: HashMap::new(),
-            integrity_checks: HashMap::new(),
-            access_times: HashMap::new(),
-        }
-    }
-}
 
 impl std::fmt::Display for CacheStats {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

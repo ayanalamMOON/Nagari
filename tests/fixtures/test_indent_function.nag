@@ -1,0 +1,7 @@
+def greet(name):
+    print("Hello, " + name + "!")
+    return "Greeting sent"
+
+print("Before function call")
+result = greet("World")
+print("Result: " + result)

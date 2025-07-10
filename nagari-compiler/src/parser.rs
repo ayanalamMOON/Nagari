@@ -1651,7 +1651,7 @@ impl Parser {
         self.consume_newline()?;
         Ok(Statement::ArrayDestructuringAssignment(
             crate::ast::ArrayDestructuringAssignment {
-                targets: elements.into_iter().filter_map(|x| x).collect(),
+                targets: elements.into_iter().flatten().collect(),
                 value,
             },
         ))
@@ -1793,9 +1793,9 @@ impl Parser {
             ));
         }
 
-        return Err(NagariError::ParseError(
+        Err(NagariError::ParseError(
             "Invalid import statement".to_string(),
-        ));
+        ))
     }
 
     // Parse export statements
@@ -2103,24 +2103,13 @@ pub struct ExportDeclarationStatement {
 impl Expression {
     // Add new variant definitions to the existing Expression enum
     pub fn is_lvalue(&self) -> bool {
-        match self {
-            Expression::Identifier(_) => true,
-            Expression::Attribute(_) => true,
-            Expression::Subscript(_) => true,
-            _ => false,
-        }
+        matches!(self, Expression::Identifier(_) | Expression::Attribute(_) | Expression::Subscript(_))
     }
 }
 
 impl Statement {
     // Add helper methods for the Statement enum
     pub fn is_definition(&self) -> bool {
-        match self {
-            Statement::FunctionDef(_) => true,
-            Statement::ClassDef(_) => true,
-            Statement::Assignment(_) => true,
-            Statement::TypeAlias(_) => true,
-            _ => false,
-        }
+        matches!(self, Statement::FunctionDef(_) | Statement::ClassDef(_) | Statement::Assignment(_) | Statement::TypeAlias(_))
     }
 }

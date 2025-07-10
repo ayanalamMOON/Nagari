@@ -3,6 +3,9 @@ use anyhow::Result;
 use std::path::Path;
 use serde::{Deserialize, Serialize};
 
+// Type alias for complex function docstring extraction result
+type FunctionDocResult = (String, Vec<DocParameter>, (Option<String>, Option<String>), Vec<String>);
+
 pub struct DocGenerator {
     _config: NagConfig,
 }
@@ -163,15 +166,13 @@ impl DocGenerator {
                         docstring.push('\n');
                     }
                 }
+            } else if trimmed.ends_with(quote_style) {
+                let content_before_quotes = trimmed.strip_suffix(quote_style).unwrap();
+                docstring.push_str(content_before_quotes);
+                break;
             } else {
-                if trimmed.ends_with(quote_style) {
-                    let content_before_quotes = trimmed.strip_suffix(quote_style).unwrap();
-                    docstring.push_str(content_before_quotes);
-                    break;
-                } else {
-                    docstring.push_str(trimmed);
-                    docstring.push('\n');
-                }
+                docstring.push_str(trimmed);
+                docstring.push('\n');
             }
         }
 
@@ -238,7 +239,7 @@ impl DocGenerator {
         &self,
         lines: &[&str],
         start_line: usize,
-    ) -> Result<(String, Vec<DocParameter>, (Option<String>, Option<String>), Vec<String>)> {
+    ) -> Result<FunctionDocResult> {
         let mut description = String::new();
         let mut parameters = Vec::new();
         let mut return_info = (None, None);
@@ -484,7 +485,7 @@ impl DocGenerator {
                 if include_private || !var_part.starts_with('_') {
                     let property = DocProperty {
                         name: var_part.to_string(),
-                        prop_type: Some(self.infer_type_from_assignment(&trimmed[eq_pos + 1..].trim())),
+                        prop_type: Some(self.infer_type_from_assignment(trimmed[eq_pos + 1..].trim())),
                         description: self.extract_property_description(&lines.iter().map(|s| s.to_string()).collect::<Vec<_>>(), i).unwrap_or_default(),
                         readonly: false,
                     };
@@ -581,8 +582,7 @@ impl DocGenerator {
         html.push_str("        <div class=\"modules\">\n");
 
         for module in modules {
-            html.push_str(&format!(
-                "            <div class=\"module-card\">\n"));
+            html.push_str("            <div class=\"module-card\">\n");
             html.push_str(&format!(
                 "                <h2><a href=\"{}.html\">{}</a></h2>\n",
                 module.name, module.name
@@ -591,8 +591,7 @@ impl DocGenerator {
                 "                <p>{}</p>\n",
                 module.description
             ));
-            html.push_str(&format!(
-                "                <div class=\"stats\">\n"));
+            html.push_str("                <div class=\"stats\">\n");
             html.push_str(&format!(
                 "                    <span>{} functions</span>\n",
                 module.functions.len()
@@ -601,8 +600,7 @@ impl DocGenerator {
                 "                    <span>{} classes</span>\n",
                 module.classes.len()
             ));
-            html.push_str(&format!(
-                "                </div>\n"));
+            html.push_str("                </div>\n");
             html.push_str("            </div>\n");
         }
 
@@ -771,7 +769,7 @@ impl DocGenerator {
                     param.description
                 ));
             }
-            md.push_str("\n");
+            md.push('\n');
         }
 
         if let Some(return_desc) = &function.return_description {
@@ -821,8 +819,8 @@ impl DocGenerator {
 
     fn extract_property_description(&self, lines: &[String], start_index: usize) -> Option<String> {
         // Look for docstring or comment after the property
-        for i in (start_index + 1)..(start_index + 3).min(lines.len()) {
-            let line = lines[i].trim();
+        for line in lines.iter().take((start_index + 3).min(lines.len())).skip(start_index + 1) {
+            let line = line.trim();
             if line.starts_with('#') {
                 return Some(line.trim_start_matches('#').trim().to_string());
             } else if line.starts_with("\"\"\"") || line.starts_with("'''") {

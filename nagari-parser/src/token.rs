@@ -14,6 +14,7 @@ pub enum Token {
     Const,
     Var,
     Function,
+    Def,
     Return,
     If,
     Else,
@@ -87,6 +88,8 @@ pub enum Token {
 
     // Special
     Newline,
+    Indent,
+    Dedent,
     Eof,
 
     // Export-related tokens

@@ -34,14 +34,11 @@ pub async fn logging_middleware(request: Request, next: Next) -> Response {
 
 /// Error handling middleware
 pub async fn error_handling_middleware(request: Request, next: Next) -> Result<Response, StatusCode> {
-    match next.run(request).await {
-        response => {
-            if response.status().is_server_error() {
-                tracing::error!("Server error: {}", response.status());
-            }
-            Ok(response)
-        }
+    let response = next.run(request).await;
+    if response.status().is_server_error() {
+        tracing::error!("Server error: {}", response.status());
     }
+    Ok(response)
 }
 
 /// Authentication middleware module

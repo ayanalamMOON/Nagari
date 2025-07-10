@@ -4,6 +4,9 @@ pub mod parser;
 pub mod error;
 pub mod token;
 
+#[cfg(test)]
+mod test_indentation;
+
 pub use ast::*;
 pub use lexer::*;
 pub use parser::*;

@@ -161,7 +161,7 @@ impl BuiltinCommands {
             let mut output = String::from("Available commands:\n");
 
             // Use the commands field here to display help
-            for (_, info) in &self.commands {
+            for info in self.commands.values() {
                 output.push_str(&format!("  {:<15} - {}\n", info.usage, info.description));
             }
 
@@ -370,12 +370,6 @@ impl BuiltinCommands {
         }
 
         // Check aliases
-        for (_, info) in &self.commands {
-            if info.aliases.contains(&name.to_string()) {
-                return Some(info);
-            }
-        }
-
-        None
+        self.commands.values().find(|&info| info.aliases.contains(&name.to_string()))
     }
 }

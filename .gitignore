@@ -41,6 +41,10 @@ yarn-error.log*
 # Test output
 test-output/
 coverage/
+tests/outputs/*.js
+tests/outputs/*.js.map
+tests/debug/debug_*
+dev-tools/test-*
 
 # Build artifacts
 dist/

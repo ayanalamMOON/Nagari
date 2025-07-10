@@ -221,7 +221,7 @@ impl JSTranspiler {
                 Ok(())
             }            Expression::JSXElement(jsx) => self.transpile_jsx_element(jsx),
             Expression::Lambda(lambda) => {
-                self.output.push_str("(");
+                self.output.push('(');
                 for (i, param) in lambda.parameters.iter().enumerate() {
                     if i > 0 {
                         self.output.push_str(", ");
