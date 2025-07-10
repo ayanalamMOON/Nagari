@@ -1,5 +1,3 @@
-"use strict";
-
 import { jsToNagari, nagariToJS, InteropRegistry } from 'nagari-runtime';
 
 
@@ -111,3 +109,5 @@ function setComp(iterable, transform, condition = () => true) {
     return new Set(iterable.filter(condition).map(transform));
 }
 
+
+//# sourceMappingURL=test_simple.js.map
