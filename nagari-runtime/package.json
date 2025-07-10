@@ -2,6 +2,7 @@
     "name": "nagari-runtime",
     "version": "0.1.0",
     "description": "Runtime utilities and polyfills for Nagari language",
+    "type": "module",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {

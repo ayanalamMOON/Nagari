@@ -1,7 +1,7 @@
 // JSX Runtime for Nagari
 // Provides React-compatible JSX transformation and utilities
 
-import { jsToNagari, nagariToJS, wrapJSFunction } from './interop';
+import { jsToNagari, nagariToJS, wrapJSFunction } from './interop.js';
 
 export interface JSXElement {
     type: string | Function;

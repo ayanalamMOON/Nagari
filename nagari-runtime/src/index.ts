@@ -1,13 +1,13 @@
 // Nagari Runtime - Core utilities and polyfills
 
-export * from './async';
-export * from './builtins';
-export * from './interop';
-export * from './jsx';
-export * from './types';
+export * from './async.js';
+export * from './builtins.js';
+export * from './interop.js';
+export * from './jsx.js';
+export * from './types.js';
 
-import { InteropRegistry } from './interop';
-import { ReactInterop } from './jsx';
+import { InteropRegistry } from './interop.js';
+import { ReactInterop } from './jsx.js';
 
 // Global runtime initialization
 if (typeof globalThis !== 'undefined') {

@@ -5,6 +5,7 @@ use crate::{DocCommands, PackageCommands};
 use anyhow::{Context, Result};
 use colored::*;
 use notify::{recommended_watcher, RecursiveMode, Watcher};
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 use std::time::Duration;
@@ -66,6 +67,9 @@ async fn run_file_once(file: &PathBuf, args: &[String], config: &NagConfig) -> R
     let temp_dir = tempfile::tempdir()?;
     let output_file = temp_dir.path().join("output.js");
 
+    // Setup runtime in temp directory
+    setup_runtime_in_temp_dir(temp_dir.path())?;
+
     // Create compiler with configuration
     let compiler_config = nagari_compiler::CompilerConfigBuilder::new()
         .target(&config.build.target)
@@ -92,6 +96,104 @@ async fn run_file_once(file: &PathBuf, args: &[String], config: &NagConfig) -> R
         }
         Err(e) => {
             anyhow::bail!("Compilation failed: {}", e);
+        }
+    }
+
+    Ok(())
+}
+
+/// Setup the Nagari runtime in a temporary directory for execution
+fn setup_runtime_in_temp_dir(temp_dir: &Path) -> Result<()> {
+    // Find the nagari-runtime directory relative to the CLI
+    let runtime_path = find_nagari_runtime_path()?;
+
+    // Create node_modules/nagari-runtime in temp directory
+    let node_modules_dir = temp_dir.join("node_modules");
+    let runtime_dest = node_modules_dir.join("nagari-runtime");
+
+    fs::create_dir_all(&runtime_dest)
+        .context("Failed to create node_modules directory in temp dir")?;
+
+    // Copy runtime files
+    copy_dir_recursive(&runtime_path, &runtime_dest)
+        .context("Failed to copy nagari-runtime to temp directory")?;
+
+    // Create package.json in temp dir to enable ES6 modules
+    let package_json = r#"{
+  "type": "module"
+}"#;
+
+    fs::write(temp_dir.join("package.json"), package_json)
+        .context("Failed to write package.json in temp directory")?;
+
+    Ok(())
+}
+
+/// Find the nagari-runtime directory path
+fn find_nagari_runtime_path() -> Result<PathBuf> {
+    // Try to find nagari-runtime relative to current executable or working directory
+    let current_exe = std::env::current_exe().context("Failed to get current executable path")?;
+
+    // Look for runtime relative to executable (in case CLI is installed)
+    let exe_parent = current_exe
+        .parent()
+        .context("Failed to get executable parent directory")?;
+
+    // Try multiple possible locations
+    let possible_paths = [
+        // Relative to executable (development)
+        exe_parent.join("../../nagari-runtime"),
+        // Relative to working directory (development)
+        PathBuf::from("nagari-runtime"),
+        // Relative to executable parent (installed)
+        exe_parent.join("../share/nagari/runtime"),
+        // System-wide installation
+        PathBuf::from("/usr/share/nagari/runtime"),
+        // Windows system-wide
+        PathBuf::from("C:\\Program Files\\Nagari\\runtime"),
+    ];
+
+    for path in &possible_paths {
+        let full_path = path.join("dist");
+        if full_path.exists() && full_path.join("index.js").exists() {
+            return Ok(path.clone());
+        }
+    }
+
+    anyhow::bail!(
+        "Could not find nagari-runtime. Please ensure it's built and available. \
+         Tried paths: {:?}",
+        possible_paths
+    );
+}
+
+/// Recursively copy a directory
+fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
+    if !src.is_dir() {
+        anyhow::bail!("Source path is not a directory: {}", src.display());
+    }
+
+    fs::create_dir_all(dst)
+        .with_context(|| format!("Failed to create destination directory: {}", dst.display()))?;
+
+    for entry in fs::read_dir(src)
+        .with_context(|| format!("Failed to read source directory: {}", src.display()))?
+    {
+        let entry = entry.context("Failed to read directory entry")?;
+        let path = entry.path();
+        let name = entry.file_name();
+        let dest_path = dst.join(&name);
+
+        if path.is_dir() {
+            copy_dir_recursive(&path, &dest_path)?;
+        } else {
+            fs::copy(&path, &dest_path).with_context(|| {
+                format!(
+                    "Failed to copy file from {} to {}",
+                    path.display(),
+                    dest_path.display()
+                )
+            })?;
         }
     }
 

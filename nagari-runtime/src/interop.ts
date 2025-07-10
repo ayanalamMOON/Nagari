@@ -1,6 +1,6 @@
 // Nagari <-> JavaScript Interoperability Layer
 
-import { NagariClass, NagariFunction, NagariModule, NagariValue } from './types';
+import { NagariClass, NagariFunction, NagariModule, NagariValue } from './types.js';
 
 /**
  * JavaScript to Nagari value conversion
@@ -81,7 +81,17 @@ export function wrapJSFunction(fn: Function, name?: string): NagariFunction {
     };
 
     (wrapped as any).__nagari_function__ = true as const;
-    wrapped.name = name || fn.name;
+
+    // Set function name using defineProperty to avoid read-only issues
+    try {
+        Object.defineProperty(wrapped, 'name', {
+            value: name || fn.name,
+            configurable: true
+        });
+    } catch (e) {
+        // Ignore if we can't set the name
+    }
+
     wrapped.arity = fn.length;
 
     return wrapped as NagariFunction;

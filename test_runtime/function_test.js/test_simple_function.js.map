@@ -1,0 +1,1 @@
+{"file":"test_simple_function.js","mappings":"AAAA","sources":["test_simple_function.nag"],"sourcesContent":["def greet(name):\n    print(\"Hello, \" + name)\n\ngreet(\"World\")\n"],"version":3}
