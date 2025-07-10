@@ -25,6 +25,7 @@ struct JSTranspiler {
     js_runtime: JSRuntime,
     builtin_mapper: BuiltinMapper,
     used_helpers: std::collections::HashSet<String>,
+    declared_variables: std::collections::HashSet<String>,
 }
 
 impl JSTranspiler {
@@ -38,6 +39,7 @@ impl JSTranspiler {
             js_runtime: JSRuntime::new(target),
             builtin_mapper: BuiltinMapper::new(),
             used_helpers: std::collections::HashSet::new(),
+            declared_variables: std::collections::HashSet::new(),
         }
     }
 
@@ -128,12 +130,19 @@ impl JSTranspiler {
         self.output.push_str(&func.name);
         self.output.push('(');
 
+        // Clear declared variables for this function scope
+        let previous_declared = self.declared_variables.clone();
+        self.declared_variables.clear();
+
         // Parameters
         for (i, param) in func.parameters.iter().enumerate() {
             if i > 0 {
                 self.output.push_str(", ");
             }
             self.output.push_str(&param.name);
+            
+            // Mark parameter as declared
+            self.declared_variables.insert(param.name.clone());
 
             // Default parameters
             if let Some(default) = &param.default_value {
@@ -155,17 +164,24 @@ impl JSTranspiler {
         self.add_indent();
         self.output.push('}');
 
+        // Restore previous scope's declared variables
+        self.declared_variables = previous_declared;
+
         Ok(())
     }
 
     fn transpile_assignment(&mut self, assign: &Assignment) -> Result<(), NagariError> {
         self.add_indent();
 
-        // Use let for new variables, const for constants
-        match self.target.as_str() {
-            "es6" | "esm" => self.output.push_str("const "),
-            _ => self.output.push_str("let "),
+        // Check if this variable has been declared before
+        let is_declaration = !self.declared_variables.contains(&assign.name);
+        
+        if is_declaration {
+            // First time seeing this variable - declare it with let (not const, in case it's reassigned)
+            self.output.push_str("let ");
+            self.declared_variables.insert(assign.name.clone());
         }
+        // Otherwise, it's a reassignment - no declaration keyword needed
 
         self.output.push_str(&assign.name);
         self.output.push_str(" = ");
