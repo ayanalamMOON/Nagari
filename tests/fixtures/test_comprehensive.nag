@@ -1,0 +1,13 @@
+# Test comprehensive import syntax support
+from js import document, window
+import { setTimeout, setInterval } from js("global")
+
+class TestClass:
+    """Test class with decorators"""
+
+    @staticmethod
+    def test_method() -> str:
+        return "success"
+
+print("Import syntax test passed!")
+print(TestClass.test_method())

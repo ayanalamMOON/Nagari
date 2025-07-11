@@ -1,0 +1,2 @@
+result = js('Date.now()')
+print(result)

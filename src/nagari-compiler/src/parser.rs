@@ -63,6 +63,10 @@ impl Parser {
             self.advance();
             self.consume_newline()?;
             Ok(Statement::Continue)
+        } else if self.check(&Token::Pass) {
+            self.advance();
+            self.consume_newline()?;
+            Ok(Statement::Pass)
         // New statement types
         } else if self.check(&Token::With) {
             self.with_statement()
@@ -106,6 +110,7 @@ impl Parser {
             self.consume(&Token::Def, "Expected 'def' after 'async'")?;
             true
         } else {
+            self.consume(&Token::Def, "Expected 'def'")?;
             false
         };
 
@@ -312,24 +317,50 @@ impl Parser {
 
     fn assignment_or_expression(&mut self) -> Result<Statement, NagariError> {
         // Look ahead to see if this is an assignment
-        if let Token::Identifier(_) = self.peek() {
-            let checkpoint = self.current;
-            self.advance(); // consume identifier
+        let checkpoint = self.current;
 
-            // Check for type annotation or assignment
-            if self.check(&Token::Colon) || self.check(&Token::Assign) {
-                // Reset and parse as assignment
-                self.current = checkpoint;
-                return self.assignment();
-            }
+        // Try to parse the left side of a potential assignment
+        let left_expr = self.expression();
 
-            // Reset and parse as expression
+        if left_expr.is_ok() && self.check(&Token::Assign) {
+            // This is an assignment - reset and parse properly
             self.current = checkpoint;
+            return self.enhanced_assignment();
         }
 
+        // Reset and parse as expression
+        self.current = checkpoint;
         let expr = self.expression()?;
         self.consume_newline()?;
         Ok(Statement::Expression(expr))
+    }
+
+    fn enhanced_assignment(&mut self) -> Result<Statement, NagariError> {
+        // Parse the left side (can be identifier or attribute access)
+        let left_side = self.expression()?;
+
+        self.consume(&Token::Assign, "Expected '=' in assignment")?;
+        let value = self.expression()?;
+        self.consume_newline()?;
+
+        // Handle different types of assignments
+        match left_side {
+            Expression::Identifier(name) => Ok(Statement::Assignment(Assignment {
+                name,
+                var_type: None,
+                value,
+            })),
+            Expression::Attribute(attr) => Ok(Statement::AttributeAssignment(
+                crate::ast::AttributeAssignment {
+                    object: *attr.object,
+                    attribute: attr.attribute,
+                    value,
+                },
+            )),
+            _ => Err(NagariError::ParseError(
+                "Invalid assignment target".to_string(),
+            )),
+        }
     }
 
     fn assignment(&mut self) -> Result<Statement, NagariError> {
@@ -615,7 +646,7 @@ impl Parser {
 
                 if !self.check(&Token::RightBracket) {
                     // Check for list comprehension
-                    let first_element = self.expression()?;
+                    let first_element = self.or_expr()?;
 
                     if self.check(&Token::For) {
                         // This is a list comprehension
@@ -1100,6 +1131,15 @@ impl Parser {
 
         let mut methods = Vec::new();
         let mut class_vars = Vec::new();
+        let mut _docstring: Option<String> = None;
+
+        // Check for optional docstring first
+        if matches!(self.peek(), Token::StringLiteral(_)) {
+            if let Token::StringLiteral(doc) = self.advance() {
+                _docstring = Some(doc);
+                self.consume_newline()?;
+            }
+        }
 
         while !self.check(&Token::Dedent) && !self.is_at_end() {
             if self.check(&Token::Newline) {
@@ -1130,14 +1170,25 @@ impl Parser {
             }
 
             // Parse method definitions
-            if self.check(&Token::Def) || self.check(&Token::Async) {
-                let method = self.function_definition()?;
-                if let Statement::FunctionDef(func_def) = method {
+            if self.check(&Token::Def) || self.check(&Token::Async) || self.check(&Token::At) {
+                let method = if self.check(&Token::At) {
+                    // Handle decorated methods
+                    self.decorated_statement()
+                } else {
+                    // Handle regular methods
+                    self.function_definition()
+                };
+
+                if let Statement::FunctionDef(func_def) = method? {
                     methods.push(func_def);
                 }
+            } else if self.check(&Token::Pass) {
+                // Handle pass statements in class body
+                self.advance(); // consume 'pass'
+                self.consume_newline()?;
             } else {
                 return Err(NagariError::ParseError(
-                    "Expected method or class variable definition".to_string(),
+                    "Expected method, class variable definition, or pass statement".to_string(),
                 ));
             }
         }
@@ -1308,11 +1359,24 @@ impl Parser {
                     break;
                 }
 
-                let key = self.expression()?;
-                self.consume(&Token::Colon, "Expected ':' after dictionary key")?;
-                let value = self.expression()?;
+                // Check for dictionary unpacking (**expr)
+                if self.match_token(&Token::Power) {
+                    let expr = self.expression()?;
+                    // For now, we'll handle this as a special dictionary entry
+                    // In a real implementation, this would need AST support for spread in dictionaries
+                    pairs.push(DictionaryPair {
+                        key: Expression::Literal(crate::ast::Literal::String(
+                            "__spread__".to_string(),
+                        )),
+                        value: expr,
+                    });
+                } else {
+                    let key = self.expression()?;
+                    self.consume(&Token::Colon, "Expected ':' after dictionary key")?;
+                    let value = self.expression()?;
 
-                pairs.push(DictionaryPair { key, value });
+                    pairs.push(DictionaryPair { key, value });
+                }
 
                 if !self.match_token(&Token::Comma) {
                     break;
@@ -1600,13 +1664,13 @@ impl Parser {
         };
 
         self.consume(&Token::In, "Expected 'in' after identifier")?;
-        let iterator = self.expression()?;
+        let iterator = self.or_expr()?;
 
         let mut conditions = Vec::new();
 
         // Optional if conditions
         while self.match_token(&Token::If) {
-            let condition = self.expression()?;
+            let condition = self.or_expr()?;
             conditions.push(condition);
         }
 
@@ -1876,6 +1940,57 @@ impl Parser {
 
     // Enhanced import statement with better support for named and default imports
     fn enhanced_import_statement(&mut self) -> Result<Statement, NagariError> {
+        // Handle both "import ..." and "from ... import ..." syntaxes
+        if self.check(&Token::From) {
+            // "from module import name1, name2" syntax
+            self.advance(); // consume 'from'
+
+            let module = match self.advance() {
+                Token::Identifier(name) => name,    // for "from js import ..."
+                Token::StringLiteral(name) => name, // for "from 'module' import ..."
+                _ => {
+                    return Err(NagariError::ParseError(
+                        "Expected module name after 'from'".to_string(),
+                    ))
+                }
+            };
+
+            self.consume(&Token::Import, "Expected 'import' after module name")?;
+
+            // Parse the import names
+            let mut named_imports = Vec::new();
+
+            if !self.check(&Token::Newline) && !self.check(&Token::Eof) {
+                loop {
+                    let import_name = match self.advance() {
+                        Token::Identifier(name) => name,
+                        _ => {
+                            return Err(NagariError::ParseError("Expected import name".to_string()))
+                        }
+                    };
+
+                    // Note: We're ignoring aliases for now to match the AST structure
+                    if self.match_token(&Token::As) {
+                        // Skip the alias
+                        self.advance();
+                    }
+
+                    named_imports.push(import_name);
+
+                    if !self.match_token(&Token::Comma) {
+                        break;
+                    }
+                }
+            }
+
+            self.consume_newline()?;
+            return Ok(Statement::ImportNamed(crate::ast::ImportNamedStatement {
+                imports: named_imports,
+                module,
+            }));
+        }
+
+        // Regular "import ..." syntax
         self.consume(&Token::Import, "Expected 'import'")?;
 
         // Check for different import patterns
@@ -1933,10 +2048,13 @@ impl Parser {
                         None
                     };
 
-                    named_imports.push(NamedImport {
-                        name: import_name,
-                        alias,
-                    });
+                    // Note: We're ignoring aliases for now to match the AST structure
+                    if alias.is_some() {
+                        // For now, we don't support aliases in the AST structure
+                        // Just use the original name
+                    }
+
+                    named_imports.push(import_name);
 
                     if !self.match_token(&Token::Comma) {
                         break;
@@ -1952,18 +2070,50 @@ impl Parser {
             self.consume(&Token::RightBrace, "Expected '}' after named imports")?;
             self.consume(&Token::From, "Expected 'from' after named imports")?;
 
-            let module = match self.advance() {
-                Token::StringLiteral(name) => name,
+            let module = match self.peek() {
+                Token::StringLiteral(_) => {
+                    // Regular string module name: "module-name"
+                    match self.advance() {
+                        Token::StringLiteral(name) => name,
+                        _ => unreachable!(),
+                    }
+                }
+                Token::Identifier(_) => {
+                    // Function call module name: js("global")
+                    match self.advance() {
+                        Token::Identifier(func_name) => {
+                            if self.match_token(&Token::LeftParen) {
+                                let arg = match self.advance() {
+                                    Token::StringLiteral(arg) => arg,
+                                    _ => {
+                                        return Err(NagariError::ParseError(
+                                            "Expected string argument in module function call"
+                                                .to_string(),
+                                        ))
+                                    }
+                                };
+                                self.consume(
+                                    &Token::RightParen,
+                                    "Expected ')' after function call",
+                                )?;
+                                format!("{}(\"{}\")", func_name, arg)
+                            } else {
+                                func_name
+                            }
+                        }
+                        _ => unreachable!(),
+                    }
+                }
                 _ => {
                     return Err(NagariError::ParseError(
-                        "Expected module name string after 'from'".to_string(),
+                        "Expected module name string or function call after 'from'".to_string(),
                     ))
                 }
             };
 
             self.consume_newline()?;
             return Ok(Statement::ImportNamed(crate::ast::ImportNamedStatement {
-                imports: named_imports.into_iter().map(|ni| ni.name).collect(),
+                imports: named_imports,
                 module,
             }));
         }

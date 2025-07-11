@@ -1,0 +1,8 @@
+def load_from_local():
+    try:
+        try:
+            return 1
+        except:
+            return 2
+    except:
+        return 3

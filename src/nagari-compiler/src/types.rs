@@ -164,12 +164,14 @@ impl Type {
             "float" => Some(Type::Float),
             "str" => Some(Type::Str),
             "bool" => Some(Type::Bool),
-            "any" => Some(Type::Any),
+            "any" | "Any" => Some(Type::Any), // Support both lowercase and uppercase
             "none" => Some(Type::None),
-            "list" => Some(Type::List(Box::new(Type::Any))), // Generic list
-            "dict" => Some(Type::Dict(Box::new(Type::Any), Box::new(Type::Any))), // Generic dict
-            "array" => Some(Type::List(Box::new(Type::Any))), // Alias for list
-            "object" => Some(Type::Dict(Box::new(Type::Str), Box::new(Type::Any))), // Generic object
+            "list" | "List" => Some(Type::List(Box::new(Type::Any))), // Generic list
+            "dict" | "Dict" => Some(Type::Dict(Box::new(Type::Any), Box::new(Type::Any))), // Generic dict
+            "array" | "Array" => Some(Type::List(Box::new(Type::Any))), // Alias for list
+            "object" | "Object" => Some(Type::Dict(Box::new(Type::Str), Box::new(Type::Any))), // Generic object
+            "callable" | "Callable" => Some(Type::Function(vec![], Box::new(Type::Any))), // Generic callable
+            "js_error" => Some(Type::Any), // JavaScript error type - treat as Any for compatibility
             _ => None,
         }
     }

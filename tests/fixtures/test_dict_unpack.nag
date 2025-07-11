@@ -1,0 +1,3 @@
+default_headers = {"Content-Type": "application/json"}
+result = {'headers': {**default_headers}}
+print(result)

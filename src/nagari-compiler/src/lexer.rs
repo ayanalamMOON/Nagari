@@ -17,6 +17,7 @@ pub enum Token {
     Await,
     Break,
     Continue,
+    Pass,
     Class,
     Try,
     Except,
@@ -115,7 +116,9 @@ pub struct Lexer {
     line: usize,
     column: usize,
     indent_stack: Vec<usize>,
-    bracket_depth: usize, // Track nesting level of brackets/braces/parens
+    bracket_depth: usize,     // Track nesting level of brackets/braces/parens
+    jsx_depth: usize, // Track JSX context depth - increment on <tag, decrement when element fully closes
+    in_jsx_closing_tag: bool, // Track if we're parsing a closing tag
 }
 
 impl Lexer {
@@ -127,6 +130,8 @@ impl Lexer {
             column: 1,
             indent_stack: vec![0],
             bracket_depth: 0,
+            jsx_depth: 0,
+            in_jsx_closing_tag: false,
         }
     }
 
@@ -167,9 +172,18 @@ impl Lexer {
 
         let mut indent_level = 0;
 
-        while self.peek() == Some(' ') {
-            self.advance();
-            indent_level += 1;
+        while let Some(ch) = self.peek() {
+            match ch {
+                ' ' => {
+                    self.advance();
+                    indent_level += 1;
+                }
+                '\t' => {
+                    self.advance();
+                    indent_level += 4; // Treat tab as 4 spaces
+                }
+                _ => break,
+            }
         }
 
         // Skip empty lines
@@ -192,10 +206,32 @@ impl Lexer {
             }
 
             if self.indent_stack.last() != Some(&indent_level) {
-                return Err(NagariError::LexError(format!(
-                    "Indentation error at line {}: expected {} spaces",
-                    self.line, indent_level
-                )));
+                // Check if this indentation level exists anywhere in the stack
+                if !self.indent_stack.contains(&indent_level) {
+                    // If stack seems corrupted (only [0] but we have significant indentation), rebuild it
+                    if self.indent_stack.len() == 1 && indent_level > 0 {
+                        // Rebuild stack based on common indentation levels (4, 8, 12, etc.)
+                        self.indent_stack.clear();
+                        self.indent_stack.push(0);
+                        let mut level = 4;
+                        while level <= indent_level {
+                            self.indent_stack.push(level);
+                            tokens.push(Token::Indent);
+                            level += 4;
+                        }
+                    } else {
+                        return Err(NagariError::LexError(format!(
+                            "Indentation error at line {}: found {} spaces, expected one of {:?}",
+                            self.line, indent_level, self.indent_stack
+                        )));
+                    }
+                } else {
+                    // If the level exists in the stack, adjust the stack to match
+                    while self.indent_stack.last() != Some(&indent_level) {
+                        self.indent_stack.pop();
+                        tokens.push(Token::Dedent);
+                    }
+                }
             }
         }
 
@@ -207,6 +243,23 @@ impl Lexer {
 
         if self.is_at_end() {
             return Ok(Token::Eof);
+        }
+
+        // Handle JSX text content when jsx_depth > 0 and not in closing tag
+        if self.jsx_depth > 0 && !self.in_jsx_closing_tag {
+            let ch = self.peek().unwrap();
+            // Check if this could be JSX text (not JSX structural characters)
+            if ch != '<'
+                && ch != '{'
+                && ch != '}'
+                && ch != '>'
+                && !ch.is_ascii_alphabetic()
+                && ch != '_'
+                && ch != '"'
+                && ch != '\''
+            {
+                return self.jsx_text();
+            }
         }
 
         let c = self.advance();
@@ -226,8 +279,29 @@ impl Lexer {
                     Ok(Token::Minus)
                 }
             }
-            '*' => Ok(Token::Multiply),
-            '/' => Ok(Token::Divide),
+            '*' => {
+                if self.peek() == Some('*') {
+                    self.advance(); // consume second '*'
+                    Ok(Token::Power)
+                } else {
+                    Ok(Token::Multiply)
+                }
+            }
+            '/' => {
+                // Check for JSX self-closing tag '/>' (only when not in a closing tag)
+                if self.jsx_depth > 0 && !self.in_jsx_closing_tag && self.peek() == Some('>') {
+                    self.advance(); // consume '>'
+                    self.jsx_depth = self.jsx_depth.saturating_sub(1);
+                    Ok(Token::JSXSelfClose)
+                } else {
+                    // Return Slash for JSX closing tags, Divide for arithmetic
+                    if self.jsx_depth > 0 || self.in_jsx_closing_tag {
+                        Ok(Token::Slash)
+                    } else {
+                        Ok(Token::Divide)
+                    }
+                }
+            }
             '%' => Ok(Token::Modulo),
             '(' => {
                 self.bracket_depth += 1;
@@ -277,7 +351,18 @@ impl Lexer {
                 }
             }
             '<' => {
-                if self.peek() == Some('=') {
+                // Check if this is JSX or a comparison operator
+                if self.is_jsx_context() {
+                    // Check if this is a closing tag
+                    if self.peek() == Some('/') {
+                        self.in_jsx_closing_tag = true;
+                    } else {
+                        // Opening tag - increment jsx_depth
+                        self.jsx_depth += 1;
+                        self.in_jsx_closing_tag = false;
+                    }
+                    Ok(Token::JSXOpen)
+                } else if self.peek() == Some('=') {
                     self.advance();
                     Ok(Token::LessEqual)
                 } else {
@@ -285,14 +370,37 @@ impl Lexer {
                 }
             }
             '>' => {
-                if self.peek() == Some('=') {
+                // Check if we're in JSX context
+                if self.jsx_depth > 0 || self.in_jsx_closing_tag {
+                    // If this completes a closing tag, decrement jsx_depth
+                    if self.in_jsx_closing_tag {
+                        self.jsx_depth = self.jsx_depth.saturating_sub(1);
+                        self.in_jsx_closing_tag = false;
+                    }
+                    Ok(Token::JSXClose)
+                } else if self.peek() == Some('=') {
                     self.advance();
                     Ok(Token::GreaterEqual)
                 } else {
                     Ok(Token::Greater)
                 }
             }
-            '"' => self.string_literal(),
+            '"' => {
+                // Check for triple-quoted strings
+                if self.peek() == Some('"') && self.peek_at(self.position + 1) == Some('"') {
+                    self.triple_quoted_string()
+                } else {
+                    self.string_literal('"')
+                }
+            }
+            '\'' => {
+                // Check for triple-quoted strings
+                if self.peek() == Some('\'') && self.peek_at(self.position + 1) == Some('\'') {
+                    self.triple_quoted_string_single()
+                } else {
+                    self.string_literal('\'')
+                }
+            }
             c if c.is_ascii_digit() => self.number_literal_with_first_char(c),
             'f' => {
                 // Check if this is an f-string (f"...") or just identifier starting with 'f'
@@ -306,6 +414,7 @@ impl Lexer {
             c if c.is_ascii_alphabetic() || c == '_' => {
                 self.identifier_or_keyword_with_first_char(c)
             }
+            '@' => Ok(Token::At),
             _ => Err(NagariError::LexError(format!(
                 "Unexpected character '{}' at line {}, column {}",
                 c, self.line, self.column
@@ -313,10 +422,10 @@ impl Lexer {
         }
     }
 
-    fn string_literal(&mut self) -> Result<Token, NagariError> {
+    fn string_literal(&mut self, quote_char: char) -> Result<Token, NagariError> {
         let mut value = String::new();
 
-        while self.peek() != Some('"') && !self.is_at_end() {
+        while self.peek() != Some(quote_char) && !self.is_at_end() {
             if self.peek() == Some('\n') {
                 self.line += 1;
                 self.column = 1;
@@ -330,6 +439,7 @@ impl Lexer {
                     'r' => value.push('\r'),
                     '\\' => value.push('\\'),
                     '"' => value.push('"'),
+                    '\'' => value.push('\''),
                     c => value.push(c),
                 }
             } else {
@@ -344,7 +454,7 @@ impl Lexer {
             )));
         }
 
-        self.advance(); // consume closing '"'
+        self.advance(); // consume closing quote
         Ok(Token::StringLiteral(value))
     }
 
@@ -381,6 +491,95 @@ impl Lexer {
 
         self.advance(); // consume closing '"'
         Ok(Token::FStringLiteral(value))
+    }
+
+    // Parse triple-quoted strings (""" or ''')
+    fn triple_quoted_string(&mut self) -> Result<Token, NagariError> {
+        // Consume the opening triple quotes
+        self.advance(); // consume first "
+        self.advance(); // consume second "
+
+        let mut value = String::new();
+
+        while !self.is_at_end() {
+            // Check for closing triple quotes
+            if self.peek() == Some('"')
+                && self.peek_at(self.position + 1) == Some('"')
+                && self.peek_at(self.position + 2) == Some('"')
+            {
+                // Consume the closing triple quotes
+                self.advance();
+                self.advance();
+                self.advance();
+                break;
+            }
+
+            if self.peek() == Some('\n') {
+                self.line += 1;
+                self.column = 1;
+            }
+
+            if self.peek() == Some('\\') {
+                self.advance(); // consume '\'
+                match self.advance() {
+                    'n' => value.push('\n'),
+                    't' => value.push('\t'),
+                    'r' => value.push('\r'),
+                    '\\' => value.push('\\'),
+                    '"' => value.push('"'),
+                    '\'' => value.push('\''),
+                    c => value.push(c),
+                }
+            } else {
+                value.push(self.advance());
+            }
+        }
+
+        Ok(Token::StringLiteral(value))
+    }
+
+    fn triple_quoted_string_single(&mut self) -> Result<Token, NagariError> {
+        // Consume the opening triple quotes
+        self.advance(); // consume first '
+        self.advance(); // consume second '
+
+        let mut value = String::new();
+
+        while !self.is_at_end() {
+            // Check for closing triple quotes
+            if self.peek() == Some('\'')
+                && self.peek_at(self.position + 1) == Some('\'')
+                && self.peek_at(self.position + 2) == Some('\'')
+            {
+                // Consume the closing triple quotes
+                self.advance();
+                self.advance();
+                self.advance();
+                break;
+            }
+
+            if self.peek() == Some('\n') {
+                self.line += 1;
+                self.column = 1;
+            }
+
+            if self.peek() == Some('\\') {
+                self.advance(); // consume '\'
+                match self.advance() {
+                    'n' => value.push('\n'),
+                    't' => value.push('\t'),
+                    'r' => value.push('\r'),
+                    '\\' => value.push('\\'),
+                    '"' => value.push('"'),
+                    '\'' => value.push('\''),
+                    c => value.push(c),
+                }
+            } else {
+                value.push(self.advance());
+            }
+        }
+
+        Ok(Token::StringLiteral(value))
     }
 
     fn number_literal_with_first_char(&mut self, first_char: char) -> Result<Token, NagariError> {
@@ -443,6 +642,7 @@ impl Lexer {
             "await" => Token::Await,
             "break" => Token::Break,
             "continue" => Token::Continue,
+            "pass" => Token::Pass,
             "class" => Token::Class,
             "try" => Token::Try,
             "except" => Token::Except,
@@ -520,5 +720,60 @@ impl Lexer {
 
     fn is_at_end(&self) -> bool {
         self.position >= self.input.len()
+    }
+
+    // JSX context detection
+    fn is_jsx_context(&self) -> bool {
+        // JSX detection: < followed by identifier or uppercase letter
+        if let Some(next_char) = self.peek() {
+            // JSX elements start with <identifier or <UpperCase
+            if next_char.is_ascii_alphabetic() || next_char == '_' {
+                return true;
+            }
+            // Also check for closing tags </identifier
+            if next_char == '/' {
+                if let Some(after_slash) = self.peek_at(self.position + 2) {
+                    return after_slash.is_ascii_alphabetic() || after_slash == '_';
+                }
+            }
+        }
+        false
+    }
+
+    fn peek_at(&self, pos: usize) -> Option<char> {
+        if pos < self.input.len() {
+            Some(self.input[pos])
+        } else {
+            None
+        }
+    }
+
+    // JSX text parsing for content like "Hello!" in JSX elements
+    fn jsx_text(&mut self) -> Result<Token, NagariError> {
+        let mut value = String::new();
+
+        while !self.is_at_end() {
+            let ch = self.peek().unwrap();
+
+            // Stop at JSX boundaries
+            if ch == '<' || ch == '{' || ch == '}' {
+                break;
+            }
+
+            if ch == '\n' {
+                self.line += 1;
+                self.column = 1;
+            }
+
+            value.push(self.advance());
+        }
+
+        // Return JSX text if we have content
+        if !value.trim().is_empty() {
+            Ok(Token::JSXText(value))
+        } else {
+            // If it's just whitespace, continue with normal tokenization
+            self.next_token()
+        }
     }
 }

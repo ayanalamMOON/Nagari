@@ -9,6 +9,7 @@ pub struct Program {
 pub enum Statement {
     FunctionDef(FunctionDef),
     Assignment(Assignment),
+    AttributeAssignment(AttributeAssignment),
     If(IfStatement),
     While(WhileLoop),
     For(ForLoop),
@@ -18,6 +19,7 @@ pub enum Statement {
     Import(ImportStatement),
     Break,
     Continue,
+    Pass,
     // New modern language features
     With(WithStatement),
     Try(TryStatement),
@@ -62,6 +64,13 @@ pub struct Parameter {
 pub struct Assignment {
     pub name: String,
     pub var_type: Option<Type>,
+    pub value: Expression,
+}
+
+#[derive(Debug, Clone)]
+pub struct AttributeAssignment {
+    pub object: Expression,
+    pub attribute: String,
     pub value: Expression,
 }
 

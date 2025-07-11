@@ -1,0 +1,5 @@
+result = hasattr(window, "test")
+print(result)
+
+data = list([1, 2, 3])
+print(data)

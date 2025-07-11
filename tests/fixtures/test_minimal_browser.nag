@@ -1,0 +1,7 @@
+class DOMHelper:
+    @staticmethod
+    def get_element(selector):
+        return "element"
+
+result = DOMHelper.get_element("div")
+print("Test completed:", result)

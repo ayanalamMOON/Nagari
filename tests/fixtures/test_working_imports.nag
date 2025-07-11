@@ -1,0 +1,8 @@
+from math import sqrt
+import { readFile } from fs
+
+def test_function():
+    return sqrt(16)
+
+print("Testing imports...")
+print(test_function())

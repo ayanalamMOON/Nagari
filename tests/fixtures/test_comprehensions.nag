@@ -1,0 +1,18 @@
+# Test different comprehensions
+numbers = [1, 2, 3, 4, 5]
+
+# List comprehension
+squares = [x * x for x in numbers]
+print("Squares:", squares)
+
+# List comprehension with condition
+evens = [x for x in numbers if x % 2 == 0]
+print("Evens:", evens)
+
+# TODO: Dict comprehension
+# square_dict = {x: x * x for x in numbers}
+# print("Square dict:", square_dict)
+
+# TODO: Set comprehension
+# unique_squares = {x * x for x in numbers}
+# print("Unique squares:", unique_squares)

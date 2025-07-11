@@ -1,0 +1,10 @@
+# Test step by step to find the exact problem
+from js import document
+
+print("Import works")
+
+class DOMHelper:
+    """Helper class for DOM operations"""
+    pass
+
+print("Empty class works")

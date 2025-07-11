@@ -1,0 +1,4 @@
+try:
+    print("test")
+except js_error:
+    print("error")

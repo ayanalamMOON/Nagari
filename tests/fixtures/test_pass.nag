@@ -1,0 +1,9 @@
+def test_pass():
+    pass
+
+if true:
+    pass
+else:
+    print("hello")
+
+print("Pass test completed")

@@ -1,0 +1,18 @@
+# Simple test of browser_apis.nag first few lines
+from js import document, window, localStorage, sessionStorage, fetch, navigator, location
+import { setTimeout, setInterval, clearTimeout, clearInterval } from js("global")
+
+# Type definitions for annotations
+Any = "Any"
+List = "List"
+Dict = "Dict"
+Callable = "Callable"
+
+# Test class definition
+class DOMHelper:
+    """Helper class for DOM operations"""
+
+    def get_element():
+        return None
+
+print("Method signature completed")

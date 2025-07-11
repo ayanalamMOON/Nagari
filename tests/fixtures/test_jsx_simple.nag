@@ -1,0 +1,3 @@
+def simple():
+    x = <div></div>
+    return x

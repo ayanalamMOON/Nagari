@@ -1,0 +1,9 @@
+from js import document
+import { setTimeout } from js("global")
+
+class Test:
+    """Test class"""
+
+    @staticmethod
+    def test_method():
+        pass

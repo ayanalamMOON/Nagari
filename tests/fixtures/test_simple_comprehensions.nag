@@ -1,0 +1,10 @@
+# Test simple comprehensions
+numbers = [1, 2, 3, 4, 5]
+
+# List comprehension
+squares = [x * x for x in numbers]
+print("Squares:", squares)
+
+# Dict comprehension
+square_dict = {x: x * x for x in numbers}
+print("Square dict:", square_dict)

@@ -82,6 +82,9 @@ impl JSTranspiler {
         match stmt {
             Statement::FunctionDef(func) => self.transpile_function(func),
             Statement::Assignment(assign) => self.transpile_assignment(assign),
+            Statement::AttributeAssignment(attr_assign) => {
+                self.transpile_attribute_assignment(attr_assign)
+            }
             Statement::If(if_stmt) => self.transpile_if(if_stmt),
             Statement::While(while_loop) => self.transpile_while(while_loop),
             Statement::For(for_loop) => self.transpile_for(for_loop),
@@ -131,6 +134,11 @@ impl JSTranspiler {
             Statement::Continue => {
                 self.add_indent();
                 self.output.push_str("continue;");
+                Ok(())
+            }
+            Statement::Pass => {
+                self.add_indent();
+                self.output.push_str("// pass");
                 Ok(())
             }
             // TODO: Add implementations for remaining statement types
@@ -215,6 +223,25 @@ impl JSTranspiler {
         Ok(())
     }
 
+    fn transpile_attribute_assignment(
+        &mut self,
+        attr_assign: &crate::ast::AttributeAssignment,
+    ) -> Result<(), NagariError> {
+        self.add_indent();
+
+        // Transpile the object
+        self.transpile_expression(&attr_assign.object)?;
+        self.output.push('.');
+        self.output.push_str(&attr_assign.attribute);
+        self.output.push_str(" = ");
+
+        // Transpile the value
+        self.transpile_expression(&attr_assign.value)?;
+        self.output.push(';');
+
+        Ok(())
+    }
+
     fn transpile_expression(&mut self, expr: &Expression) -> Result<(), NagariError> {
         match expr {
             Expression::Literal(lit) => self.transpile_literal(lit),
@@ -285,20 +312,162 @@ impl JSTranspiler {
                 self.output.push_str(") => ");
                 self.transpile_expression(&lambda.body)
             }
-            Expression::ListComprehension(_) => {
-                // TODO: Implement list comprehension transpilation
-                self.output.push_str("/* TODO: List comprehension */[]");
+            Expression::ListComprehension(comp) => {
+                // Generate JavaScript IIFE that implements the list comprehension
+                self.output.push_str("(function() {\n");
+                self.indent_level += 1;
+                self.add_indent();
+                self.output.push_str("const result = [];\n");
+
+                // Generate nested for loops for each generator
+                for generator in &comp.generators {
+                    self.add_indent();
+                    self.output.push_str("for (const ");
+                    self.output.push_str(&generator.target);
+                    self.output.push_str(" of ");
+                    self.transpile_expression(&generator.iter)?;
+                    self.output.push_str(") {\n");
+                    self.indent_level += 1;
+
+                    // Add conditions as if statements
+                    for condition in &generator.conditions {
+                        self.add_indent();
+                        self.output.push_str("if (");
+                        self.transpile_expression(condition)?;
+                        self.output.push_str(") {\n");
+                        self.indent_level += 1;
+                    }
+                }
+
+                // Add the element to result
+                self.add_indent();
+                self.output.push_str("result.push(");
+                self.transpile_expression(&comp.element)?;
+                self.output.push_str(");\n");
+
+                // Close all the loops and conditions
+                for generator in &comp.generators {
+                    for _ in &generator.conditions {
+                        self.indent_level -= 1;
+                        self.add_indent();
+                        self.output.push_str("}\n");
+                    }
+                    self.indent_level -= 1;
+                    self.add_indent();
+                    self.output.push_str("}\n");
+                }
+
+                self.add_indent();
+                self.output.push_str("return result;\n");
+                self.indent_level -= 1;
+                self.add_indent();
+                self.output.push_str("})()");
                 Ok(())
             }
-            Expression::DictComprehension(_) => {
-                // TODO: Implement dict comprehension transpilation
-                self.output.push_str("/* TODO: Dict comprehension */{}");
+            Expression::DictComprehension(comp) => {
+                // Generate JavaScript IIFE that implements the dict comprehension
+                self.output.push_str("(function() {\n");
+                self.indent_level += 1;
+                self.add_indent();
+                self.output.push_str("const result = {};\n");
+
+                // Generate nested for loops for each generator
+                for generator in &comp.generators {
+                    self.add_indent();
+                    self.output.push_str("for (const ");
+                    self.output.push_str(&generator.target);
+                    self.output.push_str(" of ");
+                    self.transpile_expression(&generator.iter)?;
+                    self.output.push_str(") {\n");
+                    self.indent_level += 1;
+
+                    // Add conditions as if statements
+                    for condition in &generator.conditions {
+                        self.add_indent();
+                        self.output.push_str("if (");
+                        self.transpile_expression(condition)?;
+                        self.output.push_str(") {\n");
+                        self.indent_level += 1;
+                    }
+                }
+
+                // Add the key-value pair to result
+                self.add_indent();
+                self.output.push_str("result[");
+                self.transpile_expression(&comp.key)?;
+                self.output.push_str("] = ");
+                self.transpile_expression(&comp.value)?;
+                self.output.push_str(";\n");
+
+                // Close all the loops and conditions
+                for generator in &comp.generators {
+                    for _ in &generator.conditions {
+                        self.indent_level -= 1;
+                        self.add_indent();
+                        self.output.push_str("}\n");
+                    }
+                    self.indent_level -= 1;
+                    self.add_indent();
+                    self.output.push_str("}\n");
+                }
+
+                self.add_indent();
+                self.output.push_str("return result;\n");
+                self.indent_level -= 1;
+                self.add_indent();
+                self.output.push_str("})()");
                 Ok(())
             }
-            Expression::SetComprehension(_) => {
-                // TODO: Implement set comprehension transpilation
-                self.output
-                    .push_str("/* TODO: Set comprehension */new Set()");
+            Expression::SetComprehension(comp) => {
+                // Generate JavaScript IIFE that implements the set comprehension
+                self.output.push_str("(function() {\n");
+                self.indent_level += 1;
+                self.add_indent();
+                self.output.push_str("const result = new Set();\n");
+
+                // Generate nested for loops for each generator
+                for generator in &comp.generators {
+                    self.add_indent();
+                    self.output.push_str("for (const ");
+                    self.output.push_str(&generator.target);
+                    self.output.push_str(" of ");
+                    self.transpile_expression(&generator.iter)?;
+                    self.output.push_str(") {\n");
+                    self.indent_level += 1;
+
+                    // Add conditions as if statements
+                    for condition in &generator.conditions {
+                        self.add_indent();
+                        self.output.push_str("if (");
+                        self.transpile_expression(condition)?;
+                        self.output.push_str(") {\n");
+                        self.indent_level += 1;
+                    }
+                }
+
+                // Add the element to result
+                self.add_indent();
+                self.output.push_str("result.add(");
+                self.transpile_expression(&comp.element)?;
+                self.output.push_str(");\n");
+
+                // Close all the loops and conditions
+                for generator in &comp.generators {
+                    for _ in &generator.conditions {
+                        self.indent_level -= 1;
+                        self.add_indent();
+                        self.output.push_str("}\n");
+                    }
+                    self.indent_level -= 1;
+                    self.add_indent();
+                    self.output.push_str("}\n");
+                }
+
+                self.add_indent();
+                self.output.push_str("return result;\n");
+                self.indent_level -= 1;
+                self.add_indent();
+                self.output.push_str("})()");
                 Ok(())
             }
             Expression::Generator(_) => {
@@ -339,6 +508,29 @@ impl JSTranspiler {
                 self.indent_level -= 1;
                 self.add_indent();
                 self.output.push('}');
+                Ok(())
+            }
+            Expression::FString(fstring) => {
+                // Transpile f-string to template literal
+                self.output.push('`');
+                for part in &fstring.parts {
+                    match part {
+                        crate::ast::FStringPart::Text(text) => {
+                            // Escape backticks and backslashes for template literals
+                            let escaped = text
+                                .replace('\\', "\\\\")
+                                .replace('`', "\\`")
+                                .replace('$', "\\$");
+                            self.output.push_str(&escaped);
+                        }
+                        crate::ast::FStringPart::Expression(expr) => {
+                            self.output.push_str("${");
+                            self.transpile_expression(expr)?;
+                            self.output.push('}');
+                        }
+                    }
+                }
+                self.output.push('`');
                 Ok(())
             }
             // Add catch-all for any remaining expression types
@@ -455,7 +647,15 @@ impl JSTranspiler {
             }
             Literal::String(s) => {
                 self.output.push('"');
-                self.output.push_str(&s.replace('"', "\\\""));
+                // Properly escape special characters for JavaScript
+                let escaped = s
+                    .replace('\\', "\\\\") // Backslash first
+                    .replace('"', "\\\"") // Double quotes
+                    .replace('\n', "\\n") // Newlines
+                    .replace('\r', "\\r") // Carriage returns
+                    .replace('\t', "\\t") // Tabs
+                    .replace('\0', "\\0"); // Null characters
+                self.output.push_str(&escaped);
                 self.output.push('"');
             }
             Literal::Bool(b) => {
@@ -469,6 +669,15 @@ impl JSTranspiler {
     }
     fn transpile_call(&mut self, call: &CallExpression) -> Result<(), NagariError> {
         if let Expression::Identifier(func_name) = call.function.as_ref() {
+            // Special handling for functions that need non-standard transpilation
+            if func_name == "hasattr" && call.arguments.len() == 2 {
+                // hasattr(obj, 'attr') -> 'attr' in obj
+                self.transpile_expression(&call.arguments[1])?; // attribute name
+                self.output.push_str(" in ");
+                self.transpile_expression(&call.arguments[0])?; // object
+                return Ok(());
+            }
+
             // Check if this is a builtin function that needs special handling
             // Clone the mapping to avoid borrow checker issues
             let mapping_opt = self.builtin_mapper.get_mapping(func_name).cloned();

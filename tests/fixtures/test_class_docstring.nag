@@ -1,0 +1,10 @@
+class TestClass:
+    """Class docstring"""
+
+    @staticmethod
+    def test_method(param: str) -> str:
+        """Method docstring"""
+        return param
+
+result = TestClass.test_method("hello")
+print(result)

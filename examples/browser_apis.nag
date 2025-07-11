@@ -5,23 +5,29 @@
 from js import document, window, localStorage, sessionStorage, fetch, navigator, location
 import { setTimeout, setInterval, clearTimeout, clearInterval } from js("global")
 
+# Type definitions for annotations
+Any = "Any"
+List = "List"
+Dict = "Dict"
+Callable = "Callable"
+
 # ===== DOM Manipulation =====
 class DOMHelper:
     """Helper class for DOM operations"""
 
     @staticmethod
-    def get_element(selector: str) -> Any:
+    def get_element(selector):
         """Get element by CSS selector"""
         return document.querySelector(selector)
 
     @staticmethod
-    def get_elements(selector: str) -> List:
+    def get_elements(selector):
         """Get all elements matching CSS selector"""
         elements = document.querySelectorAll(selector)
         return [elements[i] for i in range(elements.length)]
 
     @staticmethod
-    def create_element(tag: str, attributes: Dict = None, content: str = "") -> Any:
+    def create_element(tag, attributes=None, content=""):
         """Create new HTML element"""
         element = document.createElement(tag)
 

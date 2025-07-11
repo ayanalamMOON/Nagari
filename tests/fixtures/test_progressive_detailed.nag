@@ -1,0 +1,56 @@
+# Test the DOM Helper class and demonstrate_dom function
+from js import document, window, localStorage, sessionStorage, fetch, navigator, location
+import { setTimeout, setInterval, clearTimeout, clearInterval } from js("global")
+
+# Type definitions for annotations
+Any = "Any"
+List = "List"
+Dict = "Dict"
+Callable = "Callable"
+
+# ===== DOM Manipulation =====
+class DOMHelper:
+    """Helper class for DOM operations"""
+
+    @staticmethod
+    def get_element(selector):
+        """Get element by CSS selector"""
+        return document.querySelector(selector)
+
+    @staticmethod
+    def get_elements(selector):
+        """Get all elements matching CSS selector"""
+        elements = document.querySelectorAll(selector)
+        return [elements[i] for i in range(elements.length)]
+
+    @staticmethod
+    def create_element(tag, attributes=None, content=""):
+        """Create new HTML element"""
+        element = document.createElement(tag)
+
+        if attributes:
+            for key, value in attributes.items():
+                element.setAttribute(key, str(value))
+
+        if content:
+            element.textContent = content
+
+        return element
+
+    @staticmethod
+    def add_event_listener(element: Any, event: str, handler: Callable) -> None:
+        """Add event listener to element"""
+        element.addEventListener(event, handler)
+
+    @staticmethod
+    def remove_element(element: Any) -> None:
+        """Remove element from DOM"""
+        if element and element.parentNode:
+            element.parentNode.removeChild(element)
+
+    @staticmethod
+    def animate_element(element: Any, keyframes: List[Dict], options: Dict) -> Any:
+        """Animate element using Web Animations API"""
+        return element.animate(keyframes, options)
+
+print("DOM Helper class completed")

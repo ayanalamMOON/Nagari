@@ -1,0 +1,6 @@
+# Test class with docstring and pass without browser imports
+class DOMHelper:
+    """Helper class for DOM operations"""
+    pass
+
+print("Class with docstring and pass works!")

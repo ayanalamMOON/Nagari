@@ -1,0 +1,16 @@
+# Test all the enhanced import syntax features we implemented
+
+# 1. from module import items syntax
+from js import document, window, localStorage
+
+# 2. import { items } from module syntax
+import { setTimeout, setInterval } from js("global")
+
+# 3. import { items } from function_call("param") syntax
+import { fetch, Response } from js("fetch")
+
+# 4. Standard import patterns still work
+import defaultExport from "module"
+
+print("All import syntax patterns parsed successfully!")
+print("Import features implementation complete!")

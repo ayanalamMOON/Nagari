@@ -1,0 +1,3 @@
+# Test hasattr function specifically
+result = hasattr(navigator, 'languages')
+print("hasattr result:", result)

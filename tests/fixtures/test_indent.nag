@@ -1,0 +1,10 @@
+def test_indent():
+    try:
+        x = 1
+        try:
+            y = 2
+        except:
+            z = 3
+    except:
+        w = 4
+    return x
