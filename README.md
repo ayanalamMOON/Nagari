@@ -568,7 +568,7 @@ Nagari/
 
 ```bash
 # Prerequisites: Rust 1.70+, Node.js 18+, Git
-git clone https://github.com/nagari-lang/nagari.git
+git clone https://github.com/ayanalamMOON/Nagari.git
 cd nagari
 
 # Build all components (includes runtime)
@@ -937,7 +937,7 @@ def UserCard({ user, onEdit, onDelete }: {
 **🚀 Ready for Real-World Use:**
 ```bash
 # Install and use Nagari today!
-git clone https://github.com/nagari-lang/nagari.git
+git clone https://github.com/ayanalamMOON/Nagari.git
 cd nagari && ./tools/build.sh
 nagari run examples/hello.nag  # It just works!
 ```
@@ -1060,7 +1060,7 @@ Nagari builds upon excellent open-source projects:
 
 **Want to contribute?**
 - 🤝 [Contributing Guide](CONTRIBUTING.md) - Help improve Nagari
-- 💬 [Community Discord](https://discord.gg/nagari) - Join the discussion
-- � [Report Issues](https://github.com/nagari-lang/nagari/issues) - Help us improve
+- 💬 [GitHub Discussions](https://github.com/ayanalamMOON/Nagari/discussions) - Join the discussion
+- � [Report Issues](https://github.com/ayanalamMOON/Nagari/issues) - Help us improve
 
 **Nagari v0.2.1 (July 2025)** - A modern programming language that just works! ✨

@@ -94,7 +94,7 @@ async function createPost() {
         body: 'Post content',
         userId: 1
     };
-    
+
     const response = await http.post('https://api.example.com/posts', postData);
     const result = await response.json();
     console.log('Created:', result);
@@ -110,7 +110,7 @@ const http = InteropRegistry.getModule('http');
 // PUT request
 await http.put('https://api.example.com/posts/1', updateData);
 
-// DELETE request  
+// DELETE request
 await http.delete('https://api.example.com/posts/1');
 
 // Response includes full details

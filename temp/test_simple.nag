@@ -1,18 +1,37 @@
-async def create_post(title: str, body: str, user_id: int) -> dict:
-    url: str = "https://jsonplaceholder.typicode.com/posts"
-    data = {
-        "title": title,
-        "body": body,
-        "userId": user_id
-    }
-    response = await http.post(url, data)
-    return response
+# Simple test for data structures and functions
 
-async def main():
-    print("Creating a new post...")
-    post = await create_post(
-        "My First Nagari Post",
-        "This post was created using the Nagari programming language!",
-        1
-    )
-    print("Created post response:", post)
+def test_lists():
+    numbers = [1, 2, 3, 4, 5]
+    print("Original list:", numbers)
+
+    # Test list operations (using JavaScript-style push for now)
+    doubled = []
+    for num in numbers:
+        doubled.push(num * 2)
+
+    print("Doubled list:", doubled)
+    return doubled
+
+def test_dictionaries():
+    person = {
+        "name": "Alice",
+        "age": 30,
+        "city": "New York"
+    }
+
+    print("Person data:", person)
+    print("Name:", person["name"])
+    print("Age:", person["age"])
+
+    return person
+
+def main():
+    print("=== Testing Lists ===")
+    test_lists()
+
+    print("=== Testing Dictionaries ===")
+    test_dictionaries()
+
+    print("=== All tests completed ===")
+
+main()

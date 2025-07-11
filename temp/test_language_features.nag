@@ -1,0 +1,81 @@
+# Test mathematical operations and control flow
+
+def test_arithmetic():
+    print("=== Arithmetic Operations ===")
+
+    a = 10
+    b = 3
+
+    print("a =", a)
+    print("b =", b)
+    print("a + b =", a + b)
+    print("a - b =", a - b)
+    print("a * b =", a * b)
+    print("a / b =", a / b)
+    print("a % b =", a % b)
+
+def test_comparisons():
+    print("=== Comparison Operations ===")
+
+    x = 5
+    y = 10
+
+    print("x =", x)
+    print("y =", y)
+    print("x == y:", x == y)
+    print("x != y:", x != y)
+    print("x < y:", x < y)
+    print("x > y:", x > y)
+    print("x <= y:", x <= y)
+    print("x >= y:", x >= y)
+
+def test_conditionals():
+    print("=== Conditional Statements ===")
+
+    score = 85
+    grade = ""  # Initialize the variable
+
+    if score >= 90:
+        grade = "A"
+    elif score >= 80:
+        grade = "B"
+    elif score >= 70:
+        grade = "C"
+    elif score >= 60:
+        grade = "D"
+    else:
+        grade = "F"
+
+    print("Score:", score)
+    print("Grade:", grade)
+
+def test_loops():
+    print("=== Loop Operations ===")
+
+    # Simple for loop
+    print("Numbers 1 to 5:")
+    numbers = [1, 2, 3, 4, 5]
+    for i in numbers:
+        print("Number:", i)
+
+    # While loop
+    print("Countdown:")
+    countdown = 5
+    while countdown > 0:
+        print("T-minus", countdown)
+        countdown = countdown - 1
+    print("Blast off!")
+
+def main():
+    print("Testing Nagari Language Features")
+    print("=" * 40)
+
+    test_arithmetic()
+    test_comparisons()
+    test_conditionals()
+    test_loops()
+
+    print("=" * 40)
+    print("All tests completed successfully!")
+
+main()
