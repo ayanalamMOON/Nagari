@@ -1,6 +1,6 @@
 "use strict";
 
-import { InteropRegistry } from './nagari-runtime/dist/index.js';
+import { jsToNagari, nagariToJS, InteropRegistry } from 'nagari-runtime';
 
 
 // Browser polyfills
@@ -38,7 +38,7 @@ async function fetch_user_data(user_id) {
 }
 async function create_post(title, body, user_id) {
     let url = "https://jsonplaceholder.typicode.com/posts";
-    let data = { "title": title, "body": body, "userId": user_id };
+    let data = {"title": title, "body": body, "userId": user_id};
     let response = await http.post(url, data);
     return response;
 }
