@@ -1,4 +1,4 @@
-# Data Analysis and Visualization Demo
+++# Data Analysis and Visualization Demo
 # Statistical analysis, data processing, and visualization using Nagari
 
 from math import sqrt, abs, sum, max, min, mean, median
