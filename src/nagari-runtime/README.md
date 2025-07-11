@@ -4,19 +4,21 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 
-**Runtime utilities and polyfills for the Nagari programming language.**
+**Production-ready runtime utilities and interoperability layer for Nagari programming language with comprehensive HTTP support, Python-like builtins, and seamless JavaScript integration.**
 
-The Nagari Runtime is the essential bridge that enables Nagari code to execute seamlessly in JavaScript environments. It provides type conversion, interoperability features, and Python-like built-ins that make Nagari feel native in both browser and Node.js environments.
+The Nagari Runtime v0.2.0 is the essential bridge that enables Nagari code to execute seamlessly in JavaScript environments. It provides advanced type conversion, HTTP request capabilities, interoperability features, and Python-like built-ins that make Nagari feel native in both browser and Node.js environments.
 
 ## ✨ Features
 
 - 🔄 **Seamless Type Conversion** - Automatic conversion between Nagari and JavaScript types
-- 🌐 **Universal Compatibility** - Works in browsers, Node.js, and edge environments
+- 🌐 **HTTP Support** - Built-in HTTP module with async/await for real API calls
 - 🛠️ **Interop Registry** - Register and call JavaScript functions from Nagari code
-- 🐍 **Python-like Built-ins** - `range()`, `enumerate()`, and more familiar functions
+- 🐍 **Python-like Built-ins** - `range()`, `enumerate()`, `len()`, and more familiar functions
 - 📦 **Zero Dependencies** - Lightweight runtime with no external dependencies
 - 🚀 **ES6 + CommonJS** - Supports both modern and legacy module systems
 - 🔒 **Type Safety** - Full TypeScript definitions included
+- ⚡ **Async/Await Ready** - Native support for modern asynchronous programming
+- 🌍 **Universal Compatibility** - Works in browsers, Node.js, and edge environments
 
 ## 📦 Installation
 
@@ -61,6 +63,61 @@ InteropRegistry.initialize();
   import { InteropRegistry } from 'https://unpkg.com/nagari-runtime/dist/index.js';
   InteropRegistry.initialize();
 </script>
+```
+
+## 🌐 HTTP Module Usage
+
+The Nagari Runtime v0.2.0 includes a comprehensive HTTP module for making real API requests:
+
+### Basic HTTP Requests
+
+```javascript
+import { InteropRegistry } from 'nagari-runtime';
+
+// Initialize runtime with HTTP module
+InteropRegistry.initialize();
+
+// Get the HTTP module
+const http = InteropRegistry.getModule('http');
+
+// GET request
+async function fetchUser() {
+    const response = await http.get('https://api.example.com/users/1');
+    const userData = await response.json();
+    console.log('User:', userData);
+}
+
+// POST request with data
+async function createPost() {
+    const postData = {
+        title: 'My Post',
+        body: 'Post content',
+        userId: 1
+    };
+    
+    const response = await http.post('https://api.example.com/posts', postData);
+    const result = await response.json();
+    console.log('Created:', result);
+}
+```
+
+### Advanced HTTP Operations
+
+```javascript
+// Multiple request methods supported
+const http = InteropRegistry.getModule('http');
+
+// PUT request
+await http.put('https://api.example.com/posts/1', updateData);
+
+// DELETE request  
+await http.delete('https://api.example.com/posts/1');
+
+// Response includes full details
+const response = await http.get('https://api.example.com/data');
+console.log('Status:', response.status);
+console.log('Headers:', response.headers);
+console.log('Body:', response.body);
 ```
 
 ## 📚 API Reference
@@ -527,7 +584,29 @@ npm test
 npm run build
 ```
 
-## 📄 License
+## � Changelog
+
+### v0.2.0 (Latest)
+- ✨ **NEW**: Comprehensive HTTP module with async/await support
+- ✨ **NEW**: Real API request capabilities (GET, POST, PUT, DELETE)
+- ✨ **NEW**: Response objects with `.json()` and `.get()` methods
+- 🔧 **Enhanced**: Updated project structure organization
+- 🔧 **Enhanced**: Improved TypeScript type definitions
+- 🔧 **Enhanced**: Better error handling and debugging support
+- 📚 **Documentation**: Updated examples and API reference
+- 🚀 **Performance**: Optimized module loading and initialization
+
+### v0.1.2
+- 🔧 **Fixed**: Type conversion edge cases
+- 📚 **Documentation**: Initial comprehensive README
+- 🧪 **Testing**: Added basic test suite
+
+### v0.1.1
+- 🎉 **Initial**: Core interoperability functions
+- 🎉 **Initial**: Python-like built-in functions
+- 🎉 **Initial**: Basic type conversion system
+
+## �📄 License
 
 MIT License - see the [LICENSE](LICENSE) file for details.
 

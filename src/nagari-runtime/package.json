@@ -1,7 +1,7 @@
 {
     "name": "nagari-runtime",
-    "version": "0.1.2",
-    "description": "Runtime utilities and polyfills for Nagari language",
+    "version": "0.2.0",
+    "description": "Production-ready runtime utilities and interoperability layer for Nagari language with HTTP support, Python-like builtins, and comprehensive JavaScript integration",
     "type": "module",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -16,7 +16,8 @@
         "build": "tsc",
         "dev": "tsc --watch",
         "test": "jest",
-        "prepublishOnly": "npm run build",
+        "clean": "rm -rf dist",
+        "prepublishOnly": "npm run clean && npm run build",
         "prepare": "npm run build"
     },
     "keywords": [
@@ -26,7 +27,11 @@
         "javascript",
         "programming-language",
         "interop",
-        "polyfill"
+        "polyfill",
+        "http",
+        "async",
+        "python-like",
+        "modern-js"
     ],
     "author": {
         "name": "Nagari Team",
@@ -37,7 +42,7 @@
     "repository": {
         "type": "git",
         "url": "https://github.com/ayanalamMOON/Nagari.git",
-        "directory": "nagari-runtime"
+        "directory": "src/nagari-runtime"
     },
     "bugs": {
         "url": "https://github.com/ayanalamMOON/Nagari/issues"
