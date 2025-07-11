@@ -317,56 +317,63 @@ nag lsp --mode tcp      # Network-based editors
 ✅ **Type Safety** - Runtime type checking with intelligent inference
 ✅ **Ecosystem Integration** - Works with React, Express, Vue, and npm packages
 
-## �️ Project Structure
+## 🗂️ Project Structure
 
 The Nagari project is organized into focused, production-ready components:
 
 ```
 Nagari/
-├── cli/                         # 🔧 Command-line interface (Rust)
-│   ├── src/
-│   │   ├── main.rs             # CLI entry point
-│   │   ├── commands/           # All CLI commands (run, build, init, etc.)
-│   │   ├── repl_engine/        # Advanced REPL system
-│   │   ├── package/            # Package management
-│   │   └── tools/              # Development tools (linter, formatter)
-├── nagari-compiler/            # 🦀 Core compiler (Rust)
-│   ├── src/
-│   │   ├── lexer.rs           # Lexical analysis with proper tokenization
-│   │   ├── parser.rs          # Syntax parsing with error recovery
-│   │   ├── transpiler/        # JavaScript code generation
-│   │   └── ast.rs             # Abstract syntax tree definitions
-├── nagari-runtime/             # 📦 Runtime package (TypeScript) [npm published]
-│   ├── src/
-│   │   ├── index.ts           # Main runtime exports
-│   │   ├── interop.ts         # JavaScript ↔ Nagari interoperability
-│   │   ├── builtins.ts        # Python-like built-in functions
-│   │   └── types.ts           # Type conversion utilities
-│   ├── dist/                  # Compiled JavaScript output
-│   └── package.json           # npm package configuration
-├── lsp-server/                 # 🔍 Language Server Protocol (Rust)
-│   ├── src/
-│   │   ├── backend.rs         # LSP protocol implementation
-│   │   ├── completion.rs      # Code completion engine
-│   │   ├── diagnostics.rs     # Real-time error detection
-│   │   └── navigation.rs      # Go-to-definition, references
+├── src/                        # 📂 Source code (organized by component)
+│   ├── cli/                    # 🔧 Command-line interface (Rust)
+│   │   ├── src/
+│   │   │   ├── main.rs         # CLI entry point
+│   │   │   ├── commands/       # All CLI commands (run, build, init, etc.)
+│   │   │   ├── repl_engine/    # Advanced REPL system
+│   │   │   ├── package/        # Package management
+│   │   │   └── tools/          # Development tools (linter, formatter)
+│   ├── nagari-compiler/        # 🦀 Core compiler (Rust)
+│   │   ├── src/
+│   │   │   ├── lexer.rs        # Lexical analysis with proper tokenization
+│   │   │   ├── parser.rs       # Syntax parsing with error recovery
+│   │   │   ├── transpiler/     # JavaScript code generation
+│   │   │   └── ast.rs          # Abstract syntax tree definitions
+│   ├── nagari-runtime/         # 📦 Runtime package (TypeScript) [npm published]
+│   │   ├── src/
+│   │   │   ├── index.ts        # Main runtime exports
+│   │   │   ├── interop.ts      # JavaScript ↔ Nagari interoperability
+│   │   │   ├── builtins.ts     # Python-like built-in functions
+│   │   │   └── types.ts        # Type conversion utilities
+│   │   ├── dist/               # Compiled JavaScript output
+│   │   └── package.json        # npm package configuration
+│   ├── lsp-server/             # 🔍 Language Server Protocol (Rust)
+│   │   ├── src/
+│   │   │   ├── backend.rs      # LSP protocol implementation
+│   │   │   ├── completion.rs   # Code completion engine
+│   │   │   ├── diagnostics.rs  # Real-time error detection
+│   │   │   └── navigation.rs   # Go-to-definition, references
+│   ├── nagari-vm/              # ⚡ Virtual machine (Rust)
+│   ├── nagari-wasm/            # 🌐 WebAssembly bindings (Rust)
+│   ├── nagari-embedded/        # 🔌 Embedded systems support (Rust)
+│   └── registry-server/        # 📦 Package registry server (Rust)
+├── build/                      # 🏗️ Build outputs and artifacts
+│   ├── target/                 # Cargo build directory
+│   └── dist/                   # Distribution builds
+├── scripts/                    # 🔨 Build and development scripts
+│   ├── tools/                  # Development utilities
+│   └── run-tests.*             # Test runners for different platforms
 ├── examples/                   # 📝 Working example projects
-│   ├── fibonacci_working.nag   # ✅ Tested mathematical algorithms
-│   ├── react_todo_app.nag     # React application with hooks
-│   ├── express_server.nag     # Express.js REST API
-│   └── algorithms.nag         # Data structures and algorithms
-├── tests/                      # 🧪 Comprehensive test suite
-│   ├── fixtures/              # Test input files (.nag)
-│   ├── outputs/               # Generated JavaScript files
-│   ├── debug/                 # Debug utilities and tools
-│   └── integration/           # End-to-end integration tests
-├── dev-tools/                  # 🛠️ Development utilities
-│   └── test-projects/         # Temporary test projects
+│   ├── async_demo.nag          # ✅ HTTP requests with async/await
+│   ├── react_todo_app.nag      # React application with hooks
+│   ├── express_server.nag      # Express.js REST API
+│   └── algorithms.nag          # Data structures and algorithms
+├── temp/                       # 🧪 Temporary files and test outputs
+│   ├── tests/                  # Test fixtures and debugging
+│   └── dev-tools/              # Development utilities
 ├── docs/                       # 📚 Comprehensive documentation
-│   ├── getting-started.md     # Quick start guide
-│   ├── api-reference.md       # Complete API documentation
-│   ├── tutorials.md           # Step-by-step tutorials
-│   └── troubleshooting.md     # Common issues and solutions
+│   ├── getting-started.md      # Quick start guide
+│   ├── api-reference.md        # Complete API documentation
+│   ├── tutorials.md            # Step-by-step tutorials
+│   └── troubleshooting.md      # Common issues and solutions
 ├── stdlib/                     # 📖 Standard library (.nag files)
 │   ├── core.nag              # Built-in functions and types
 │   ├── math.nag              # Mathematical operations

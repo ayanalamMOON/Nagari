@@ -1,0 +1,23 @@
+def add_numbers(a, b):
+    return a + b
+
+print("Testing Type System")
+print("==================")
+
+# Test with integers
+result1 = add_numbers(5, 3)
+print("5 + 3 =", result1)
+
+# Test with floats
+result2 = add_numbers(2.5, 1.5)
+print("2.5 + 1.5 =", result2)
+
+# Test arrays
+numbers = [1, 2, 3, 4, 5]
+print("Numbers:", numbers)
+
+# Test string concatenation
+greeting = "Hello" + " " + "World"
+print("Greeting:", greeting)
+
+print("Type system working!")

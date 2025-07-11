@@ -3,7 +3,11 @@ import http
 async def fetch_user_data(user_id: int) -> dict:
     url: str = "https://jsonplaceholder.typicode.com/users/" + str(user_id)
     response = await http.get(url)
-    return response
+    print("Raw response:", response)
+    print("Response status:", response.status)
+    print("Response body:", response.body)
+    user_data = response.json()
+    return user_data
 
 async def create_post(title: str, body: str, user_id: int) -> dict:
     url: str = "https://jsonplaceholder.typicode.com/posts"
@@ -13,18 +17,21 @@ async def create_post(title: str, body: str, user_id: int) -> dict:
         "userId": user_id
     }
     response = await http.post(url, data)
-    return response
+    print("POST response status:", response.status)
+    print("POST response body:", response.body)
+    post_data = response.json()
+    return post_data
 
 async def main():
     print("Fetching user data...")
     user = await fetch_user_data(1)
-    print("User response:", user)
+    print("User data:", user)
     print("Creating a new post...")
     post = await create_post(
         "My First Nagari Post",
         "This post was created using the Nagari programming language!",
         1
     )
-    print("Created post response:", post)
+    print("Created post:", post)
 
 main()

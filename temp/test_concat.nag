@@ -1,0 +1,7 @@
+def test_string_concat():
+    i = 5
+    result = 42
+    message = "fibonacci(" + str(i) + ") = " + str(result)
+    print(message)
+
+test_string_concat()

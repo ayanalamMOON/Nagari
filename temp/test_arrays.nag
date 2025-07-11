@@ -1,0 +1,12 @@
+def test_arrays():
+    # Test basic array creation
+    numbers = [1, 2, 3, 4, 5]
+    print("Array:", numbers)
+
+    # Test array indexing
+    first = numbers[0]
+    print("First element:", first)
+
+    return numbers
+
+test_arrays()

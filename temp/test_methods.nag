@@ -1,0 +1,7 @@
+def test_method_calls():
+    sequence = []
+    sequence.push(1)
+    sequence.push(2)
+    print("Sequence:", sequence)
+
+test_method_calls()

@@ -1,21 +1,42 @@
-import math
-
 def calculate_circle_area(radius: float) -> float:
-    return math.PI * radius * radius
+    PI: float = 3.141592653589793
+    return PI * radius * radius
 
 def calculate_rectangle_area(width: float, height: float) -> float:
     return width * height
 
+def sum_list(numbers: list[int]) -> int:
+    result: int = 0
+    for num in numbers:
+        result = result + num
+    return result
+
+def max_list(numbers: list[int]) -> int:
+    if len(numbers) == 0:
+        return 0
+    result: int = numbers[0]
+    for num in numbers:
+        if num > result:
+            result = num
+    return result
+
+def min_list(numbers: list[int]) -> int:
+    if len(numbers) == 0:
+        return 0
+    result: int = numbers[0]
+    for num in numbers:
+        if num < result:
+            result = num
+    return result
+
 def main():
     print("Circle area (radius 5):", calculate_circle_area(5.0))
     print("Rectangle area (4x6):", calculate_rectangle_area(4.0, 6.0))
-
     # Demonstrate list operations
     numbers: list[int] = [1, 2, 3, 4, 5]
     print("Numbers:", numbers)
-    print("Sum:", math.sum(numbers))
-    print("Max:", math.max(*numbers))
-    print("Min:", math.min(*numbers))
+    print("Sum:", sum_list(numbers))
+    print("Max:", max_list(numbers))
+    print("Min:", min_list(numbers))
 
-if __name__ == "__main__":
-    main()
+main()

@@ -1,0 +1,1 @@
+{"file":"test_arithmetic.js","mappings":"AAAA","sources":["test_arithmetic.nag"],"sourcesContent":["# Test 1: Basic arithmetic and variables\r\nx = 10\r\ny = 20\r\nresult = x + y\r\nprint(\"Sum:\", result)\r\nprint(\"Product:\", x * y)\r\nprint(\"Division:\", y / x)\r\n"],"version":3}

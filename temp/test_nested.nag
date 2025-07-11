@@ -1,0 +1,7 @@
+def test_nested_calls():
+    import math
+    n = 25
+    result = int(math.sqrt(n))
+    print(result)
+
+test_nested_calls()

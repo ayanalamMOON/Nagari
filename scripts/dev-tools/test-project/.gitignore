@@ -1,0 +1,15 @@
+# Nagari build outputs
+dist/
+*.js.map
+
+# Dependencies
+node_modules/
+nag_modules/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

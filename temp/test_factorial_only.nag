@@ -1,0 +1,7 @@
+def test_modulo():
+    n = 10
+    i = 3
+    result = n % i
+    print("Result:", result)
+
+test_modulo()

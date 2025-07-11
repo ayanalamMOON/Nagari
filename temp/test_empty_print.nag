@@ -1,0 +1,5 @@
+def test_empty_print():
+    print()
+    print("after empty")
+
+test_empty_print()

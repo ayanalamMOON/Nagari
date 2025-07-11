@@ -1,14 +1,14 @@
 [workspace]
 resolver = "2"
 members = [
-    "cli",
-    "nagari-compiler",
-    "nagari-parser",
-    "lsp-server",
-    "nagari-vm",
-    "nagari-wasm",
-    "nagari-embedded",
-    "registry-server"
+    "src/cli",
+    "src/nagari-compiler",
+    "src/nagari-parser",
+    "src/lsp-server",
+    "src/nagari-vm",
+    "src/nagari-wasm",
+    "src/nagari-embedded",
+    "src/registry-server"
 ]
 
 [workspace.package]

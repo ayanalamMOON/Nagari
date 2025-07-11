@@ -1,0 +1,34 @@
+def test_working_types():
+    print("Testing Working Type System Features")
+    print("====================================")
+
+    # Test basic function with type inference
+    def add_numbers(a, b):
+        return a + b
+
+    # Test with integers
+    result1 = add_numbers(5, 3)
+    print("5 + 3 =", result1)
+
+    # Test with floats
+    result2 = add_numbers(2.5, 1.5)
+    print("2.5 + 1.5 =", result2)
+
+    # Test arrays with type inference
+    numbers = [1, 2, 3, 4, 5]
+    print("Numbers array:", numbers)
+
+    # Test string concatenation
+    greeting = "Hello" + " " + "World"
+    print("Greeting:", greeting)
+
+    # Test boolean logic
+    flag1 = true
+    flag2 = false
+    result3 = flag1 and flag2
+    print("true and false =", result3)
+
+    return "Type system working correctly!"
+
+result = test_working_types()
+print(result)

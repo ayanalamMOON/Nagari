@@ -1,0 +1,9 @@
+def greet(name: str = "World") -> str:
+    return f"Hello, {name}!"
+
+def main():
+    message = greet("Nagari")
+    print(message)
+
+if __name__ == "__main__":
+    main()

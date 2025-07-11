@@ -1,0 +1,10 @@
+def test_modulo(n: int) -> bool:
+    for i in range(2, n):
+        if n % i == 0:
+            return false
+    return true
+
+def test():
+    print(test_modulo(6))
+
+test()

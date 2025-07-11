@@ -1,0 +1,2 @@
+for i in range(2, int(10)):
+    let x = i

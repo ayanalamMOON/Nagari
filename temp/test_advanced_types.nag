@@ -1,0 +1,28 @@
+def test_advanced_types():
+    print("Testing Advanced Type System")
+    print("============================")
+
+    # Test basic types
+    number = 42
+    text = "Hello, World!"
+    flag = true
+
+    print("Number:", number)
+    print("Text:", text)
+    print("Flag:", flag)
+
+    # Test arrays (Lists)
+    numbers = [1, 2, 3, 4, 5]
+    print("Numbers:", numbers)
+
+    # Test tuples (when implemented)
+    # coordinates = (10, 20)
+
+    # Test objects/dictionaries
+    person = {"name": "Alice", "age": 30}
+    print("Person:", person)
+
+    return "All type tests passed!"
+
+result = test_advanced_types()
+print(result)

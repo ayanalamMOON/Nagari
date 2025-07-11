@@ -1,0 +1,9 @@
+async def test():
+    print("Hello from async")
+    return 42
+
+async def main():
+    result = await test()
+    print("Result:", result)
+
+main()

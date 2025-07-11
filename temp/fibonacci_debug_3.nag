@@ -1,0 +1,10 @@
+def fibonacci(n):
+    if n <= 0:
+        return 0
+    if n == 1:
+        return 1
+    return 42
+
+print("Testing...")
+result = fibonacci(5)
+print("Result:", result)

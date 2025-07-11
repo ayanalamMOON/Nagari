@@ -1,0 +1,13 @@
+def fibonacci_iterative(n):
+    if n <= 0:
+        return 0
+    if n == 1:
+        return 1
+
+    a = 0
+    b = 1
+    return b
+
+print("Testing iterative simplified...")
+result = fibonacci_iterative(5)
+print("Result:", result)

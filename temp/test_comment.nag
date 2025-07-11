@@ -1,0 +1,5 @@
+def test_comment():
+    status = "FAIL"  # default value
+    print("Status:", status)
+
+test_comment()

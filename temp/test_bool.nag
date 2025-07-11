@@ -1,0 +1,5 @@
+def test_bool():
+    result = false
+    print(result)
+
+test_bool()

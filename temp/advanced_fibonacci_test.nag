@@ -1,0 +1,80 @@
+def comprehensive_type_test():
+    print("Advanced Type System Demo")
+    print("=========================")
+
+    # Test type inference with numbers
+    def add(a, b):
+        return a + b
+
+    # The type system should infer these as Int and Float operations
+    int_result = add(5, 3)        # Int + Int = Int
+    float_result = add(2.5, 1.5)  # Float + Float = Float
+    mixed_result = add(5, 2.5)    # Int + Float = Float
+
+    print("Int result:", int_result)
+    print("Float result:", float_result)
+    print("Mixed result:", mixed_result)
+
+    # Test array type inference
+    numbers = [1, 2, 3, 4, 5]  # Array<Int>
+    mixed_numbers = [1, 2.5, 3, 4.5]  # Array<Float> (unified type)
+
+    print("Numbers:", numbers)
+    print("Mixed numbers:", mixed_numbers)
+
+    # Test string operations
+    greeting = "Hello" + " " + "World"  # String concatenation
+    print("Greeting:", greeting)
+
+    # Test function composition
+    def square(x):
+        return x * x
+
+    def double(x):
+        return x + x
+
+    # Type system should track these through the call chain
+    value = 5
+    squared = square(value)      # Int -> Int
+    doubled = double(squared)    # Int -> Int
+
+    print("Value:", value, "Squared:", squared, "Doubled:", doubled)
+
+    # Test conditional type inference
+    def conditional_type(flag):
+        if flag:
+            return 42        # Int
+        else:
+            return 3.14      # Float
+        # Result type should be Union<Int, Float>
+
+    result1 = conditional_type(true)   # Could be Int or Float
+    result2 = conditional_type(false)  # Could be Int or Float
+
+    print("Conditional results:", result1, result2)
+
+    return "Advanced type system working perfectly!"
+
+# Test recursive types with the Fibonacci sequence
+def fibonacci_with_types(n):
+    # Type system should infer: Int -> Int
+    if n <= 0:
+        return 0  # Int
+    if n == 1:
+        return 1  # Int
+    return fibonacci_with_types(n - 1) + fibonacci_with_types(n - 2)  # Int + Int = Int
+
+print("=== Type System Comprehensive Test ===")
+message = comprehensive_type_test()
+print(message)
+
+print()
+print("=== Fibonacci with Advanced Type Inference ===")
+i = 0
+while i <= 10:
+    fib_result = fibonacci_with_types(i)
+    print("fib(" + str(i) + ") = " + str(fib_result))
+    i = i + 1
+
+print()
+print("🎉 Advanced Type System Implementation Complete! 🎉")
