@@ -1,0 +1,95 @@
+# Test file for recent language feature implementations (simplified)
+# Tests all the features we've implemented during this session
+
+print("=== Testing Recent Language Features ===")
+
+# 1. Test function definitions with default parameters including None
+print("\n1. Testing function default parameters:")
+
+def test_none_default(param=None):
+    return f"param is: {param}"
+
+def test_mixed_defaults(a, b=None, c="default", d=42):
+    return f"a={a}, b={b}, c={c}, d={d}"
+
+print(test_none_default())
+print(test_none_default("custom"))
+print(test_mixed_defaults("first"))
+print(test_mixed_defaults("first", "second"))
+
+# 2. Test tuple expressions and returns
+print("\n2. Testing tuple expressions:")
+
+def return_tuple(a, b):
+    return a, b
+
+result_tuple = return_tuple("hello", "world")
+print(f"Tuple result: {result_tuple}")
+
+# 3. Test tuple unpacking
+print("\n3. Testing tuple unpacking:")
+
+x, y = return_tuple(10, 20)
+print(f"Unpacked values: x={x}, y={y}")
+
+# 4. Test isinstance function
+print("\n4. Testing isinstance function:")
+
+test_list = [1, 2, 3]
+test_dict = {"key": "value"}
+test_str = "hello"
+
+print(f"isinstance(test_list, list): {isinstance(test_list, list)}")
+print(f"isinstance(test_dict, dict): {isinstance(test_dict, dict)}")
+print(f"isinstance(test_str, str): {isinstance(test_str, str)}")
+
+# 5. Test boolean literals
+print("\n5. Testing boolean literals:")
+
+def test_booleans():
+    a = true
+    b = false
+    c = True
+    d = False
+    return a, b, c, d
+
+bool_results = test_booleans()
+print(f"Boolean results: {bool_results}")
+
+# 6. Test pass statements
+print("\n6. Testing pass statements:")
+
+def empty_function():
+    pass
+
+class EmptyClass:
+    """Test class with pass"""
+    pass
+
+empty_function()
+print("Pass statements work!")
+
+# 7. Test del statements
+print("\n7. Testing del statements:")
+
+test_obj = {"a": 1, "b": 2, "c": 3}
+print(f"Before del: {test_obj}")
+del test_obj["b"]
+print(f"After del: {test_obj}")
+
+# 8. Test attribute assignment
+print("\n8. Testing attribute assignment:")
+
+class TestClass:
+    def __init__(self):
+        self.value = "initial"
+
+    def update_value(self, new_value):
+        self.value = new_value
+
+obj = TestClass()
+print(f"Initial value: {obj.value}")
+obj.update_value("updated")
+print(f"Updated value: {obj.value}")
+
+print("\n=== All tests completed successfully! ===")

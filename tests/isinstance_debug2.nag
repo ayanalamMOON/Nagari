@@ -1,0 +1,11 @@
+# Debug isinstance special handling
+test_list = [1, 2, 3]
+
+# Case 1: Direct call (works)
+result1 = isinstance(test_list, list)
+
+# Case 2: In print function (might not work)
+print(isinstance(test_list, list))
+
+# Case 3: In f-string (doesn't work)
+print(f"Result: {isinstance(test_list, list)}")

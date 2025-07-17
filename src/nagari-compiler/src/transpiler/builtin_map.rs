@@ -382,15 +382,16 @@ impl BuiltinMapper {
         );
 
         // Type checking
-        self.add_mapping(
-            "isinstance",
-            BuiltinMapping {
-                js_equivalent: "instanceof".to_string(),
-                requires_import: None,
-                requires_helper: false,
-                is_method: false,
-            },
-        );
+        // isinstance is handled specially in transpile_call
+        // self.add_mapping(
+        //     "isinstance",
+        //     BuiltinMapping {
+        //         js_equivalent: "instanceof".to_string(),
+        //         requires_import: None,
+        //         requires_helper: false,
+        //         is_method: false,
+        //     },
+        // );
 
         self.add_mapping(
             "hasattr",

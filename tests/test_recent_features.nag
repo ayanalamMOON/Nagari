@@ -1,0 +1,151 @@
+# Test file for recent language feature implementations
+# Tests all the features we've implemented during this session
+
+print("=== Testing Recent Language Features ===")
+
+# 1. Test function definitions with default parameters including None
+print("\n1. Testing function default parameters:")
+
+def test_none_default(param=None):
+    return f"param is: {param}"
+
+def test_mixed_defaults(a, b=None, c="default", d=42):
+    return f"a={a}, b={b}, c={c}, d={d}"
+
+print(test_none_default())
+print(test_none_default("custom"))
+print(test_mixed_defaults("first"))
+print(test_mixed_defaults("first", "second"))
+
+# 2. Test tuple expressions and returns
+print("\n2. Testing tuple expressions:")
+
+def return_tuple(a, b):
+    return a, b
+
+def process_tuple():
+    x, y = return_tuple(10, 20)
+    return x + y
+
+result_tuple = return_tuple("hello", "world")
+print(f"Tuple result: {result_tuple}")
+print(f"Tuple sum: {process_tuple()}")
+
+# 3. Test isinstance function
+print("\n3. Testing isinstance function:")
+
+test_list = [1, 2, 3]
+test_dict = {"key": "value"}
+test_str = "hello"
+
+print(f"isinstance(test_list, list): {isinstance(test_list, list)}")
+print(f"isinstance(test_dict, dict): {isinstance(test_dict, dict)}")
+print(f"isinstance(test_str, str): {isinstance(test_str, str)}")
+
+# Test isinstance with tuple of types
+test_value = [1, 2, 3]
+print(f"isinstance with tuple: {isinstance(test_value, (dict, list))}")
+
+# 4. Test boolean literals
+print("\n4. Testing boolean literals:")
+
+def test_booleans():
+    a = true
+    b = false
+    c = True
+    d = False
+    return a, b, c, d
+
+bool_results = test_booleans()
+print(f"Boolean results: {bool_results}")
+
+# 5. Test try/except statements
+print("\n5. Testing try/except statements:")
+
+def test_exception_handling():
+    try:
+        print("In try block")
+        # This should work without throwing
+        result = 10 / 2
+        print(f"Division result: {result}")
+    except Exception as e:
+        print(f"Exception caught: {e}")
+
+    try:
+        print("Testing error case")
+        # This will cause an error
+        result = 10 / 0
+    except Exception as e:
+        print(f"Expected exception: {e}")
+
+test_exception_handling()
+
+# 6. Test pass statements
+print("\n6. Testing pass statements:")
+
+def empty_function():
+    pass
+
+class EmptyClass:
+    """Test class with pass"""
+    pass
+
+empty_function()
+print("Pass statements work!")
+
+# 7. Test del statements
+print("\n7. Testing del statements:")
+
+test_obj = {"a": 1, "b": 2, "c": 3}
+print(f"Before del: {test_obj}")
+del test_obj["b"]
+print(f"After del: {test_obj}")
+
+# 8. Test attribute assignment
+print("\n8. Testing attribute assignment:")
+
+class TestClass:
+    def __init__(self):
+        self.value = "initial"
+
+    def update_value(self, new_value):
+        self.value = new_value
+
+obj = TestClass()
+print(f"Initial value: {obj.value}")
+obj.update_value("updated")
+print(f"Updated value: {obj.value}")
+
+# 9. Test class decorators
+print("\n9. Testing class decorators:")
+
+@staticmethod
+def static_method():
+    return "static method called"
+
+class DecoratedClass:
+    """Class with decorated methods"""
+
+    @staticmethod
+    def class_static_method():
+        return "class static method"
+
+print(f"Static method: {DecoratedClass.class_static_method()}")
+
+# 10. Test complex expressions
+print("\n10. Testing complex expressions:")
+
+def complex_expression_test():
+    # Test multiple features together
+    data = [1, 2, 3, 4, 5]
+
+    if isinstance(data, list):
+        result = data[0], data[-1]  # tuple
+        return result
+    else:
+        return None, None
+
+first, last = complex_expression_test()
+print(f"Complex expression result: first={first}, last={last}")
+
+print("\n=== All tests completed successfully! ===")

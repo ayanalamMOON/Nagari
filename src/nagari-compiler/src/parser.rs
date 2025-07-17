@@ -362,6 +362,24 @@ impl Parser {
                     value,
                 },
             )),
+            Expression::Tuple(elements) => {
+                // Tuple unpacking assignment: x, y = expr
+                let mut targets = Vec::new();
+                for element in elements {
+                    match element {
+                        Expression::Identifier(name) => targets.push(name),
+                        _ => {
+                            return Err(NagariError::ParseError(
+                                "Invalid tuple unpacking target".to_string(),
+                            ))
+                        }
+                    }
+                }
+                Ok(Statement::TupleAssignment(crate::ast::TupleAssignment {
+                    targets,
+                    value,
+                }))
+            }
             _ => Err(NagariError::ParseError(
                 "Invalid assignment target".to_string(),
             )),
@@ -442,20 +460,23 @@ impl Parser {
 
     fn expression(&mut self) -> Result<Expression, NagariError> {
         let expr = self.ternary()?;
-        
+
         // Check for tuple (comma-separated expressions)
         if self.check(&Token::Comma) {
             let mut elements = vec![expr];
-            
+
             while self.match_token(&Token::Comma) {
                 // Allow trailing comma
-                if self.check(&Token::RightParen) || self.check(&Token::Newline) 
-                    || self.check(&Token::Dedent) || self.check(&Token::Eof) {
+                if self.check(&Token::RightParen)
+                    || self.check(&Token::Newline)
+                    || self.check(&Token::Dedent)
+                    || self.check(&Token::Eof)
+                {
                     break;
                 }
                 elements.push(self.ternary()?);
             }
-            
+
             Ok(Expression::Tuple(elements))
         } else {
             Ok(expr)
@@ -1398,7 +1419,7 @@ impl Parser {
 
                 // Check for dictionary unpacking (**expr)
                 if self.match_token(&Token::Power) {
-                    let expr = self.expression()?;
+                    let expr = self.non_tuple_expression()?;
                     // For now, we'll handle this as a special dictionary entry
                     // In a real implementation, this would need AST support for spread in dictionaries
                     pairs.push(DictionaryPair {
@@ -1408,9 +1429,9 @@ impl Parser {
                         value: expr,
                     });
                 } else {
-                    let key = self.expression()?;
+                    let key = self.non_tuple_expression()?;
                     self.consume(&Token::Colon, "Expected ':' after dictionary key")?;
-                    let value = self.expression()?;
+                    let value = self.non_tuple_expression()?;
 
                     pairs.push(DictionaryPair { key, value });
                 }

@@ -1,0 +1,10 @@
+# Test isinstance from comprehensive test
+print("4. Testing isinstance function:")
+
+test_list = [1, 2, 3]
+test_dict = {"key": "value"}
+test_str = "hello"
+
+print(f"isinstance(test_list, list): {isinstance(test_list, list)}")
+print(f"isinstance(test_dict, dict): {isinstance(test_dict, dict)}")
+print(f"isinstance(test_str, str): {isinstance(test_str, str)}")

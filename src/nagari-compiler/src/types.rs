@@ -173,10 +173,10 @@ impl Type {
             "callable" | "Callable" => Some(Type::Function(vec![], Box::new(Type::Any))), // Generic callable
             "js_error" => Some(Type::Any), // JavaScript error type - treat as Any for compatibility
             // Exception types
-            "Exception" => Some(Type::Any), // Base exception type
+            "Exception" => Some(Type::Any),  // Base exception type
             "ValueError" => Some(Type::Any), // Value error type
-            "TypeError" => Some(Type::Any), // Type error type
-            "KeyError" => Some(Type::Any), // Key error type
+            "TypeError" => Some(Type::Any),  // Type error type
+            "KeyError" => Some(Type::Any),   // Key error type
             "IndexError" => Some(Type::Any), // Index error type
             "AttributeError" => Some(Type::Any), // Attribute error type
             "RuntimeError" => Some(Type::Any), // Runtime error type

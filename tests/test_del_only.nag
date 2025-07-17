@@ -1,0 +1,7 @@
+# Test del statements only
+print("Testing del statements:")
+
+test_obj = {"a": 1, "b": 2, "c": 3}
+print(f"Before del: {test_obj}")
+del test_obj["b"]
+print(f"After del: {test_obj}")

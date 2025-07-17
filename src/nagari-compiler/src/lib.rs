@@ -3,18 +3,18 @@
 //! This library provides the core compilation functionality for the Nagari programming language,
 //! including lexical analysis, parsing, type checking, and transpilation to JavaScript.
 
+pub mod ast;
+pub mod error;
 pub mod lexer;
 pub mod parser;
-pub mod ast;
-pub mod types;
-pub mod error;
 pub mod transpiler;
+pub mod types;
 
-use std::path::Path;
 use std::fs;
+use std::path::Path;
 
-pub use error::NagariError;
 pub use ast::Program;
+pub use error::NagariError;
 pub use lexer::Lexer;
 pub use parser::Parser as NagParser;
 
@@ -86,14 +86,19 @@ impl Compiler {
     }
 
     /// Compile a Nagari source string to JavaScript
-    pub fn compile_string(&self, source: &str, filename: Option<&str>) -> Result<CompilationResult, NagariError> {
+    pub fn compile_string(
+        &self,
+        source: &str,
+        filename: Option<&str>,
+    ) -> Result<CompilationResult, NagariError> {
         if self.config.verbose {
             println!("🔄 Compiling Nagari source...");
         }
 
         // Lexical analysis
         let mut lexer = Lexer::new(source);
-        let tokens = lexer.tokenize()
+        let tokens = lexer
+            .tokenize()
             .map_err(|e| NagariError::LexError(format!("Lexing failed: {}", e)))?;
 
         if self.config.verbose {
@@ -102,7 +107,8 @@ impl Compiler {
 
         // Parsing
         let mut parser = NagParser::new(tokens);
-        let ast = parser.parse()
+        let ast = parser
+            .parse()
             .map_err(|e| NagariError::ParseError(format!("Parsing failed: {}", e)))?;
 
         if self.config.verbose {
@@ -140,7 +146,10 @@ impl Compiler {
     }
 
     /// Compile a Nagari file to JavaScript
-    pub fn compile_file<P: AsRef<Path>>(&self, input_path: P) -> Result<CompilationResult, NagariError> {
+    pub fn compile_file<P: AsRef<Path>>(
+        &self,
+        input_path: P,
+    ) -> Result<CompilationResult, NagariError> {
         let input_path = input_path.as_ref();
 
         if self.config.verbose {
@@ -150,7 +159,8 @@ impl Compiler {
         let source = fs::read_to_string(input_path)
             .map_err(|e| NagariError::IoError(format!("Failed to read input file: {}", e)))?;
 
-        let filename = input_path.file_name()
+        let filename = input_path
+            .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("input.nag");
 
@@ -176,12 +186,14 @@ impl Compiler {
 
         // Lexical analysis
         let mut lexer = Lexer::new(&source);
-        let tokens = lexer.tokenize()
+        let tokens = lexer
+            .tokenize()
             .map_err(|e| NagariError::LexError(format!("Lexing failed: {}", e)))?;
 
         // Parsing
         let mut parser = NagParser::new(tokens);
-        let ast = parser.parse()
+        let ast = parser
+            .parse()
             .map_err(|e| NagariError::ParseError(format!("Parsing failed: {}", e)))?;
 
         if self.config.verbose {
@@ -202,13 +214,15 @@ impl Compiler {
 
         // Create output directory if needed
         if let Some(parent) = output_path.parent() {
-            fs::create_dir_all(parent)
-                .map_err(|e| NagariError::IoError(format!("Failed to create output directory: {}", e)))?;
+            fs::create_dir_all(parent).map_err(|e| {
+                NagariError::IoError(format!("Failed to create output directory: {}", e))
+            })?;
         }
 
         // Add source map comment if enabled
         let final_code = if self.config.sourcemap && result.source_map.is_some() {
-            format!("{}\n//# sourceMappingURL={}.map",
+            format!(
+                "{}\n//# sourceMappingURL={}.map",
                 result.js_code,
                 output_path.file_name().unwrap().to_str().unwrap()
             )
@@ -230,8 +244,9 @@ impl Compiler {
         // Write TypeScript declarations if enabled
         if let Some(declarations) = result.declarations {
             let dts_path = output_path.with_extension("d.ts");
-            fs::write(&dts_path, declarations)
-                .map_err(|e| NagariError::IoError(format!("Failed to write declarations: {}", e)))?;
+            fs::write(&dts_path, declarations).map_err(|e| {
+                NagariError::IoError(format!("Failed to write declarations: {}", e))
+            })?;
         }
 
         if self.config.verbose {
@@ -242,7 +257,11 @@ impl Compiler {
     }
 
     /// Generate a source map for the given source code
-    fn generate_source_map(&self, filename: &str, source_content: &str) -> Result<String, NagariError> {
+    fn generate_source_map(
+        &self,
+        filename: &str,
+        source_content: &str,
+    ) -> Result<String, NagariError> {
         let sourcemap = serde_json::json!({
             "version": 3,
             "file": filename.replace(".nag", ".js"),

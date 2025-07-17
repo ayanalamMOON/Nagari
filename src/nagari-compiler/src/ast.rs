@@ -10,6 +10,7 @@ pub enum Statement {
     FunctionDef(FunctionDef),
     Assignment(Assignment),
     AttributeAssignment(AttributeAssignment),
+    TupleAssignment(TupleAssignment),
     If(IfStatement),
     While(WhileLoop),
     For(ForLoop),
@@ -72,6 +73,12 @@ pub struct Assignment {
 pub struct AttributeAssignment {
     pub object: Expression,
     pub attribute: String,
+    pub value: Expression,
+}
+
+#[derive(Debug, Clone)]
+pub struct TupleAssignment {
+    pub targets: Vec<String>,
     pub value: Expression,
 }
 

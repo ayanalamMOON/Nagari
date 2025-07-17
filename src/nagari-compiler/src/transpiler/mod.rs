@@ -85,6 +85,9 @@ impl JSTranspiler {
             Statement::AttributeAssignment(attr_assign) => {
                 self.transpile_attribute_assignment(attr_assign)
             }
+            Statement::TupleAssignment(tuple_assign) => {
+                self.transpile_tuple_assignment(tuple_assign)
+            }
             Statement::If(if_stmt) => self.transpile_if(if_stmt),
             Statement::While(while_loop) => self.transpile_while(while_loop),
             Statement::For(for_loop) => self.transpile_for(for_loop),
@@ -244,6 +247,29 @@ impl JSTranspiler {
 
         // Transpile the value
         self.transpile_expression(&attr_assign.value)?;
+        self.output.push(';');
+
+        Ok(())
+    }
+
+    fn transpile_tuple_assignment(
+        &mut self,
+        tuple_assign: &crate::ast::TupleAssignment,
+    ) -> Result<(), NagariError> {
+        self.add_indent();
+
+        // JavaScript destructuring assignment: let [a, b, c] = expression
+        self.output.push_str("let [");
+        for (i, target) in tuple_assign.targets.iter().enumerate() {
+            if i > 0 {
+                self.output.push_str(", ");
+            }
+            self.output.push_str(target);
+        }
+        self.output.push_str("] = ");
+
+        // Transpile the value
+        self.transpile_expression(&tuple_assign.value)?;
         self.output.push(';');
 
         Ok(())
@@ -702,18 +728,24 @@ impl JSTranspiler {
                 self.output.push_str("(function(obj, types) {\n");
                 self.output.push_str("  if (Array.isArray(types)) {\n");
                 self.output.push_str("    return types.some(t => {\n");
-                self.output.push_str("      if (t === Array) return Array.isArray(obj);\n");
+                self.output
+                    .push_str("      if (t === Array) return Array.isArray(obj);\n");
                 self.output.push_str("      if (t === Object || t.name === 'dict') return typeof obj === 'object' && obj !== null && !Array.isArray(obj);\n");
-                self.output.push_str("      if (t === String || t.name === 'str') return typeof obj === 'string';\n");
+                self.output.push_str(
+                    "      if (t === String || t.name === 'str') return typeof obj === 'string';\n",
+                );
                 self.output.push_str("      if (t === Number || t.name === 'int' || t.name === 'float') return typeof obj === 'number';\n");
                 self.output.push_str("      if (t === Boolean || t.name === 'bool') return typeof obj === 'boolean';\n");
                 self.output.push_str("      return obj instanceof t;\n");
                 self.output.push_str("    });\n");
                 self.output.push_str("  } else {\n");
                 self.output.push_str("    const t = types;\n");
-                self.output.push_str("    if (t === Array) return Array.isArray(obj);\n");
+                self.output
+                    .push_str("    if (t === Array) return Array.isArray(obj);\n");
                 self.output.push_str("    if (t === Object || t.name === 'dict') return typeof obj === 'object' && obj !== null && !Array.isArray(obj);\n");
-                self.output.push_str("    if (t === String || t.name === 'str') return typeof obj === 'string';\n");
+                self.output.push_str(
+                    "    if (t === String || t.name === 'str') return typeof obj === 'string';\n",
+                );
                 self.output.push_str("    if (t === Number || t.name === 'int' || t.name === 'float') return typeof obj === 'number';\n");
                 self.output.push_str("    if (t === Boolean || t.name === 'bool') return typeof obj === 'boolean';\n");
                 self.output.push_str("    return obj instanceof t;\n");

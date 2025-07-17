@@ -1,0 +1,4 @@
+# Simple isinstance test without other complications
+test_list = [1, 2, 3]
+result = isinstance(test_list, list)
+print(f"isinstance result: {result}")

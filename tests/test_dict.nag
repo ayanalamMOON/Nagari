@@ -1,0 +1,3 @@
+# Test dictionary syntax
+test_dict = {"key": "value"}
+print(test_dict)

@@ -1,0 +1,9 @@
+# Test isinstance in f-string vs regular call
+test_list = [1, 2, 3]
+
+# This works:
+result = isinstance(test_list, list)
+print(result)
+
+# This might not work:
+print(f"isinstance result: {isinstance(test_list, list)}")
