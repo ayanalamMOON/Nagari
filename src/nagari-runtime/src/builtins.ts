@@ -73,3 +73,110 @@ export function bool(obj: any): boolean {
 export const print = typeof console !== 'undefined'
     ? (...args: any[]) => console.log(...args.map(str))
     : (...args: any[]) => { };
+
+// Python-style range function
+export function range(start: number, stop?: number, step: number = 1): number[] {
+    if (stop === undefined) {
+        stop = start;
+        start = 0;
+    }
+    
+    const result: number[] = [];
+    if (step > 0) {
+        for (let i = start; i < stop; i += step) {
+            result.push(i);
+        }
+    } else if (step < 0) {
+        for (let i = start; i > stop; i += step) {
+            result.push(i);
+        }
+    }
+    return result;
+}
+
+// Exception classes
+export class Exception extends Error {
+    constructor(message: string = '') {
+        super(message);
+        this.name = 'Exception';
+    }
+}
+
+export class ValueError extends Exception {
+    constructor(message: string = '') {
+        super(message);
+        this.name = 'ValueError';
+    }
+}
+
+export class TypeError extends Exception {
+    constructor(message: string = '') {
+        super(message);
+        this.name = 'TypeError';
+    }
+}
+
+export class KeyError extends Exception {
+    constructor(message: string = '') {
+        super(message);
+        this.name = 'KeyError';
+    }
+}
+
+export class IndexError extends Exception {
+    constructor(message: string = '') {
+        super(message);
+        this.name = 'IndexError';
+    }
+}
+
+// JavaScript error alias (for catching JS errors in try/except)
+export const js_error = Error;
+
+// Additional utility functions
+export function hasattr(obj: any, attr: string): boolean {
+    return attr in obj;
+}
+
+export function getattr(obj: any, attr: string, defaultValue?: any): any {
+    if (attr in obj) {
+        return obj[attr];
+    }
+    if (defaultValue !== undefined) {
+        return defaultValue;
+    }
+    throw new Error(`'${typeof obj}' object has no attribute '${attr}'`);
+}
+
+export function setattr(obj: any, attr: string, value: any): void {
+    obj[attr] = value;
+}
+
+export function delattr(obj: any, attr: string): void {
+    delete obj[attr];
+}
+
+export function isinstance(obj: any, types: any): boolean {
+    if (Array.isArray(types)) {
+        return types.some(t => {
+            if (t === Array) return Array.isArray(obj);
+            if (t === Object || t.name === 'dict') return typeof obj === 'object' && obj !== null && !Array.isArray(obj);
+            if (t === String || t.name === 'str') return typeof obj === 'string';
+            if (t === Number || t.name === 'int' || t.name === 'float') return typeof obj === 'number';
+            if (t === Boolean || t.name === 'bool') return typeof obj === 'boolean';
+            return obj instanceof t;
+        });
+    } else {
+        const t = types;
+        if (t === Array) return Array.isArray(obj);
+        if (t === Object || t.name === 'dict') return typeof obj === 'object' && obj !== null && !Array.isArray(obj);
+        if (t === String || t.name === 'str') return typeof obj === 'string';
+        if (t === Number || t.name === 'int' || t.name === 'float') return typeof obj === 'number';
+        if (t === Boolean || t.name === 'bool') return typeof obj === 'boolean';
+        return obj instanceof t;
+    }
+}
+
+// Type aliases for common types
+export const dict = Object;
+export const list = Array;

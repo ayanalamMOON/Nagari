@@ -18,6 +18,7 @@ pub enum Token {
     Break,
     Continue,
     Pass,
+    Del,
     Class,
     Try,
     Except,
@@ -643,6 +644,7 @@ impl Lexer {
             "break" => Token::Break,
             "continue" => Token::Continue,
             "pass" => Token::Pass,
+            "del" => Token::Del,
             "class" => Token::Class,
             "try" => Token::Try,
             "except" => Token::Except,
@@ -664,6 +666,7 @@ impl Lexer {
             "true" => Token::BoolLiteral(true),
             "false" => Token::BoolLiteral(false),
             "none" => Token::None,
+            "None" => Token::None,
             _ => Token::Identifier(value),
         };
 

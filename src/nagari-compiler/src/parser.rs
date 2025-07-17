@@ -34,7 +34,7 @@ impl Parser {
             return self.decorated_statement();
         }
 
-        if self.match_token(&Token::Def) || self.check(&Token::Async) {
+        if self.check(&Token::Def) || self.check(&Token::Async) {
             self.function_definition()
         } else if self.check(&Token::Let) {
             self.let_statement()
@@ -67,6 +67,11 @@ impl Parser {
             self.advance();
             self.consume_newline()?;
             Ok(Statement::Pass)
+        } else if self.check(&Token::Del) {
+            self.advance(); // consume 'del'
+            let target = self.expression()?;
+            self.consume_newline()?;
+            Ok(Statement::Del(target))
         // New statement types
         } else if self.check(&Token::With) {
             self.with_statement()
@@ -145,7 +150,7 @@ impl Parser {
                 };
 
                 let default_value = if self.match_token(&Token::Assign) {
-                    Some(self.expression()?)
+                    Some(self.non_tuple_expression()?)
                 } else {
                     None
                 };
@@ -436,6 +441,29 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Result<Expression, NagariError> {
+        let expr = self.ternary()?;
+        
+        // Check for tuple (comma-separated expressions)
+        if self.check(&Token::Comma) {
+            let mut elements = vec![expr];
+            
+            while self.match_token(&Token::Comma) {
+                // Allow trailing comma
+                if self.check(&Token::RightParen) || self.check(&Token::Newline) 
+                    || self.check(&Token::Dedent) || self.check(&Token::Eof) {
+                    break;
+                }
+                elements.push(self.ternary()?);
+            }
+            
+            Ok(Expression::Tuple(elements))
+        } else {
+            Ok(expr)
+        }
+    }
+
+    // Expression parsing that doesn't handle tuples (for contexts where commas have other meanings)
+    fn non_tuple_expression(&mut self) -> Result<Expression, NagariError> {
         self.ternary()
     }
 
@@ -893,8 +921,14 @@ impl Parser {
             self.consume_newline()?;
         }
 
-        // Now parse the decorated statement (should be a function)
-        let mut stmt = self.statement()?;
+        // Now parse the function definition directly (decorators can only be applied to functions)
+        let mut stmt = if self.check(&Token::Async) || self.check(&Token::Def) {
+            self.function_definition()?
+        } else {
+            return Err(NagariError::ParseError(
+                "Expected function definition after decorator".to_string(),
+            ));
+        };
 
         // Add decorators to function definition
         if let Statement::FunctionDef(ref mut func_def) = stmt {
@@ -1137,7 +1171,10 @@ impl Parser {
         if matches!(self.peek(), Token::StringLiteral(_)) {
             if let Token::StringLiteral(doc) = self.advance() {
                 _docstring = Some(doc);
-                self.consume_newline()?;
+                // Skip any following newlines after docstring
+                while self.check(&Token::Newline) {
+                    self.advance();
+                }
             }
         }
 
@@ -1299,10 +1336,10 @@ impl Parser {
                     // Positional argument - check for spread operator
                     if self.match_token(&Token::Multiply) {
                         // Spread operator: *expression
-                        let spread_expr = self.expression()?;
+                        let spread_expr = self.non_tuple_expression()?;
                         arguments.push(Expression::Spread(Box::new(spread_expr)));
                     } else {
-                        arguments.push(self.expression()?);
+                        arguments.push(self.non_tuple_expression()?);
                     }
                     if !self.match_token(&Token::Comma) {
                         break;

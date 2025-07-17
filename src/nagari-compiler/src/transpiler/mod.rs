@@ -141,6 +141,13 @@ impl JSTranspiler {
                 self.output.push_str("// pass");
                 Ok(())
             }
+            Statement::Del(target) => {
+                self.add_indent();
+                self.output.push_str("delete ");
+                self.transpile_expression(target)?;
+                self.output.push(';');
+                Ok(())
+            }
             // TODO: Add implementations for remaining statement types
             _ => {
                 self.add_indent();
@@ -533,6 +540,18 @@ impl JSTranspiler {
                 self.output.push('`');
                 Ok(())
             }
+            Expression::Tuple(elements) => {
+                // Transpile tuple to JavaScript array
+                self.output.push('[');
+                for (i, element) in elements.iter().enumerate() {
+                    if i > 0 {
+                        self.output.push_str(", ");
+                    }
+                    self.transpile_expression(element)?;
+                }
+                self.output.push(']');
+                Ok(())
+            }
             // Add catch-all for any remaining expression types
             _ => {
                 self.output
@@ -675,6 +694,35 @@ impl JSTranspiler {
                 self.transpile_expression(&call.arguments[1])?; // attribute name
                 self.output.push_str(" in ");
                 self.transpile_expression(&call.arguments[0])?; // object
+                return Ok(());
+            }
+
+            if func_name == "isinstance" && call.arguments.len() == 2 {
+                // isinstance(obj, type) -> implement proper type checking
+                self.output.push_str("(function(obj, types) {\n");
+                self.output.push_str("  if (Array.isArray(types)) {\n");
+                self.output.push_str("    return types.some(t => {\n");
+                self.output.push_str("      if (t === Array) return Array.isArray(obj);\n");
+                self.output.push_str("      if (t === Object || t.name === 'dict') return typeof obj === 'object' && obj !== null && !Array.isArray(obj);\n");
+                self.output.push_str("      if (t === String || t.name === 'str') return typeof obj === 'string';\n");
+                self.output.push_str("      if (t === Number || t.name === 'int' || t.name === 'float') return typeof obj === 'number';\n");
+                self.output.push_str("      if (t === Boolean || t.name === 'bool') return typeof obj === 'boolean';\n");
+                self.output.push_str("      return obj instanceof t;\n");
+                self.output.push_str("    });\n");
+                self.output.push_str("  } else {\n");
+                self.output.push_str("    const t = types;\n");
+                self.output.push_str("    if (t === Array) return Array.isArray(obj);\n");
+                self.output.push_str("    if (t === Object || t.name === 'dict') return typeof obj === 'object' && obj !== null && !Array.isArray(obj);\n");
+                self.output.push_str("    if (t === String || t.name === 'str') return typeof obj === 'string';\n");
+                self.output.push_str("    if (t === Number || t.name === 'int' || t.name === 'float') return typeof obj === 'number';\n");
+                self.output.push_str("    if (t === Boolean || t.name === 'bool') return typeof obj === 'boolean';\n");
+                self.output.push_str("    return obj instanceof t;\n");
+                self.output.push_str("  }\n");
+                self.output.push_str("})(");
+                self.transpile_expression(&call.arguments[0])?; // object
+                self.output.push_str(", ");
+                self.transpile_expression(&call.arguments[1])?; // types
+                self.output.push(')');
                 return Ok(());
             }
 

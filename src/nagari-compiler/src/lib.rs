@@ -374,7 +374,7 @@ print(greet("World"))
 
         // This test would require the actual lexer/parser implementation
         // For now, we'll just test that the API exists
-        let result = compiler.compile_string(source, Some("test.nag"));
+        let _result = compiler.compile_string(source, Some("test.nag"));
         // Test should pass once the lexer/parser are fully implemented
     }
 }

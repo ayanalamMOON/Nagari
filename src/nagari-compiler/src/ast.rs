@@ -20,6 +20,7 @@ pub enum Statement {
     Break,
     Continue,
     Pass,
+    Del(Expression),
     // New modern language features
     With(WithStatement),
     Try(TryStatement),
