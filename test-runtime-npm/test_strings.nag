@@ -1,0 +1,31 @@
+# Test Nagari program with string functions
+print("=== Testing Nagari String Functions ===")
+
+# Test basic string functions
+text = "hello nagari programming"
+print("Original text:", text)
+
+# Test str_capitalize
+capitalized = str_capitalize(text)
+print("Capitalized:", capitalized)
+
+# Test str_title
+title_case = str_title(text)
+print("Title case:", title_case)
+
+# Test str_reverse
+reversed_text = str_reverse("Nagari")
+print("Reversed 'Nagari':", reversed_text)
+
+# Test str_count
+count_a = str_count(text, "a")
+print("Count of 'a' in text:", count_a)
+
+# Test padding functions
+short_text = "Nagari"
+print("Padding tests with '" + short_text + "':")
+print("Left padded:", "'" + str_pad_left(short_text, 15) + "'")
+print("Right padded:", "'" + str_pad_right(short_text, 15) + "'")
+print("Centered:", "'" + str_center(short_text, 15) + "'")
+
+print("=== All string functions working! ===")

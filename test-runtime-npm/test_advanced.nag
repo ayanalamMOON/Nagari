@@ -1,0 +1,33 @@
+# Advanced string functions test
+print("=== Advanced String Functions Test ===")
+
+# Test edge cases
+print("Edge case tests:")
+
+# Empty string tests
+print("Empty string tests:")
+print("str_capitalize(''):", "'" + str_capitalize("") + "'")
+print("str_reverse(''):", "'" + str_reverse("") + "'")
+print("str_count('', ''):", str_count("", ""))
+
+# Single character tests
+print("Single character tests:")
+print("str_capitalize('a'):", str_capitalize("a"))
+print("str_title('a'):", str_title("a"))
+print("str_reverse('a'):", str_reverse("a"))
+
+# Complex padding tests
+text = "Test"
+print("Complex padding with '" + text + "':")
+print("Center in 10 chars:", "'" + str_center(text, 10) + "'")
+print("Center in 11 chars:", "'" + str_center(text, 11) + "'")
+print("Center smaller than text:", "'" + str_center(text, 2) + "'")
+
+# Count tests
+sample = "hello world hello"
+print("Count tests with '" + sample + "':")
+print("Count 'hello':", str_count(sample, "hello"))
+print("Count 'l':", str_count(sample, "l"))
+print("Count 'xyz':", str_count(sample, "xyz"))
+
+print("=== Advanced tests completed! ===")
