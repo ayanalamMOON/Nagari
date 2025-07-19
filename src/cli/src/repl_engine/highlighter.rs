@@ -369,6 +369,13 @@ fn classify_identifier(text: &str) -> TokenType {
             | "locals"
             | "eval"
             | "exec"
+            | "str_capitalize"
+            | "str_title"
+            | "str_reverse"
+            | "str_count"
+            | "str_pad_left"
+            | "str_pad_right"
+            | "str_center"
     ) {
         TokenType::Builtin
     }

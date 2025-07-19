@@ -453,6 +453,77 @@ impl BuiltinMapper {
                 is_method: true,
             },
         );
+
+        // String manipulation functions
+        self.add_mapping(
+            "str_capitalize",
+            BuiltinMapping {
+                js_equivalent: "str_capitalize".to_string(),
+                requires_import: Some("nagari-runtime".to_string()),
+                requires_helper: false,
+                is_method: false,
+            },
+        );
+
+        self.add_mapping(
+            "str_title",
+            BuiltinMapping {
+                js_equivalent: "str_title".to_string(),
+                requires_import: Some("nagari-runtime".to_string()),
+                requires_helper: false,
+                is_method: false,
+            },
+        );
+
+        self.add_mapping(
+            "str_reverse",
+            BuiltinMapping {
+                js_equivalent: "str_reverse".to_string(),
+                requires_import: Some("nagari-runtime".to_string()),
+                requires_helper: false,
+                is_method: false,
+            },
+        );
+
+        self.add_mapping(
+            "str_count",
+            BuiltinMapping {
+                js_equivalent: "str_count".to_string(),
+                requires_import: Some("nagari-runtime".to_string()),
+                requires_helper: false,
+                is_method: false,
+            },
+        );
+
+        self.add_mapping(
+            "str_pad_left",
+            BuiltinMapping {
+                js_equivalent: "str_pad_left".to_string(),
+                requires_import: Some("nagari-runtime".to_string()),
+                requires_helper: false,
+                is_method: false,
+            },
+        );
+
+        self.add_mapping(
+            "str_pad_right",
+            BuiltinMapping {
+                js_equivalent: "str_pad_right".to_string(),
+                requires_import: Some("nagari-runtime".to_string()),
+                requires_helper: false,
+                is_method: false,
+            },
+        );
+
+        self.add_mapping(
+            "str_center",
+            BuiltinMapping {
+                js_equivalent: "str_center".to_string(),
+                requires_import: Some("nagari-runtime".to_string()),
+                requires_helper: false,
+                is_method: false,
+            },
+        );
     }
 
     fn add_mapping(&mut self, name: &str, mapping: BuiltinMapping) {

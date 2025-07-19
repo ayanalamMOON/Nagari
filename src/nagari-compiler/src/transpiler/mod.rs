@@ -26,6 +26,7 @@ struct JSTranspiler {
     builtin_mapper: BuiltinMapper,
     used_helpers: std::collections::HashSet<String>,
     declared_variables: std::collections::HashSet<String>,
+    required_imports: std::collections::HashSet<String>,
 }
 
 impl JSTranspiler {
@@ -40,6 +41,7 @@ impl JSTranspiler {
             builtin_mapper: BuiltinMapper::new(),
             used_helpers: std::collections::HashSet::new(),
             declared_variables: std::collections::HashSet::new(),
+            required_imports: std::collections::HashSet::new(),
         }
     }
 
@@ -765,6 +767,11 @@ impl JSTranspiler {
             if let Some(mapping) = mapping_opt {
                 if mapping.requires_helper {
                     self.used_helpers.insert(func_name.clone());
+                }
+
+                // Track required imports
+                if let Some(import_module) = &mapping.requires_import {
+                    self.required_imports.insert(import_module.clone());
                 }
 
                 if mapping.is_method {

@@ -337,7 +337,19 @@ impl ModuleResolver {
     }
 
     pub fn get_runtime_imports(&self, jsx_enabled: bool) -> String {
-        let mut imports = vec!["jsToNagari", "nagariToJS", "InteropRegistry"];
+        let mut imports = vec![
+            "jsToNagari",
+            "nagariToJS",
+            "InteropRegistry",
+            // String manipulation functions
+            "str_capitalize",
+            "str_title",
+            "str_reverse",
+            "str_count",
+            "str_pad_left",
+            "str_pad_right",
+            "str_center",
+        ];
 
         if jsx_enabled {
             imports.extend_from_slice(&["jsx", "Fragment", "jsxToReact", "ReactInterop"]);

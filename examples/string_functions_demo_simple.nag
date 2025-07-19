@@ -1,0 +1,92 @@
+# String Manipulation Demo - Simple Version
+# This example demonstrates the new string manipulation functions in Nagari
+
+def demo_capitalization():
+    print("=== Capitalization Functions ===")
+
+    text = "hello world from nagari"
+    print("Original: " + text)
+    print("Capitalize: " + str_capitalize(text))
+    print("Title case: " + str_title(text))
+    print()
+
+def demo_transformation():
+    print("=== String Transformation ===")
+
+    text = "Nagari Programming Language"
+    print("Original: " + text)
+    print("Reversed: " + str_reverse(text))
+    print()
+
+def demo_counting():
+    print("=== String Counting ===")
+
+    text = "Programming with Nagari is exciting"
+    print("Text: " + text)
+    print("Count 'i': " + str(str_count(text, "i")))
+    print("Count 'ing': " + str(str_count(text, "ing")))
+    print()
+
+def demo_padding():
+    print("=== String Padding ===")
+
+    item1 = "Item 1"
+    item2 = "Long Item Name"
+    item3 = "X"
+
+    print("Left padding with spaces:")
+    print("'" + str_pad_left(item1, 20) + "'")
+    print("'" + str_pad_left(item2, 20) + "'")
+    print("'" + str_pad_left(item3, 20) + "'")
+
+    print()
+    print("Right padding:")
+    print("'" + str_pad_right(item1, 20) + "'")
+    print("'" + str_pad_right(item2, 20) + "'")
+    print("'" + str_pad_right(item3, 20) + "'")
+
+    print()
+    print("Centered:")
+    print("'" + str_center(item1, 20) + "'")
+    print("'" + str_center(item2, 20) + "'")
+    print("'" + str_center(item3, 20) + "'")
+    print()
+
+def demo_practical_examples():
+    print("=== Practical Examples ===")
+
+    # Format a simple table
+    print("Formatted Table:")
+    name_header = str_center("Name", 15)
+    score_header = str_center("Score", 10)
+    grade_header = str_center("Grade", 8)
+    print(name_header + score_header + grade_header)
+    print("-" * 33)
+
+    # Sample data
+    name1 = str_pad_right("Alice", 15)
+    score1 = str_center("95", 10)
+    grade1 = str_center("A", 8)
+    print(name1 + score1 + grade1)
+
+    name2 = str_pad_right("Bob", 15)
+    score2 = str_center("87", 10)
+    grade2 = str_center("B", 8)
+    print(name2 + score2 + grade2)
+
+    print()
+
+def main():
+    print("String Functions Demo")
+    print("====================")
+    print()
+
+    demo_capitalization()
+    demo_transformation()
+    demo_counting()
+    demo_padding()
+    demo_practical_examples()
+
+    print("Demo completed!")
+
+main()

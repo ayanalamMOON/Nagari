@@ -1,0 +1,162 @@
+# Test all string functions
+# Test file for string manipulation functions in stdlib/core.nag
+
+def test_str_capitalize():
+    """Test str_capitalize function"""
+    # Basic test cases
+    assert str_capitalize("hello world") == "Hello world"
+    assert str_capitalize("HELLO WORLD") == "Hello world"
+    assert str_capitalize("hELLO wORLD") == "Hello world"
+
+    # Edge cases
+    assert str_capitalize("") == ""
+    assert str_capitalize("a") == "A"
+    assert str_capitalize("A") == "A"
+    assert str_capitalize("123hello") == "123hello"
+    assert str_capitalize(" hello") == " hello"
+
+    print("✅ str_capitalize tests passed")
+
+def test_str_title():
+    """Test str_title function"""
+    # Basic test cases
+    assert str_title("hello world") == "Hello World"
+    assert str_title("HELLO WORLD") == "Hello World"
+    assert str_title("hELLO wORLD") == "Hello World"
+    assert str_title("the quick brown fox") == "The Quick Brown Fox"
+
+    # Edge cases
+    assert str_title("") == ""
+    assert str_title("a") == "A"
+    assert str_title("A") == "A"
+    assert str_title("hello  world") == "Hello  World"  # Multiple spaces
+    assert str_title(" hello world ") == " Hello World "
+    assert str_title("123 hello world") == "123 Hello World"
+
+    print("✅ str_title tests passed")
+
+def test_str_reverse():
+    """Test str_reverse function"""
+    # Basic test cases
+    assert str_reverse("hello") == "olleh"
+    assert str_reverse("world") == "dlrow"
+    assert str_reverse("Nagari") == "iragaN"
+
+    # Edge cases
+    assert str_reverse("") == ""
+    assert str_reverse("a") == "a"
+    assert str_reverse("ab") == "ba"
+    assert str_reverse("abc") == "cba"
+    assert str_reverse("racecar") == "racecar"  # Palindrome
+    assert str_reverse("A man a plan a canal Panama") == "amanaP lanac a nalp a nam A"
+
+    print("✅ str_reverse tests passed")
+
+def test_str_count():
+    """Test str_count function"""
+    # Basic test cases
+    assert str_count("hello world", "l") == 3
+    assert str_count("hello world", "o") == 2
+    assert str_count("hello world", "world") == 1
+    assert str_count("hello world", "hello") == 1
+
+    # Edge cases
+    assert str_count("", "") == 1  # Empty substring in empty string
+    assert str_count("hello", "") == 6  # Empty substring matches at each position + 1
+    assert str_count("hello world", "x") == 0  # Substring not found
+    assert str_count("aaaa", "aa") == 2  # Overlapping substrings
+    assert str_count("hello world", "Hello") == 0  # Case sensitive
+
+    # Longer substrings
+    assert str_count("the quick brown fox jumps over the lazy dog", "the") == 2
+    assert str_count("banana", "ana") == 1
+
+    print("✅ str_count tests passed")
+
+def test_str_pad_left():
+    """Test str_pad_left function"""
+    # Basic test cases
+    assert str_pad_left("hello", 10) == "     hello"
+    assert str_pad_left("hello", 10, "*") == "*****hello"
+    assert str_pad_left("hello", 8, "0") == "000hello"
+
+    # Edge cases
+    assert str_pad_left("hello", 5) == "hello"  # No padding needed
+    assert str_pad_left("hello", 3) == "hello"  # String longer than width
+    assert str_pad_left("", 5) == "     "  # Empty string
+    assert str_pad_left("hello", 7, "") == "hello"  # Empty fillchar defaults to space
+    assert str_pad_left("test", 10, "ab") == "aaaaaatest"  # Multi-char fillchar uses first char
+
+    print("✅ str_pad_left tests passed")
+
+def test_str_pad_right():
+    """Test str_pad_right function"""
+    # Basic test cases
+    assert str_pad_right("hello", 10) == "hello     "
+    assert str_pad_right("hello", 10, "*") == "hello*****"
+    assert str_pad_right("hello", 8, "0") == "hello000"
+
+    # Edge cases
+    assert str_pad_right("hello", 5) == "hello"  # No padding needed
+    assert str_pad_right("hello", 3) == "hello"  # String longer than width
+    assert str_pad_right("", 5) == "     "  # Empty string
+    assert str_pad_right("hello", 7, "") == "hello"  # Empty fillchar defaults to space
+    assert str_pad_right("test", 10, "ab") == "testaaaaaa"  # Multi-char fillchar uses first char
+
+    print("✅ str_pad_right tests passed")
+
+def test_str_center():
+    """Test str_center function"""
+    # Basic test cases
+    assert str_center("hello", 11) == "   hello   "
+    assert str_center("hello", 10) == "  hello   "  # Odd padding, extra on right
+    assert str_center("hello", 9) == "  hello  "
+    assert str_center("test", 10, "*") == "***test***"
+    assert str_center("test", 9, "-") == "--test---"  # Odd padding
+
+    # Edge cases
+    assert str_center("hello", 5) == "hello"  # No padding needed
+    assert str_center("hello", 3) == "hello"  # String longer than width
+    assert str_center("", 5) == "     "  # Empty string
+    assert str_center("hello", 7, "") == "hello"  # Empty fillchar defaults to space
+    assert str_center("x", 5) == "  x  "  # Single character
+    assert str_center("ab", 6, "*") == "**ab**"  # Even string, even width
+
+    print("✅ str_center tests passed")
+
+def test_edge_cases():
+    """Test edge cases and error conditions"""
+    # Test with special characters
+    assert str_capitalize("äöü") == "Äöü"  # Unicode support (if available)
+    assert str_reverse("🙂😊") == "😊🙂"  # Emoji support (if available)
+
+    # Test with numbers as strings
+    assert str_title("123 456") == "123 456"
+    assert str_count("12345", "3") == 1
+
+    # Test with newlines and special chars
+    assert str_reverse("hello\nworld") == "dlrow\nolleh"
+    assert str_count("line1\nline2\nline3", "\n") == 2
+
+    print("✅ Edge case tests passed")
+
+def run_all_tests():
+    """Run all string function tests"""
+    print("Running string function tests...")
+    print()
+
+    test_str_capitalize()
+    test_str_title()
+    test_str_reverse()
+    test_str_count()
+    test_str_pad_left()
+    test_str_pad_right()
+    test_str_center()
+    test_edge_cases()
+
+    print()
+    print("🎉 All string function tests passed!")
+    print("✨ String manipulation functions are working correctly!")
+
+# Run the tests
+run_all_tests()

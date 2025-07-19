@@ -414,6 +414,36 @@ list("hello")   # ["h", "e", "l", "l", "o"]
 dict([["a", 1], ["b", 2]])  # {"a": 1, "b": 2}
 ```
 
+### String Manipulation
+
+```nagari
+# String capitalization
+str_capitalize("hello world")    # "Hello world"
+str_title("hello world")         # "Hello World"
+
+# String transformation
+str_reverse("hello")             # "olleh"
+str_count("hello world", "l")    # 3
+
+# String padding
+str_pad_left("hello", 10)        # "     hello"
+str_pad_left("hello", 10, "*")   # "*****hello"
+str_pad_right("hello", 10)       # "hello     "
+str_pad_right("hello", 10, "*")  # "hello*****"
+str_center("hello", 11)          # "   hello   "
+str_center("hello", 11, "*")     # "***hello***"
+
+# Usage examples
+name = "alice"
+print(str_capitalize(name))      # "Alice"
+print(str_title("the great adventure"))  # "The Great Adventure"
+
+# Formatting with padding
+numbers = ["1", "22", "333"]
+for num in numbers:
+    print(str_pad_left(num, 5, "0"))  # "00001", "00022", "00333"
+```
+
 ### Math Functions
 
 ```nagari
