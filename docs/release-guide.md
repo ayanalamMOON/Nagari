@@ -10,7 +10,7 @@ This document describes how to build and release binary packages for the Nagari 
    ```bash
    # Run tests to ensure everything works
    cargo test --workspace
-   
+
    # Build and test runtime
    cd nagari-runtime && npm test && cd ..
    ```
@@ -19,7 +19,7 @@ This document describes how to build and release binary packages for the Nagari 
    ```bash
    # Using the release script (Unix/macOS)
    ./scripts/release.sh 0.3.0
-   
+
    # Or on Windows
    scripts\release.bat 0.3.0
    ```
@@ -37,7 +37,7 @@ If you need to create a release manually:
    ```bash
    # Build for current platform
    ./scripts/build.sh
-   
+
    # Build for specific target
    ./scripts/build.sh x86_64-unknown-linux-gnu
    ```
@@ -57,7 +57,7 @@ The release process is automated through GitHub Actions workflows:
 #### 1. **Release Workflow** (`.github/workflows/release.yml`)
 - **Trigger:** Push tag matching `v*` pattern or manual dispatch
 - **Builds:** Cross-platform binaries for Windows, macOS, and Linux
-- **Outputs:** 
+- **Outputs:**
   - GitHub Release with binary packages
   - Automated npm publishing of nagari-runtime
 
@@ -130,7 +130,7 @@ scripts\build.bat x86_64-pc-windows-msvc
    ```bash
    # Install Rust target
    rustup target add x86_64-unknown-linux-gnu
-   
+
    # Install Node.js dependencies
    cd nagari-runtime && npm install && cd ..
    ```

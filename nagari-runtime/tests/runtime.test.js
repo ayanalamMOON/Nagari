@@ -1,5 +1,5 @@
 // Basic test for nagari-runtime
-import { str_capitalize, str_title, str_reverse, str_count, str_pad_left, str_pad_right, str_center } from '../dist/index.js';
+import { str_capitalize, str_center, str_count, str_pad_left, str_pad_right, str_reverse, str_title } from '../dist/index.js';
 
 describe('Nagari Runtime String Functions', () => {
     test('str_capitalize should capitalize first character', () => {

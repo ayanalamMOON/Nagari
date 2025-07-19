@@ -63,14 +63,14 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y musl-tools gcc-aarch64-linux-gnu
-        
+
     - name: Install Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        
+
     - name: Cache Cargo dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
@@ -83,76 +83,76 @@ jobs:
         cd nagari-runtime
         npm install
         npm run build
-        
+
     - name: Build CLI binary
       run: |
         cargo build --release --bin nag --target ${{ matrix.target }}
-        
-    - name: Build LSP server binary  
+
+    - name: Build LSP server binary
       run: |
         cargo build --release --bin nagari-lsp --target ${{ matrix.target }}
-        
+
     - name: Create release directory
       run: |
         mkdir -p release/nagari-${{ github.ref_name }}-${{ matrix.target }}
-        
+
     - name: Copy binaries (Unix)
       if: matrix.os != 'windows-latest'
       run: |
         cp target/${{ matrix.target }}/release/nag${{ matrix.extension }} release/nagari-${{ github.ref_name }}-${{ matrix.target }}/
         cp target/${{ matrix.target }}/release/nagari-lsp${{ matrix.extension }} release/nagari-${{ github.ref_name }}-${{ matrix.target }}/
-        
+
     - name: Copy binaries (Windows)
       if: matrix.os == 'windows-latest'
       run: |
         copy target\${{ matrix.target }}\release\nag${{ matrix.extension }} release\nagari-${{ github.ref_name }}-${{ matrix.target }}\
         copy target\${{ matrix.target }}\release\nagari-lsp${{ matrix.extension }} release\nagari-${{ github.ref_name }}-${{ matrix.target }}\
-        
+
     - name: Copy additional files
       run: |
         cp README.md release/nagari-${{ github.ref_name }}-${{ matrix.target }}/
         cp LICENSE release/nagari-${{ github.ref_name }}-${{ matrix.target }}/
         cp CHANGELOG.md release/nagari-${{ github.ref_name }}-${{ matrix.target }}/
-        
+
     - name: Copy standard library
       run: |
         cp -r stdlib release/nagari-${{ github.ref_name }}-${{ matrix.target }}/
-        
+
     - name: Copy runtime package
       run: |
         cp -r nagari-runtime/dist release/nagari-${{ github.ref_name }}-${{ matrix.target }}/runtime
         cp nagari-runtime/package.json release/nagari-${{ github.ref_name }}-${{ matrix.target }}/runtime/
-        
+
     - name: Create installation script (Unix)
       if: matrix.os != 'windows-latest'
       run: |
         cat > release/nagari-${{ github.ref_name }}-${{ matrix.target }}/install.sh << 'EOF'
         #!/bin/bash
         set -e
-        
+
         echo "🚀 Installing Nagari Programming Language..."
-        
+
         # Detect OS and architecture
         OS=$(uname -s | tr '[:upper:]' '[:lower:]')
         ARCH=$(uname -m)
-        
+
         # Create installation directory
         INSTALL_DIR="${HOME}/.nagari"
         BIN_DIR="${INSTALL_DIR}/bin"
         STDLIB_DIR="${INSTALL_DIR}/stdlib"
         RUNTIME_DIR="${INSTALL_DIR}/runtime"
-        
+
         mkdir -p "${BIN_DIR}" "${STDLIB_DIR}" "${RUNTIME_DIR}"
-        
+
         # Copy binaries
         cp nag "${BIN_DIR}/"
         cp nagari-lsp "${BIN_DIR}/"
         chmod +x "${BIN_DIR}/nag" "${BIN_DIR}/nagari-lsp"
-        
+
         # Copy standard library and runtime
         cp -r stdlib/* "${STDLIB_DIR}/"
         cp -r runtime/* "${RUNTIME_DIR}/"
-        
+
         # Add to PATH
         echo ""
         echo "✅ Nagari installed successfully!"
@@ -167,32 +167,32 @@ jobs:
         echo "nag --version"
         EOF
         chmod +x release/nagari-${{ github.ref_name }}-${{ matrix.target }}/install.sh
-        
+
     - name: Create installation script (Windows)
       if: matrix.os == 'windows-latest'
       run: |
         $installScript = @"
         @echo off
         echo 🚀 Installing Nagari Programming Language...
-        
+
         REM Create installation directory
         set "INSTALL_DIR=%USERPROFILE%\.nagari"
         set "BIN_DIR=%INSTALL_DIR%\bin"
         set "STDLIB_DIR=%INSTALL_DIR%\stdlib"
         set "RUNTIME_DIR=%INSTALL_DIR%\runtime"
-        
+
         if not exist "%BIN_DIR%" mkdir "%BIN_DIR%"
         if not exist "%STDLIB_DIR%" mkdir "%STDLIB_DIR%"
         if not exist "%RUNTIME_DIR%" mkdir "%RUNTIME_DIR%"
-        
+
         REM Copy binaries
         copy nag.exe "%BIN_DIR%\"
         copy nagari-lsp.exe "%BIN_DIR%\"
-        
+
         REM Copy standard library and runtime
         xcopy /E /I stdlib "%STDLIB_DIR%"
         xcopy /E /I runtime "%RUNTIME_DIR%"
-        
+
         echo.
         echo ✅ Nagari installed successfully!
         echo.
@@ -203,21 +203,21 @@ jobs:
         echo nag --version
         "@
         $installScript | Out-File -FilePath "release\nagari-${{ github.ref_name }}-${{ matrix.target }}\install.bat" -Encoding ASCII
-        
+
     - name: Create archive (tar.gz)
       if: matrix.archive == 'tar.gz'
       run: |
         cd release
         tar -czf nagari-${{ github.ref_name }}-${{ matrix.target }}.tar.gz nagari-${{ github.ref_name }}-${{ matrix.target }}
-        
+
     - name: Create archive (zip)
       if: matrix.archive == 'zip'
       run: |
         cd release
         7z a nagari-${{ github.ref_name }}-${{ matrix.target }}.zip nagari-${{ github.ref_name }}-${{ matrix.target }}
-        
+
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: nagari-${{ github.ref_name }}-${{ matrix.target }}
         path: release/nagari-${{ github.ref_name }}-${{ matrix.target }}.*
@@ -229,12 +229,12 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
+
     - name: Download all artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         path: artifacts
-        
+
     - name: Generate release notes
       id: release_notes
       run: |
@@ -262,7 +262,7 @@ jobs:
           echo 'nag --version' >> release_notes.md
           echo '```' >> release_notes.md
         fi
-        
+
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
@@ -283,13 +283,13 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
         registry-url: 'https://registry.npmjs.org'
-        
+
     - name: Build and publish nagari-runtime
       run: |
         cd nagari-runtime

@@ -30,7 +30,7 @@ jobs:
         node-version: '18'
 
     - name: Cache Cargo dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
@@ -65,7 +65,7 @@ jobs:
         ./target/release/nag --version
         echo 'print("Hello from CI test!")' > test_ci.nag
         ./target/release/nag compile test_ci.nag
-        
+
     - name: Test CLI functionality (Windows)
       if: matrix.os == 'windows-latest'
       run: |
@@ -101,7 +101,7 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
 
     - name: Cache Cargo dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
@@ -126,7 +126,7 @@ jobs:
       run: cargo doc --workspace --no-deps
 
     - name: Upload documentation
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: documentation
         path: target/doc

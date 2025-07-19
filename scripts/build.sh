@@ -34,7 +34,7 @@ if [ -z "$TARGET" ]; then
         Darwin) TARGET="x86_64-apple-darwin" ;;
         Linux) TARGET="x86_64-unknown-linux-gnu" ;;
         CYGWIN*|MINGW*|MSYS*) TARGET="x86_64-pc-windows-msvc" ;;
-        *) 
+        *)
             print_error "Unsupported platform: $(uname -s)"
             exit 1
             ;;
