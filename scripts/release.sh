@@ -74,7 +74,9 @@ print_success "Binaries built successfully"
 print_step "Testing CLI functionality"
 ./target/release/nag --version
 echo 'print("Release test successful!")' > test_release.nag
-./target/release/nag compile test_release.nag
+# Test the binary
+echo "Testing the binary..."
+./target/release/nag build test_release.nag
 rm -f test_release.nag test_release.js
 print_success "CLI test passed"
 

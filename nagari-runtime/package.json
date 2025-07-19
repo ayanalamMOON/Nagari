@@ -1,6 +1,6 @@
 {
     "name": "nagari-runtime",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "Production-ready runtime utilities and interoperability layer for Nagari language with HTTP support, Python-like builtins, and comprehensive JavaScript integration",
     "type": "module",
     "main": "dist/index.js",

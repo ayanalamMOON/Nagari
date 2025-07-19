@@ -77,7 +77,9 @@ jobs:
       if: matrix.os != 'windows-latest'
       run: |
         echo 'print("Hello from build test!")' > test_build.nag
-        ./target/${{ matrix.target }}/release/nag compile test_build.nag
+              - name: Test CLI binary
+        run: |
+          ./target/${{ matrix.target }}/release/nag build test_build.nag
 
     - name: Test simple compilation (Windows)
       if: matrix.os == 'windows-latest'
