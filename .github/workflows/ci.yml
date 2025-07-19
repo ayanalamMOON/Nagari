@@ -64,16 +64,14 @@ jobs:
       run: |
         ./target/release/nag --version
         echo 'print("Hello from CI test!")' > test_ci.nag
-              - name: Test CLI binary
-        run: |
-          ./target/release/nag build test_ci.nag
+        ./target/release/nag build test_ci.nag
 
     - name: Test CLI functionality (Windows)
       if: matrix.os == 'windows-latest'
       run: |
         .\target\release\nag.exe --version
         echo 'print("Hello from CI test!")' > test_ci.nag
-        .\target\release\nag.exe compile test_ci.nag
+        .\target\release\nag.exe build test_ci.nag
 
   security:
     name: Security Audit

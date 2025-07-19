@@ -501,7 +501,7 @@ impl Type {
                 }
 
                 // Remove duplicates and Never types
-                simplified_types.sort_by(|a, b| format!("{:?}", a).cmp(&format!("{:?}", b)));
+                simplified_types.sort_by(|a, b| format!("{a:?}").cmp(&format!("{b:?}")));
                 simplified_types.dedup();
                 simplified_types.retain(|t| !matches!(t, Type::Never));
 
@@ -557,7 +557,7 @@ impl TypeInferenceEngine {
                 .type_variables
                 .get(name)
                 .cloned()
-                .ok_or_else(|| format!("Unknown identifier: {}", name)),
+                .ok_or_else(|| format!("Unknown identifier: {name}")),
 
             Expression::Tuple(elements) => {
                 let element_types: Result<Vec<_>, _> = elements
@@ -698,7 +698,7 @@ impl TypeInferenceEngine {
                 (Type::Float, Type::Float) => Ok(Type::Float),
                 (Type::Int, Type::Float) | (Type::Float, Type::Int) => Ok(Type::Float),
                 (Type::String, Type::String) => Ok(Type::String),
-                _ => Err(format!("Cannot add {} and {}", left, right)),
+                _ => Err(format!("Cannot add {left} and {right}")),
             },
 
             BinaryOperator::Subtract | BinaryOperator::Multiply | BinaryOperator::Divide => {
@@ -707,8 +707,7 @@ impl TypeInferenceEngine {
                     (Type::Float, Type::Float) => Ok(Type::Float),
                     (Type::Int, Type::Float) | (Type::Float, Type::Int) => Ok(Type::Float),
                     _ => Err(format!(
-                        "Cannot perform arithmetic on {} and {}",
-                        left, right
+                        "Cannot perform arithmetic on {left} and {right}"
                     )),
                 }
             }
@@ -722,7 +721,7 @@ impl TypeInferenceEngine {
                 if self.are_comparable(left, right) {
                     Ok(Type::Bool)
                 } else {
-                    Err(format!("Cannot compare {} and {}", left, right))
+                    Err(format!("Cannot compare {left} and {right}"))
                 }
             }
 
@@ -814,8 +813,8 @@ impl TypeInferenceEngine {
             Type::Generic(generic) => {
                 if generic.parameters.len() != type_args.len() {
                     return Err(format!(
-                        "Generic type {} expects {} type arguments, got {}",
-                        format!("{:?}", generic.base),
+                        "Generic type {:?} expects {} type arguments, got {}",
+                        generic.base,
                         generic.parameters.len(),
                         type_args.len()
                     ));
@@ -925,7 +924,7 @@ impl TypeInferenceEngine {
                 Ok(Type::Omit(Box::new(base_type.clone()), keys))
             }
             "NonNullable" => self.apply_non_nullable(base_type),
-            _ => Err(format!("Unknown utility type: {}", utility)),
+            _ => Err(format!("Unknown utility type: {utility}")),
         }
     }
 
@@ -993,17 +992,17 @@ impl TypeInferenceEngine {
             match constraint {
                 TypeConstraint::Subtype { sub, sup } => {
                     if !sub.is_assignable_to(sup) {
-                        return Err(format!("Type {} is not assignable to {}", sub, sup));
+                        return Err(format!("Type {sub} is not assignable to {sup}"));
                     }
                 }
                 TypeConstraint::Equal { left, right } => {
                     if left != right {
-                        return Err(format!("Types {} and {} are not equal", left, right));
+                        return Err(format!("Types {left} and {right} are not equal"));
                     }
                 }
                 TypeConstraint::Compatible { left, right } => {
                     if !self.are_compatible_types(left, right) {
-                        return Err(format!("Types {} and {} are not compatible", left, right));
+                        return Err(format!("Types {left} and {right} are not compatible"));
                     }
                 }
                 TypeConstraint::Implements(_) => {
@@ -1047,7 +1046,7 @@ impl fmt::Display for Type {
                         generic
                             .parameters
                             .iter()
-                            .map(|p| format!("{}", p))
+                            .map(|p| format!("{p}"))
                             .collect::<Vec<_>>()
                             .join(", ")
                     )?;
@@ -1062,7 +1061,7 @@ impl fmt::Display for Type {
                     union
                         .types
                         .iter()
-                        .map(|t| format!("{}", t))
+                        .map(|t| format!("{t}"))
                         .collect::<Vec<_>>()
                         .join(" | ")
                 )
@@ -1077,7 +1076,7 @@ impl fmt::Display for Type {
                         param
                             .constraints
                             .iter()
-                            .map(|c| format!("{:?}", c))
+                            .map(|c| format!("{c:?}"))
                             .collect::<Vec<_>>()
                             .join(" + ")
                     )?;
@@ -1091,13 +1090,13 @@ impl fmt::Display for Type {
                     "[{}]",
                     elements
                         .iter()
-                        .map(|t| format!("{}", t))
+                        .map(|t| format!("{t}"))
                         .collect::<Vec<_>>()
                         .join(", ")
                 )
             }
 
-            Type::Set(elem_type) => write!(f, "Set<{}>", elem_type),
+            Type::Set(elem_type) => write!(f, "Set<{elem_type}>"),
 
             Type::Intersection(intersection) => {
                 write!(
@@ -1106,7 +1105,7 @@ impl fmt::Display for Type {
                     intersection
                         .types
                         .iter()
-                        .map(|t| format!("{}", t))
+                        .map(|t| format!("{t}"))
                         .collect::<Vec<_>>()
                         .join(" & ")
                 )
@@ -1130,31 +1129,31 @@ impl fmt::Display for Type {
                 )
             }
 
-            Type::Partial(inner) => write!(f, "Partial<{}>", inner),
-            Type::Required(inner) => write!(f, "Required<{}>", inner),
-            Type::Readonly(inner) => write!(f, "Readonly<{}>", inner),
-            Type::NonNullable(inner) => write!(f, "NonNullable<{}>", inner),
+            Type::Partial(inner) => write!(f, "Partial<{inner}>"),
+            Type::Required(inner) => write!(f, "Required<{inner}>"),
+            Type::Readonly(inner) => write!(f, "Readonly<{inner}>"),
+            Type::NonNullable(inner) => write!(f, "NonNullable<{inner}>"),
 
-            Type::Record(key_type, value_type) => write!(f, "Record<{}, {}>", key_type, value_type),
+            Type::Record(key_type, value_type) => write!(f, "Record<{key_type}, {value_type}>"),
             Type::Pick(base_type, keys) => {
-                write!(f, "Pick<{}, '{}'>", base_type, keys.join("' | '"))
+                write!(f, "Pick<{base_type}, '{}'>", keys.join("' | '"))
             }
             Type::Omit(base_type, keys) => {
-                write!(f, "Omit<{}, '{}'>", base_type, keys.join("' | '"))
+                write!(f, "Omit<{base_type}, '{}'>", keys.join("' | '"))
             }
             Type::Exclude(union_type, excluded_type) => {
-                write!(f, "Exclude<{}, {}>", union_type, excluded_type)
+                write!(f, "Exclude<{union_type}, {excluded_type}>")
             }
             Type::Extract(union_type, extracted_type) => {
-                write!(f, "Extract<{}, {}>", union_type, extracted_type)
+                write!(f, "Extract<{union_type}, {extracted_type}>")
             }
 
             Type::TemplateLiteral(template) => {
                 write!(f, "`")?;
                 for part in &template.parts {
                     match part {
-                        TemplatePart::Literal(s) => write!(f, "{}", s)?,
-                        TemplatePart::Type(t) => write!(f, "${{{}}}", t)?,
+                        TemplatePart::Literal(s) => write!(f, "{s}")?,
+                        TemplatePart::Type(t) => write!(f, "${{{t}}}")?,
                     }
                 }
                 write!(f, "`")
@@ -1169,7 +1168,7 @@ impl fmt::Display for Type {
                         "{}",
                         overloads
                             .iter()
-                            .map(|o| format!("{}", o))
+                            .map(|o| format!("{o}"))
                             .collect::<Vec<_>>()
                             .join(" | ")
                     )
@@ -1180,11 +1179,11 @@ impl fmt::Display for Type {
                 key_type,
                 value_type,
             } => {
-                write!(f, "{{ [key: {}]: {} }}", key_type, value_type)
+                write!(f, "{{ [key: {key_type}]: {value_type} }}")
             }
 
             // ...existing Display implementations for other variants...
-            _ => write!(f, "{:?}", self),
+            _ => write!(f, "{self:?}"),
         }
     }
 }
@@ -1247,7 +1246,7 @@ impl MacroProcessor {
         let macro_def = self
             .macros
             .get(name)
-            .ok_or_else(|| format!("Unknown macro: {}", name))?;
+            .ok_or_else(|| format!("Unknown macro: {name}"))?;
 
         if args.len() != macro_def.parameters.len() {
             return Err(format!(

@@ -99,7 +99,7 @@ impl Compiler {
         let mut lexer = Lexer::new(source);
         let tokens = lexer
             .tokenize()
-            .map_err(|e| NagariError::LexError(format!("Lexing failed: {}", e)))?;
+            .map_err(|e| NagariError::LexError(format!("Lexing failed: {e}")))?;
 
         if self.config.verbose {
             println!("✅ Lexical analysis completed ({} tokens)", tokens.len());
@@ -109,7 +109,7 @@ impl Compiler {
         let mut parser = NagParser::new(tokens);
         let ast = parser
             .parse()
-            .map_err(|e| NagariError::ParseError(format!("Parsing failed: {}", e)))?;
+            .map_err(|e| NagariError::ParseError(format!("Parsing failed: {e}")))?;
 
         if self.config.verbose {
             println!("✅ Parsing completed");
@@ -157,7 +157,7 @@ impl Compiler {
         }
 
         let source = fs::read_to_string(input_path)
-            .map_err(|e| NagariError::IoError(format!("Failed to read input file: {}", e)))?;
+            .map_err(|e| NagariError::IoError(format!("Failed to read input file: {e}")))?;
 
         let filename = input_path
             .file_name()
@@ -182,19 +182,19 @@ impl Compiler {
         }
 
         let source = fs::read_to_string(input_path)
-            .map_err(|e| NagariError::IoError(format!("Failed to read input file: {}", e)))?;
+            .map_err(|e| NagariError::IoError(format!("Failed to read input file: {e}")))?;
 
         // Lexical analysis
         let mut lexer = Lexer::new(&source);
         let tokens = lexer
             .tokenize()
-            .map_err(|e| NagariError::LexError(format!("Lexing failed: {}", e)))?;
+            .map_err(|e| NagariError::LexError(format!("Lexing failed: {e}")))?;
 
         // Parsing
         let mut parser = NagParser::new(tokens);
         let ast = parser
             .parse()
-            .map_err(|e| NagariError::ParseError(format!("Parsing failed: {}", e)))?;
+            .map_err(|e| NagariError::ParseError(format!("Parsing failed: {e}")))?;
 
         if self.config.verbose {
             println!("✅ Syntax check passed");
@@ -215,7 +215,7 @@ impl Compiler {
         // Create output directory if needed
         if let Some(parent) = output_path.parent() {
             fs::create_dir_all(parent).map_err(|e| {
-                NagariError::IoError(format!("Failed to create output directory: {}", e))
+                NagariError::IoError(format!("Failed to create output directory: {e}"))
             })?;
         }
 
@@ -232,20 +232,20 @@ impl Compiler {
 
         // Write JavaScript output
         fs::write(output_path, final_code)
-            .map_err(|e| NagariError::IoError(format!("Failed to write output file: {}", e)))?;
+            .map_err(|e| NagariError::IoError(format!("Failed to write output file: {e}")))?;
 
         // Write source map if enabled
         if let Some(source_map) = result.source_map {
             let map_path = output_path.with_extension("js.map");
             fs::write(&map_path, source_map)
-                .map_err(|e| NagariError::IoError(format!("Failed to write source map: {}", e)))?;
+                .map_err(|e| NagariError::IoError(format!("Failed to write source map: {e}")))?;
         }
 
         // Write TypeScript declarations if enabled
         if let Some(declarations) = result.declarations {
             let dts_path = output_path.with_extension("d.ts");
             fs::write(&dts_path, declarations).map_err(|e| {
-                NagariError::IoError(format!("Failed to write declarations: {}", e))
+                NagariError::IoError(format!("Failed to write declarations: {e}"))
             })?;
         }
 

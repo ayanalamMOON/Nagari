@@ -175,14 +175,14 @@ function setComp(iterable, transform, condition = () => true) {
         if is_async {
             match self.target.as_str() {
                 "node" => {
-                    format!("async function {}(...args) {{ return nagariToJS(await jsToNagari({}(...args.map(jsToNagari)))); }}", function_name, function_name)
+                    format!("async function {function_name}(...args) {{ return nagariToJS(await jsToNagari({function_name}(...args.map(jsToNagari)))); }}")
                 }
                 _ => {
-                    format!("async function {}(...args) {{ return nagariToJS(await jsToNagari({}(...args.map(jsToNagari)))); }}", function_name, function_name)
+                    format!("async function {function_name}(...args) {{ return nagariToJS(await jsToNagari({function_name}(...args.map(jsToNagari)))); }}")
                 }
             }
         } else {
-            format!("function {}(...args) {{ return nagariToJS({}(...args.map(jsToNagari))); }}", function_name, function_name)
+            format!("function {function_name}(...args) {{ return nagariToJS({function_name}(...args.map(jsToNagari))); }}")
         }
     }
 

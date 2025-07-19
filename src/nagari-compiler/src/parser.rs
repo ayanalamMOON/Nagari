@@ -777,7 +777,7 @@ impl Parser {
         match self.advance() {
             Token::Identifier(type_name) => {
                 let mut base_type = Type::from_string(&type_name).ok_or_else(|| {
-                    NagariError::ParseError(format!("Unknown type: {}", type_name))
+                    NagariError::ParseError(format!("Unknown type: {type_name}"))
                 })?;
 
                 // Handle generic types like list[int], dict[str, int]
@@ -1578,8 +1578,7 @@ impl Parser {
 
         if closing_tag != tag_name {
             return Err(NagariError::ParseError(format!(
-                "Mismatched JSX tags: {} and {}",
-                tag_name, closing_tag
+                "Mismatched JSX tags: {tag_name} and {closing_tag}"
             )));
         }
 
@@ -1839,7 +1838,7 @@ impl Parser {
                 let mut expr_content = String::new();
                 let mut brace_count = 1;
 
-                while let Some(ch) = chars.next() {
+                for ch in chars.by_ref() {
                     if ch == '{' {
                         brace_count += 1;
                     } else if ch == '}' {
@@ -2154,7 +2153,7 @@ impl Parser {
                                     &Token::RightParen,
                                     "Expected ')' after function call",
                                 )?;
-                                format!("{}(\"{}\")", func_name, arg)
+                                format!("{func_name}(\"{arg}\")")
                             } else {
                                 func_name
                             }

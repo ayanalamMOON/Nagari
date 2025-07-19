@@ -587,25 +587,25 @@ impl Lexer {
         let mut value = String::new();
         value.push(first_char); // Include the first character that was already consumed
 
-        while self.peek().map_or(false, |c| c.is_ascii_digit()) {
+        while self.peek().is_some_and(|c| c.is_ascii_digit()) {
             value.push(self.advance());
         }
 
-        if self.peek() == Some('.') && self.peek_next().map_or(false, |c| c.is_ascii_digit()) {
+        if self.peek() == Some('.') && self.peek_next().is_some_and(|c| c.is_ascii_digit()) {
             value.push(self.advance()); // consume '.'
 
-            while self.peek().map_or(false, |c| c.is_ascii_digit()) {
+            while self.peek().is_some_and(|c| c.is_ascii_digit()) {
                 value.push(self.advance());
             }
 
             let float_val = value
                 .parse::<f64>()
-                .map_err(|_| NagariError::LexError(format!("Invalid float literal: {}", value)))?;
+                .map_err(|_| NagariError::LexError(format!("Invalid float literal: {value}")))?;
 
             Ok(Token::FloatLiteral(float_val))
         } else {
             let int_val = value.parse::<i64>().map_err(|_| {
-                NagariError::LexError(format!("Invalid integer literal: {}", value))
+                NagariError::LexError(format!("Invalid integer literal: {value}"))
             })?;
 
             Ok(Token::IntLiteral(int_val))
@@ -621,7 +621,7 @@ impl Lexer {
 
         while self
             .peek()
-            .map_or(false, |c| c.is_ascii_alphanumeric() || c == '_')
+            .is_some_and(|c| c.is_ascii_alphanumeric() || c == '_')
         {
             value.push(self.advance());
         }
