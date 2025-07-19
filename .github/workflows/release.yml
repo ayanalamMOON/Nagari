@@ -1,0 +1,115 @@
+name: Release Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Release ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            ext: .exe
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            ext: ""
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            ext: ""
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            ext: ""
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            ext: ""
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            ext: ""
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        target: ${{ matrix.target }}
+        override: true
+
+    - name: Install dependencies (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pkg-config libssl-dev
+
+    - name: Install cross (for cross-compilation)
+      if: matrix.target == 'x86_64-unknown-linux-musl' || matrix.target == 'aarch64-unknown-linux-gnu'
+      run: cargo install cross --git https://github.com/cross-rs/cross
+
+    - name: Build binaries (native)
+      if: matrix.target == 'x86_64-pc-windows-msvc' || matrix.target == 'x86_64-unknown-linux-gnu' || matrix.target == 'x86_64-apple-darwin' || matrix.target == 'aarch64-apple-darwin'
+      run: cargo build --release --target ${{ matrix.target }}
+
+    - name: Build binaries (cross)
+      if: matrix.target == 'x86_64-unknown-linux-musl' || matrix.target == 'aarch64-unknown-linux-gnu'
+      run: cross build --release --target ${{ matrix.target }}
+
+    - name: Create release directory
+      run: mkdir -p release
+
+    - name: Package binaries (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: cmd
+      run: |
+        copy "target\${{ matrix.target }}\release\nag.exe" "release\nag-${{ matrix.target }}.exe" 2>nul || echo nag not found
+        copy "target\${{ matrix.target }}\release\nagari-lsp.exe" "release\nagari-lsp-${{ matrix.target }}.exe" 2>nul || echo nagari-lsp not found
+        copy "target\${{ matrix.target }}\release\nagari-registry.exe" "release\nagari-registry-${{ matrix.target }}.exe" 2>nul || echo nagari-registry not found
+        copy "target\${{ matrix.target }}\release\nagc.exe" "release\nagc-${{ matrix.target }}.exe" 2>nul || echo nagc not found
+        copy "target\${{ matrix.target }}\release\nagrun.exe" "release\nagrun-${{ matrix.target }}.exe" 2>nul || echo nagrun not found
+
+    - name: Package binaries (Unix)
+      if: matrix.os != 'windows-latest'
+      run: |
+        cp target/${{ matrix.target }}/release/nag release/nag-${{ matrix.target }} 2>/dev/null || echo "nag not found"
+        cp target/${{ matrix.target }}/release/nagari-lsp release/nagari-lsp-${{ matrix.target }} 2>/dev/null || echo "nagari-lsp not found"
+        cp target/${{ matrix.target }}/release/nagari-registry release/nagari-registry-${{ matrix.target }} 2>/dev/null || echo "nagari-registry not found"
+        cp target/${{ matrix.target }}/release/nagc release/nagc-${{ matrix.target }} 2>/dev/null || echo "nagc not found"
+        cp target/${{ matrix.target }}/release/nagrun release/nagrun-${{ matrix.target }} 2>/dev/null || echo "nagrun not found"
+        chmod +x release/* 2>/dev/null || true
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: nagari-binaries-${{ matrix.target }}
+        path: release/
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: release
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          nagari-binaries-*/nag-*
+          nagari-binaries-*/nagari-lsp-*
+          nagari-binaries-*/nagari-registry-*
+          nagari-binaries-*/nagc-*
+          nagari-binaries-*/nagrun-*
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
