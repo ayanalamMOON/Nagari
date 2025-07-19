@@ -1,4 +1,0 @@
-print("Testing str_capitalize:", str_capitalize("hello world"))
-print("Testing str_title:", str_title("hello world"))
-print("Testing str_reverse:", str_reverse("hello"))
-print("All string functions work!")
