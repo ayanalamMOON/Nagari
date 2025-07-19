@@ -60,7 +60,7 @@ impl Value {
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a + b)),
             (Value::Int(a), Value::Float(b)) => Ok(Value::Float(*a as f64 + b)),
             (Value::Float(a), Value::Int(b)) => Ok(Value::Float(a + *b as f64)),
-            (Value::String(a), Value::String(b)) => Ok(Value::String(format!("{}{}", a, b))),
+            (Value::String(a), Value::String(b)) => Ok(Value::String(format!("{a}{b}"))),
             (Value::List(a), Value::List(b)) => {
                 let mut result = a.clone();
                 result.extend(b.clone());
@@ -250,16 +250,16 @@ impl Value {
 impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::Int(n) => write!(f, "{}", n),
-            Value::Float(float) => write!(f, "{}", float),
-            Value::String(s) => write!(f, "{}", s),
+            Value::Int(n) => write!(f, "{n}"),
+            Value::Float(float) => write!(f, "{float}"),
+            Value::String(s) => write!(f, "{s}"),
             Value::Bool(b) => write!(f, "{}", if *b { "true" } else { "false" }),
             Value::List(l) => {
                 let items: Vec<String> = l.iter().map(|v| v.to_string()).collect();
                 write!(f, "[{}]", items.join(", "))
             }
             Value::Dict(d) => {
-                let items: Vec<String> = d.iter().map(|(k, v)| format!("{}: {}", k, v)).collect();
+                let items: Vec<String> = d.iter().map(|(k, v)| format!("{k}: {v}")).collect();
                 write!(f, "{{{}}}", items.join(", "))
             }
             Value::Function(func) => write!(f, "<function {}>", func.name),

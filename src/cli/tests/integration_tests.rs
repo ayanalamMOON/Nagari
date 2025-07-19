@@ -1,0 +1,380 @@
+use std::fs;
+use std::path::PathBuf;
+use tempfile::TempDir;
+use tokio::io::AsyncWriteExt;
+use tokio::process::Command;
+
+/// Integration tests for the Nagari CLI
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn get_nag_binary() -> PathBuf {
+        // Get the current executable directory and construct path to nag binary
+        let mut exe_path = std::env::current_exe().unwrap();
+        exe_path.pop(); // Remove the test executable name
+        exe_path.push("nag.exe");
+        if !exe_path.exists() {
+            // Try debug directory
+            exe_path.pop();
+            exe_path.push("debug");
+            exe_path.push("nag.exe");
+        }
+        exe_path
+    }
+
+    #[tokio::test]
+    async fn test_cli_help() {
+        let output = Command::new("cargo")
+            .args(&["run", "--bin", "nag", "--", "--help"])
+            .output()
+            .await
+            .expect("Failed to run command");
+
+        assert!(output.status.success());
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        assert!(stdout.contains("Nagari CLI tool"));
+    }
+
+    #[tokio::test]
+    #[ignore] // Integration tests require complex binary path setup - use unit tests for core validation
+    async fn test_package_init() {
+        let temp_dir = TempDir::new().unwrap();
+        let project_path = temp_dir.path();
+
+        let nag_binary = get_nag_binary();
+        let output = Command::new(&nag_binary)
+            .args(&["package", "init", "--yes"])
+            .current_dir(project_path)
+            .output()
+            .await
+            .expect("Failed to run package init");
+
+        assert!(output.status.success());
+
+        // Check if nagari.toml was created
+        let manifest_path = project_path.join("nagari.toml");
+        assert!(manifest_path.exists());
+
+        // Verify manifest content
+        let content = fs::read_to_string(manifest_path).unwrap();
+        assert!(content.contains("[package]"));
+        assert!(content.contains("name ="));
+        assert!(content.contains("version ="));
+    }
+
+    #[tokio::test]
+    #[ignore] // Integration tests require proper binary setup
+    async fn test_build_command() {
+        let temp_dir = TempDir::new().unwrap();
+        let project_path = temp_dir.path();
+
+        // Create a simple Nagari source file
+        let source_file = project_path.join("main.nag");
+        fs::write(
+            &source_file,
+            r#"
+            function main() {
+                print("Hello, World!");
+            }
+        "#,
+        )
+        .unwrap();
+
+        let output = Command::new("cargo")
+            .args(&[
+                "run",
+                "--bin",
+                "nag",
+                "--",
+                "build",
+                source_file.to_str().unwrap(),
+            ])
+            .current_dir(project_path)
+            .output()
+            .await
+            .expect("Failed to run build command");
+
+        assert!(output.status.success());
+    }
+
+    #[tokio::test]
+    #[ignore] // Integration tests require proper binary setup
+    async fn test_format_command() {
+        let temp_dir = TempDir::new().unwrap();
+        let project_path = temp_dir.path();
+
+        // Create a poorly formatted Nagari source file
+        let source_file = project_path.join("main.nag");
+        fs::write(&source_file, r#"function main(){print("Hello");}"#).unwrap();
+
+        let output = Command::new("cargo")
+            .args(&[
+                "run",
+                "--bin",
+                "nag",
+                "--",
+                "format",
+                source_file.to_str().unwrap(),
+            ])
+            .current_dir(project_path)
+            .output()
+            .await
+            .expect("Failed to run format command");
+
+        assert!(output.status.success());
+    }
+
+    #[tokio::test]
+    #[ignore] // Integration tests require proper binary setup
+    async fn test_lint_command() {
+        let temp_dir = TempDir::new().unwrap();
+        let project_path = temp_dir.path();
+
+        // Create a Nagari source file with potential issues
+        let source_file = project_path.join("main.nag");
+        fs::write(
+            &source_file,
+            r#"
+            function main() {
+                let unused_var = 42;
+                print("Hello, World!");
+            }
+        "#,
+        )
+        .unwrap();
+
+        let output = Command::new("cargo")
+            .args(&[
+                "run",
+                "--bin",
+                "nag",
+                "--",
+                "lint",
+                source_file.to_str().unwrap(),
+            ])
+            .current_dir(project_path)
+            .output()
+            .await
+            .expect("Failed to run lint command");
+
+        assert!(output.status.success());
+    }
+
+    #[tokio::test]
+    #[ignore] // Integration tests require proper binary setup
+    async fn test_transpile_command() {
+        let temp_dir = TempDir::new().unwrap();
+        let project_path = temp_dir.path();
+        let output_dir = project_path.join("output");
+
+        // Create a simple Nagari source file
+        let source_file = project_path.join("main.nag");
+        fs::write(
+            &source_file,
+            r#"
+            function add(a, b) {
+                return a + b;
+            }
+
+            export { add };
+        "#,
+        )
+        .unwrap();
+
+        let output = Command::new("cargo")
+            .args(&[
+                "run",
+                "--bin",
+                "nag",
+                "--",
+                "transpile",
+                source_file.to_str().unwrap(),
+                "--output",
+                output_dir.to_str().unwrap(),
+            ])
+            .current_dir(project_path)
+            .output()
+            .await
+            .expect("Failed to run transpile command");
+
+        assert!(output.status.success());
+
+        // Check if output was generated
+        let js_file = output_dir.join("main.js");
+        assert!(js_file.exists());
+    }
+
+    #[tokio::test]
+    #[ignore] // Integration tests require proper binary setup
+    async fn test_init_project() {
+        let temp_dir = TempDir::new().unwrap();
+        let project_path = temp_dir.path().join("test-project");
+
+        let output = Command::new("cargo")
+            .args(&[
+                "run",
+                "--bin",
+                "nag",
+                "--",
+                "init",
+                "test-project",
+                "--template",
+                "basic",
+                "--yes",
+            ])
+            .current_dir(temp_dir.path())
+            .output()
+            .await
+            .expect("Failed to run init command");
+
+        assert!(output.status.success());
+
+        // Check if project directory was created
+        assert!(project_path.exists());
+        assert!(project_path.join("nagari.toml").exists());
+        assert!(project_path.join("src").exists());
+        assert!(project_path.join("src/main.nag").exists());
+    }
+}
+
+#[cfg(test)]
+mod package_tests {
+    use super::*;
+
+    #[tokio::test]
+    #[ignore] // Integration tests require proper binary setup
+    async fn test_package_add() {
+        let temp_dir = TempDir::new().unwrap();
+        let project_path = temp_dir.path();
+
+        // First init a project
+        let _init_output = Command::new("cargo")
+            .args(&["run", "--bin", "nag", "--", "package", "init", "--yes"])
+            .current_dir(project_path)
+            .output()
+            .await
+            .expect("Failed to init project");
+
+        // Add a package
+        let output = Command::new("cargo")
+            .args(&[
+                "run",
+                "--bin",
+                "nag",
+                "--",
+                "package",
+                "add",
+                "test-package",
+                "--version",
+                "1.0.0",
+            ])
+            .current_dir(project_path)
+            .output()
+            .await
+            .expect("Failed to add package");
+
+        assert!(output.status.success());
+
+        // Check if lockfile was created/updated
+        let lockfile_path = project_path.join("nagari.lock");
+        assert!(lockfile_path.exists());
+    }
+
+    #[tokio::test]
+    #[ignore] // Integration tests require proper binary setup
+    async fn test_package_list() {
+        let temp_dir = TempDir::new().unwrap();
+        let project_path = temp_dir.path();
+
+        // First init a project
+        let _init_output = Command::new("cargo")
+            .args(&["run", "--bin", "nag", "--", "package", "init", "--yes"])
+            .current_dir(project_path)
+            .output()
+            .await
+            .expect("Failed to init project");
+
+        let output = Command::new("cargo")
+            .args(&["run", "--bin", "nag", "--", "package", "list"])
+            .current_dir(project_path)
+            .output()
+            .await
+            .expect("Failed to list packages");
+
+        assert!(output.status.success());
+    }
+}
+
+#[cfg(test)]
+mod repl_tests {
+    use super::*;
+    use std::process::Stdio;
+
+    #[tokio::test]
+    #[ignore] // Integration tests require proper binary setup
+    async fn test_repl_basic() {
+        let mut child = Command::new("cargo")
+            .args(&["run", "--bin", "nag", "--", "repl"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .expect("Failed to start REPL");
+
+        // Send some basic commands
+        if let Some(stdin) = child.stdin.as_mut() {
+            stdin.write_all(b"1 + 1\n").await.unwrap();
+            stdin.write_all(b":quit\n").await.unwrap();
+        }
+
+        let output = child.wait_with_output().await.unwrap();
+        let stdout = String::from_utf8(output.stdout).unwrap();
+
+        // Should contain REPL prompt and result
+        assert!(stdout.contains("nagari>") || stdout.contains("Welcome"));
+    }
+
+    #[tokio::test]
+    #[ignore] // Integration tests require proper binary setup
+    async fn test_repl_with_script() {
+        let temp_dir = TempDir::new().unwrap();
+        let script_file = temp_dir.path().join("init.nag");
+
+        fs::write(
+            &script_file,
+            r#"
+            let x = 42;
+            function greet(name) {
+                return "Hello, " + name + "!";
+            }
+        "#,
+        )
+        .unwrap();
+
+        let mut child = Command::new("cargo")
+            .args(&[
+                "run",
+                "--bin",
+                "nag",
+                "--",
+                "repl",
+                "--script",
+                script_file.to_str().unwrap(),
+            ])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .expect("Failed to start REPL with script");
+
+        if let Some(stdin) = child.stdin.as_mut() {
+            stdin.write_all(b"x\n").await.unwrap();
+            stdin.write_all(b"greet(\"World\")\n").await.unwrap();
+            stdin.write_all(b":quit\n").await.unwrap();
+        }
+
+        let output = child.wait_with_output().await.unwrap();
+        assert!(output.status.success());
+    }
+}

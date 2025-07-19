@@ -99,7 +99,7 @@ impl BytecodeFile {
         // Check version
         let version = u16::from_le_bytes([data[cursor], data[cursor + 1]]);
         if version != 1 {
-            return Err(format!("Unsupported bytecode version: {}", version));
+            return Err(format!("Unsupported bytecode version: {version}"));
         }
         cursor += 2;
 
@@ -245,7 +245,7 @@ impl BytecodeFile {
                 // None
                 Ok((Value::None, cursor))
             }
-            _ => Err(format!("Unknown constant type tag: {}", type_tag)),
+            _ => Err(format!("Unknown constant type tag: {type_tag}")),
         }
     }
 
@@ -262,7 +262,7 @@ impl BytecodeFile {
         }
 
         let string = String::from_utf8(data[cursor..cursor + length].to_vec())
-            .map_err(|e| format!("Invalid UTF-8 string: {}", e))?;
+            .map_err(|e| format!("Invalid UTF-8 string: {e}"))?;
 
         Ok((string, cursor + length))
     }

@@ -86,7 +86,7 @@ impl VM {
             Opcode::LoadConst => {
                 let const_index = instruction.operand as usize;
                 if const_index >= bytecode.constants.len() {
-                    return Err(format!("Constant index out of bounds: {}", const_index));
+                    return Err(format!("Constant index out of bounds: {const_index}"));
                 }
                 let value = bytecode.constants[const_index].clone();
                 self.stack.push(value);
@@ -95,21 +95,21 @@ impl VM {
             Opcode::LoadName => {
                 let name_index = instruction.operand as usize;
                 if name_index >= bytecode.names.len() {
-                    return Err(format!("Name index out of bounds: {}", name_index));
+                    return Err(format!("Name index out of bounds: {name_index}"));
                 }
                 let name = &bytecode.names[name_index];
 
                 if let Some(value) = self.environment.get(name) {
                     self.stack.push(value.clone());
                 } else {
-                    return Err(format!("Undefined variable: {}", name));
+                    return Err(format!("Undefined variable: {name}"));
                 }
             }
 
             Opcode::StoreName => {
                 let name_index = instruction.operand as usize;
                 if name_index >= bytecode.names.len() {
-                    return Err(format!("Name index out of bounds: {}", name_index));
+                    return Err(format!("Name index out of bounds: {name_index}"));
                 }
                 let name = &bytecode.names[name_index];
 
@@ -269,12 +269,12 @@ impl VM {
         match instruction.opcode {
             Opcode::LoadConst => {
                 if let Some(constant) = bytecode.constants.get(instruction.operand as usize) {
-                    print!(" ({})", constant);
+                    print!(" ({constant})");
                 }
             }
             Opcode::LoadName | Opcode::StoreName => {
                 if let Some(name) = bytecode.names.get(instruction.operand as usize) {
-                    print!(" ({})", name);
+                    print!(" ({name})");
                 }
             }
             Opcode::Jump | Opcode::JumpIfFalse => {

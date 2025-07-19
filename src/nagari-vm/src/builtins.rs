@@ -42,7 +42,7 @@ pub async fn call_builtin(name: &str, args: &[Value]) -> Result<Value, String> {
         "int" => builtin_int(args),
         "float" => builtin_float(args),
         "bool" => builtin_bool(args),
-        _ => Err(format!("Unknown builtin function: {}", name)),
+        _ => Err(format!("Unknown builtin function: {name}")),
     }
 }
 
@@ -97,7 +97,7 @@ fn builtin_int(args: &[Value]) -> Result<Value, String> {
         Value::String(s) => {
             s.parse::<i64>()
                 .map(Value::Int)
-                .map_err(|_| format!("invalid literal for int(): '{}'", s))
+                .map_err(|_| format!("invalid literal for int(): '{s}'"))
         }
         _ => Err(format!("int() argument must be a string, a bytes-like object or a number, not '{}'", args[0].type_name())),
     }
@@ -115,7 +115,7 @@ fn builtin_float(args: &[Value]) -> Result<Value, String> {
         Value::String(s) => {
             s.parse::<f64>()
                 .map(Value::Float)
-                .map_err(|_| format!("could not convert string to float: '{}'", s))
+                .map_err(|_| format!("could not convert string to float: '{s}'"))
         }
         _ => Err(format!("float() argument must be a string or a number, not '{}'", args[0].type_name())),
     }
