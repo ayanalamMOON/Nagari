@@ -1,0 +1,62 @@
+name: Build Linux Binaries
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-gnu
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        target: ${{ matrix.target }}
+        override: true
+
+    - name: Install dependencies (Ubuntu)
+      if: matrix.target == 'x86_64-unknown-linux-gnu'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pkg-config libssl-dev
+
+    - name: Install cross for MUSL and ARM64
+      if: matrix.target != 'x86_64-unknown-linux-gnu'
+      run: |
+        cargo install cross --git https://github.com/cross-rs/cross
+
+    - name: Build for x86_64-unknown-linux-gnu
+      if: matrix.target == 'x86_64-unknown-linux-gnu'
+      run: |
+        cargo build --release --target ${{ matrix.target }}
+
+    - name: Build with cross
+      if: matrix.target != 'x86_64-unknown-linux-gnu'
+      run: |
+        cross build --release --target ${{ matrix.target }}
+
+    - name: Create binary directory
+      run: mkdir -p binaries
+
+    - name: Copy binaries
+      run: |
+        cp target/${{ matrix.target }}/release/nag binaries/nag-${{ matrix.target }}
+        cp target/${{ matrix.target }}/release/nagari-lsp binaries/nagari-lsp-${{ matrix.target }} || true
+        cp target/${{ matrix.target }}/release/nagari-registry binaries/nagari-registry-${{ matrix.target }} || true
+        cp target/${{ matrix.target }}/release/nagc binaries/nagc-${{ matrix.target }} || true
+        cp target/${{ matrix.target }}/release/nagrun binaries/nagrun-${{ matrix.target }} || true
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: nagari-linux-${{ matrix.target }}
+        path: binaries/
