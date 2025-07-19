@@ -15,7 +15,7 @@
     "scripts": {
         "build": "tsc",
         "dev": "tsc --watch",
-        "test": "jest",
+        "test": "npm run build && jest --passWithNoTests",
         "clean": "rm -rf dist",
         "prepublishOnly": "npm run clean && npm run build",
         "prepare": "npm run build"

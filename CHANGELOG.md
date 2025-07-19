@@ -17,6 +17,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+## [0.3.1] - 2025-07-19
+
+### Added
+
+- **Complete Binary Release Infrastructure (July 2025)**
+  - **GitHub Actions Workflows**: Automated cross-platform binary building and releasing
+    - `release.yml` - Full release pipeline with cross-platform binary builds
+    - `ci.yml` - Comprehensive continuous integration testing
+    - `build-test.yml` - Pre-release build verification and binary size analysis
+  - **Cross-Platform Support**: Automated builds for 6 target platforms:
+    - Windows x64 (`x86_64-pc-windows-msvc`)
+    - macOS x64 (`x86_64-apple-darwin`) and ARM64 (`aarch64-apple-darwin`)
+    - Linux x64 (`x86_64-unknown-linux-gnu` and `x86_64-unknown-linux-musl`)
+    - Linux ARM64 (`aarch64-unknown-linux-gnu`)
+  - **Complete Release Packages**: Each release includes:
+    - CLI binary (`nag` / `nag.exe`)
+    - LSP server binary (`nagari-lsp` / `nagari-lsp.exe`)
+    - Standard library (`stdlib/` directory)
+    - Runtime package (`nagari-runtime` distribution)
+    - Installation scripts (`install.sh` / `install.bat`)
+    - Documentation (README.md, LICENSE, CHANGELOG.md)
+  - **Automated Release Scripts**:
+    - `scripts/release.sh` and `scripts/release.bat` - Automated release workflow
+    - `scripts/build.sh` and `scripts/build.bat` - Local development builds
+    - `scripts/test-build.sh` and `scripts/test-build.bat` - Pre-release testing
+  - **Professional Installation Experience**:
+    - Platform-specific installation scripts with proper PATH setup
+    - Automated installation to `~/.nagari` (Unix) or `%USERPROFILE%\.nagari` (Windows)
+    - Comprehensive verification and troubleshooting instructions
+
+- **Release Documentation and Guides (July 2025)**
+  - **Complete Release Guide** (`docs/release-guide.md`):
+    - Step-by-step release process documentation
+    - Build troubleshooting and debugging instructions
+    - Cross-compilation setup and target configuration
+    - GitHub Secrets configuration for automated npm publishing
+  - **Developer-Friendly Scripts**: All build and release scripts include:
+    - Colored terminal output for better user experience
+    - Comprehensive error handling and validation
+    - Progress indicators and success/failure reporting
+    - Detailed usage instructions and examples
+
+### Enhanced
+
 - **String Manipulation Functions (July 2025)**
   - **Standard Library Enhancement**: Added 7 comprehensive string manipulation functions to `stdlib/core.nag`
     - `str_capitalize(s)` - Capitalizes the first character of a string

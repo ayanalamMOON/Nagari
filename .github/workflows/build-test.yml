@@ -1,0 +1,116 @@
+name: Pre-release Build Test
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/**'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-test:
+    name: Build Test ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.target }}
+
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Cache Cargo dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build nagari-runtime
+      run: |
+        cd nagari-runtime
+        npm install
+        npm run build
+
+    - name: Build CLI binary
+      run: cargo build --release --bin nag --target ${{ matrix.target }}
+
+    - name: Build LSP server binary
+      run: cargo build --release --bin nagari-lsp --target ${{ matrix.target }}
+
+    - name: Test CLI basic functionality (Unix)
+      if: matrix.os != 'windows-latest'
+      run: |
+        ./target/${{ matrix.target }}/release/nag --version
+        ./target/${{ matrix.target }}/release/nag --help
+
+    - name: Test CLI basic functionality (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        .\target\${{ matrix.target }}\release\nag.exe --version
+        .\target\${{ matrix.target }}\release\nag.exe --help
+
+    - name: Test simple compilation (Unix)
+      if: matrix.os != 'windows-latest'
+      run: |
+        echo 'print("Hello from build test!")' > test_build.nag
+        ./target/${{ matrix.target }}/release/nag compile test_build.nag
+
+    - name: Test simple compilation (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        echo 'print("Hello from build test!")' > test_build.nag
+        .\target\${{ matrix.target }}\release\nag.exe compile test_build.nag
+
+  size-check:
+    name: Binary Size Check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Build optimized binaries
+      run: |
+        cargo build --release --bin nag
+        cargo build --release --bin nagari-lsp
+
+    - name: Check binary sizes
+      run: |
+        echo "🔍 Binary size analysis:"
+        echo "CLI binary (nag): $(du -h target/release/nag | cut -f1)"
+        echo "LSP binary (nagari-lsp): $(du -h target/release/nagari-lsp | cut -f1)"
+        echo ""
+        echo "📊 Detailed sizes:"
+        ls -lh target/release/nag target/release/nagari-lsp
+
+    - name: Upload size report
+      uses: actions/upload-artifact@v3
+      with:
+        name: binary-size-report
+        path: target/release/nag*
