@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
     use crate::lexer::Lexer;
-    use crate::parse;
 
     #[test]
     fn test_simple_indentation() {
@@ -17,7 +16,7 @@ mod tests {
 
     #[test]
     fn test_using_parse_function() {
-        let input = std::fs::read_to_string("../test_indent_function.nag").unwrap();
+        let input = std::fs::read_to_string("../../temp/tests/fixtures/test_indent_function.nag").unwrap();
 
         match crate::parse(&input) {
             Ok(ast) => println!("SUCCESS! AST: {:?}", ast),
