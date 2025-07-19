@@ -17,6 +17,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **String Manipulation Functions (July 2025)**
+  - **Standard Library Enhancement**: Added 7 comprehensive string manipulation functions to `stdlib/core.nag`
+    - `str_capitalize(s)` - Capitalizes the first character of a string
+    - `str_title(s)` - Converts string to title case (first letter of each word capitalized)
+    - `str_reverse(s)` - Reverses the order of characters in a string
+    - `str_count(s, substring)` - Counts non-overlapping occurrences of substring
+    - `str_pad_left(s, width, fillchar=' ')` - Left-pads string to specified width
+    - `str_pad_right(s, width, fillchar=' ')` - Right-pads string to specified width
+    - `str_center(s, width, fillchar=' ')` - Centers string within specified width
+  - **Runtime Implementation**: Added JavaScript implementations in `nagari-runtime` TypeScript package
+  - **Transpiler Integration**: Modified transpiler to automatically import string functions without manual imports
+  - **JavaScript Compatibility**: All functions use native JavaScript string methods for optimal performance
+  - **Comprehensive Documentation**: Updated API reference and created detailed stdlib documentation with examples
+
+- **Nagari Runtime Package Updates (July 2025)**
+  - **Version 0.3.0 Release**: Published updated `nagari-runtime` package to npm registry
+  - **Enhanced Package Description**: Updated to highlight string manipulation functionality
+  - **Automatic Import System**: String functions automatically available in all Nagari programs
+  - **Zero Dependencies**: Maintained lightweight package with no external dependencies
+  - **TypeScript Support**: Full type definitions included for all string functions
+
 - **Project Organization and Structure (July 2025)**
   - Comprehensive test directory structure with logical file organization
     - `tests/fixtures/` - Test Nagari source files for various language features (hello.nag, math_demo.nag, etc.)
@@ -63,12 +84,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Enhanced
 
+- **Transpiler and Compiler Improvements (July 2025)**
+  - **Automatic Function Import System**: Enhanced transpiler to automatically generate imports for string manipulation functions
+  - **Builtin Function Mapping**: Added comprehensive mapping system in `builtin_map.rs` for Nagari→JavaScript function translation
+  - **Module Import Optimization**: Improved `modules.rs` to intelligently include only required runtime functions
+  - **Unused Variable Fix**: Resolved compiler warnings by properly tracking import module usage
+  - **Runtime Resolution**: Enhanced transpiler to work seamlessly with published npm packages
+
 - **Development Experience (July 2025)**
   - **Dramatically improved code quality:** Reduced clippy warnings from 50+ to just 9 minor stylistic issues
   - **Clean project structure:** All loose files moved from root directory to appropriate subdirectories
   - **Improved maintainability:** Logical separation of test files, debug utilities, and development tools
   - **Better documentation:** Updated README files and project documentation to reflect new structure
   - **Streamlined development workflow:** Organized test fixtures and outputs for easier debugging and testing
+
+### Documentation & Testing
+
+- **String Functions Documentation (July 2025)**
+  - **API Reference Updates**: Added comprehensive documentation for all 7 string functions in `docs/api-reference.md`
+  - **Standard Library README**: Created detailed `stdlib/README.md` with usage examples and function signatures
+  - **Practical Examples**: Developed `examples/string_functions_demo_simple.nag` demonstrating real-world usage
+  - **Test Coverage**: Created comprehensive test suites covering basic usage, edge cases, and error conditions
+  - **Integration Testing**: Verified end-to-end functionality from Nagari source to JavaScript execution
+
+- **Package Publication (July 2025)**
+  - **npm Registry**: Successfully published `nagari-runtime@0.3.0` to public npm registry
+  - **Verification Testing**: Created isolated test environment to verify published package functionality
+  - **Version Management**: Updated package version and runtime version strings consistently
+  - **Public Availability**: Package now installable via `npm install nagari-runtime@latest`
 
 ### Known Issues
 
@@ -80,6 +123,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ✅ **FIXED**: Function property assignment errors in strict mode resolved
 
 ### Resolved Issues (July 2025)
+
+- **String Manipulation Functions Implementation**
+  - Successfully implemented complete string manipulation library for Nagari standard library
+  - Resolved transpiler import generation issues for automatic function availability
+  - Fixed TypeScript compilation and export issues in nagari-runtime package
+  - Resolved Node.js module resolution problems for seamless `nag run` command execution
+  - Successfully published and verified npm package distribution with all functions working
+  - Completed end-to-end integration: Nagari source → transpiler → JavaScript → Node.js execution
 
 - **Complete Runtime Integration**
   - Fixed ES6 module resolution by adding `.js` extensions to TypeScript relative imports
@@ -94,6 +145,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Created recursive directory copying functionality to bundle runtime with generated code
   - Enabled seamless execution: `nagari run file.nag` now works without manual runtime setup
   - Tested with multiple Nagari programs: simple expressions, functions, and arithmetic operations
+
+- **Project Structure Cleanup (July 2025)**
+  - Removed Node.js dependencies and package files from main project directory
+  - Cleaned up temporary test files and build artifacts from development process
+  - Maintained clean separation between Nagari source code and npm package dependencies
+  - Verified `nag run` commands work without local node_modules in main directory
+  - Established proper project organization with runtime package self-contained in src/nagari-runtime
 
 - **Phase 5: Complete Ecosystem Implementation (June 2025)**
   - **Enhanced CLI Command Integration**
