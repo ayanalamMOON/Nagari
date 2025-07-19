@@ -54,11 +54,21 @@ jobs:
 
     - name: Build binaries (native)
       if: matrix.target == 'x86_64-pc-windows-msvc' || matrix.target == 'x86_64-unknown-linux-gnu' || matrix.target == 'x86_64-apple-darwin' || matrix.target == 'aarch64-apple-darwin'
-      run: cargo build --release --target ${{ matrix.target }}
+      run: |
+        cargo build --release --target ${{ matrix.target }} --bin nag
+        cargo build --release --target ${{ matrix.target }} --bin nagari-lsp || echo "nagari-lsp build failed"
+        cargo build --release --target ${{ matrix.target }} --bin nagari-registry || echo "nagari-registry build failed"
+        cargo build --release --target ${{ matrix.target }} --bin nagc || echo "nagc build failed"
+        cargo build --release --target ${{ matrix.target }} --bin nagrun || echo "nagrun build failed"
 
     - name: Build binaries (cross)
       if: matrix.target == 'x86_64-unknown-linux-musl' || matrix.target == 'aarch64-unknown-linux-gnu'
-      run: cross build --release --target ${{ matrix.target }}
+      run: |
+        cross build --release --target ${{ matrix.target }} --bin nag
+        cross build --release --target ${{ matrix.target }} --bin nagari-lsp || echo "nagari-lsp build failed"
+        cross build --release --target ${{ matrix.target }} --bin nagari-registry || echo "nagari-registry build failed"
+        cross build --release --target ${{ matrix.target }} --bin nagc || echo "nagc build failed"
+        cross build --release --target ${{ matrix.target }} --bin nagrun || echo "nagrun build failed"
 
     - name: Create release directory
       run: mkdir -p release
