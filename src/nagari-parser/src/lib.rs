@@ -1,16 +1,16 @@
 pub mod ast;
+pub mod error;
 pub mod lexer;
 pub mod parser;
-pub mod error;
 pub mod token;
 
 #[cfg(test)]
 mod test_indentation;
 
 pub use ast::*;
+pub use error::*;
 pub use lexer::*;
 pub use parser::*;
-pub use error::*;
 pub use token::*;
 
 /// Parse Nagari source code into an AST
