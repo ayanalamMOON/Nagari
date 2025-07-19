@@ -1,5 +1,5 @@
-use crate::repl_engine::{ReplEngine, ReplConfig, ReplEditor};
 use crate::config::NagConfig;
+use crate::repl_engine::{ReplConfig, ReplEditor, ReplEngine};
 use tempfile::TempDir;
 use tokio;
 
@@ -129,7 +129,10 @@ mod tests {
         assert!(result.error.is_some());
 
         // Test runtime error
-        let result = engine.execute("undefined_function()".to_string()).await.unwrap();
+        let result = engine
+            .execute("undefined_function()".to_string())
+            .await
+            .unwrap();
         assert!(!result.success);
         assert!(result.error.is_some());
     }
@@ -164,7 +167,9 @@ mod tests {
 
         // Create a module file
         let module_file = temp_dir.path().join("math.nag");
-        std::fs::write(&module_file, r#"
+        std::fs::write(
+            &module_file,
+            r#"
             export function add(a, b) {
                 return a + b;
             }
@@ -172,12 +177,17 @@ mod tests {
             export function multiply(a, b) {
                 return a * b;
             }
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
 
         let mut engine = ReplEngine::new(NagConfig::default()).unwrap();
 
         // Test importing the module
-        let import_code = format!("import {{ add, multiply }} from '{}'", module_file.display());
+        let import_code = format!(
+            "import {{ add, multiply }} from '{}'",
+            module_file.display()
+        );
         let result = engine.execute(import_code).await.unwrap();
         assert!(result.success);
 

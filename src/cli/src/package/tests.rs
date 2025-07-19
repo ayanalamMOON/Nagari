@@ -1,7 +1,7 @@
 use crate::config::NagConfig;
 use crate::package::{
-    PackageManager,
     manifest::{DependencySpec, PackageManifest},
+    PackageManager,
 };
 use std::collections::HashMap;
 use tempfile::TempDir;
@@ -9,10 +9,12 @@ use tokio;
 
 #[cfg(test)]
 mod tests {
-    use super::*;    #[tokio::test]
+    use super::*;
+
+    #[tokio::test]
     async fn test_package_manager_new() {
-        let temp_dir = TempDir::new().unwrap();
-        let config = NagConfig::load(Some(temp_dir.path())).unwrap();
+        let _temp_dir = TempDir::new().unwrap();
+        let config = NagConfig::default();
         let _manager = PackageManager::new(config).unwrap();
 
         // Note: PackageManager doesn't expose get_cache_dir method
@@ -161,8 +163,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_package_manager_install() {
-        let temp_dir = TempDir::new().unwrap();
-        let config = NagConfig::load(Some(temp_dir.path())).unwrap();
+        let _temp_dir = TempDir::new().unwrap();
+        let config = NagConfig::default();
         let _manager = PackageManager::new(config).unwrap();
 
         // Create a mock manifest
@@ -297,10 +299,7 @@ mod tests {
 #[cfg(test)]
 mod resolver_tests {
     use super::*;
-    use crate::package::{
-        resolver::DependencyResolver,
-        registry::RegistryClient,
-    };
+    use crate::package::{registry::RegistryClient, resolver::DependencyResolver};
 
     #[tokio::test]
     async fn test_dependency_resolver() {
@@ -345,7 +344,24 @@ mod cache_tests {
 
         let package_name = "test-package";
         let version = "1.0.0";
-        let package_data = b"mock package data";
+
+        // Create a proper tar.gz package data
+        let mut package_data = Vec::new();
+        {
+            let enc =
+                flate2::write::GzEncoder::new(&mut package_data, flate2::Compression::default());
+            let mut tar = tar::Builder::new(enc);
+
+            // Add a simple file to the tar
+            let mut header = tar::Header::new_gnu();
+            header.set_path("main.nag").unwrap();
+            header.set_size(13);
+            header.set_cksum();
+            tar.append(&header, "print('hi');".as_bytes()).unwrap();
+
+            tar.finish().unwrap();
+        }
+
         let metadata = serde_json::json!({
             "name": package_name,
             "version": version,
@@ -354,7 +370,7 @@ mod cache_tests {
 
         // Test storing package
         cache
-            .cache_package(package_name, version, package_data, metadata)
+            .cache_package(package_name, version, &package_data, metadata)
             .await
             .unwrap();
 
@@ -369,12 +385,33 @@ mod cache_tests {
     #[tokio::test]
     async fn test_cache_cleanup() {
         let temp_dir = TempDir::new().unwrap();
-        let mut cache = PackageCache::new(temp_dir.path().to_path_buf()).unwrap();        // Store multiple packages
+        let mut cache = PackageCache::new(temp_dir.path().to_path_buf()).unwrap();
+
+        // Store multiple packages
         for i in 0..5 {
             let package_name = format!("package-{}", i);
             let version = "1.0.0";
-            let package_data_string = format!("data for package {}", i);
-            let package_data = package_data_string.as_bytes();
+
+            // Create a proper tar.gz package data
+            let mut package_data = Vec::new();
+            {
+                let enc = flate2::write::GzEncoder::new(
+                    &mut package_data,
+                    flate2::Compression::default(),
+                );
+                let mut tar = tar::Builder::new(enc);
+
+                // Add a simple file to the tar
+                let mut header = tar::Header::new_gnu();
+                header.set_path(&format!("main-{}.nag", i)).unwrap();
+                let content = format!("print('package {}');", i);
+                header.set_size(content.len() as u64);
+                header.set_cksum();
+                tar.append(&header, content.as_bytes()).unwrap();
+
+                tar.finish().unwrap();
+            }
+
             let metadata = serde_json::json!({
                 "name": package_name,
                 "version": version,
@@ -382,7 +419,7 @@ mod cache_tests {
             });
 
             cache
-                .cache_package(&package_name, version, package_data, metadata)
+                .cache_package(&package_name, version, &package_data, metadata)
                 .await
                 .unwrap();
         }
