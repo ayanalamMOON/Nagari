@@ -8,29 +8,8 @@ on:
 
 jobs:
   release:
-    name: Release ${{ matrix.target }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
-            ext: .exe
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
-            ext: ""
-          - target: x86_64-unknown-linux-musl
-            os: ubuntu-latest
-            ext: ""
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
-            ext: ""
-          - target: x86_64-apple-darwin
-            os: macos-latest
-            ext: ""
-          - target: aarch64-apple-darwin
-            os: macos-latest
-            ext: ""
+    name: Release Windows Binaries
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -39,64 +18,33 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-        target: ${{ matrix.target }}
+        target: x86_64-pc-windows-msvc
         override: true
 
-    - name: Install dependencies (Linux)
-      if: matrix.os == 'ubuntu-latest'
+    - name: Build binaries
       run: |
-        sudo apt-get update
-        sudo apt-get install -y pkg-config libssl-dev
-
-    - name: Install cross (for cross-compilation)
-      if: matrix.target == 'x86_64-unknown-linux-musl' || matrix.target == 'aarch64-unknown-linux-gnu'
-      run: cargo install cross --git https://github.com/cross-rs/cross
-
-    - name: Build binaries (native)
-      if: matrix.target == 'x86_64-pc-windows-msvc' || matrix.target == 'x86_64-unknown-linux-gnu' || matrix.target == 'x86_64-apple-darwin' || matrix.target == 'aarch64-apple-darwin'
-      run: |
-        cargo build --release --target ${{ matrix.target }} --bin nag
-        cargo build --release --target ${{ matrix.target }} --bin nagari-lsp || echo "nagari-lsp build failed"
-        cargo build --release --target ${{ matrix.target }} --bin nagari-registry || echo "nagari-registry build failed"
-        cargo build --release --target ${{ matrix.target }} --bin nagc || echo "nagc build failed"
-        cargo build --release --target ${{ matrix.target }} --bin nagrun || echo "nagrun build failed"
-
-    - name: Build binaries (cross)
-      if: matrix.target == 'x86_64-unknown-linux-musl' || matrix.target == 'aarch64-unknown-linux-gnu'
-      run: |
-        cross build --release --target ${{ matrix.target }} --bin nag
-        cross build --release --target ${{ matrix.target }} --bin nagari-lsp || echo "nagari-lsp build failed"
-        cross build --release --target ${{ matrix.target }} --bin nagari-registry || echo "nagari-registry build failed"
-        cross build --release --target ${{ matrix.target }} --bin nagc || echo "nagc build failed"
-        cross build --release --target ${{ matrix.target }} --bin nagrun || echo "nagrun build failed"
+        cargo build --release --target x86_64-pc-windows-msvc --bin nag
+        cargo build --release --target x86_64-pc-windows-msvc --bin nagari-lsp || echo "nagari-lsp build failed"
+        cargo build --release --target x86_64-pc-windows-msvc --bin nagari-registry || echo "nagari-registry build failed"
+        cargo build --release --target x86_64-pc-windows-msvc --bin nagc || echo "nagc build failed"
+        cargo build --release --target x86_64-pc-windows-msvc --bin nagrun || echo "nagrun build failed"
 
     - name: Create release directory
-      run: mkdir -p release
+      run: mkdir release
 
-    - name: Package binaries (Windows)
-      if: matrix.os == 'windows-latest'
+    - name: Package binaries
       shell: cmd
       run: |
-        copy "target\${{ matrix.target }}\release\nag.exe" "release\nag-${{ matrix.target }}.exe" 2>nul || echo nag not found
-        copy "target\${{ matrix.target }}\release\nagari-lsp.exe" "release\nagari-lsp-${{ matrix.target }}.exe" 2>nul || echo nagari-lsp not found
-        copy "target\${{ matrix.target }}\release\nagari-registry.exe" "release\nagari-registry-${{ matrix.target }}.exe" 2>nul || echo nagari-registry not found
-        copy "target\${{ matrix.target }}\release\nagc.exe" "release\nagc-${{ matrix.target }}.exe" 2>nul || echo nagc not found
-        copy "target\${{ matrix.target }}\release\nagrun.exe" "release\nagrun-${{ matrix.target }}.exe" 2>nul || echo nagrun not found
-
-    - name: Package binaries (Unix)
-      if: matrix.os != 'windows-latest'
-      run: |
-        cp target/${{ matrix.target }}/release/nag release/nag-${{ matrix.target }} 2>/dev/null || echo "nag not found"
-        cp target/${{ matrix.target }}/release/nagari-lsp release/nagari-lsp-${{ matrix.target }} 2>/dev/null || echo "nagari-lsp not found"
-        cp target/${{ matrix.target }}/release/nagari-registry release/nagari-registry-${{ matrix.target }} 2>/dev/null || echo "nagari-registry not found"
-        cp target/${{ matrix.target }}/release/nagc release/nagc-${{ matrix.target }} 2>/dev/null || echo "nagc not found"
-        cp target/${{ matrix.target }}/release/nagrun release/nagrun-${{ matrix.target }} 2>/dev/null || echo "nagrun not found"
-        chmod +x release/* 2>/dev/null || true
+        copy "target\x86_64-pc-windows-msvc\release\nag.exe" "release\nag-windows.exe" 2>nul || echo nag not found
+        copy "target\x86_64-pc-windows-msvc\release\nagari-lsp.exe" "release\nagari-lsp-windows.exe" 2>nul || echo nagari-lsp not found
+        copy "target\x86_64-pc-windows-msvc\release\nagari-registry.exe" "release\nagari-registry-windows.exe" 2>nul || echo nagari-registry not found
+        copy "target\x86_64-pc-windows-msvc\release\nagc.exe" "release\nagc-windows.exe" 2>nul || echo nagc not found
+        copy "target\x86_64-pc-windows-msvc\release\nagrun.exe" "release\nagrun-windows.exe" 2>nul || echo nagrun not found
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: nagari-binaries-${{ matrix.target }}
+        name: nagari-windows-binaries
         path: release/
 
   create-release:
@@ -112,12 +60,7 @@ jobs:
     - name: Create release
       uses: softprops/action-gh-release@v1
       with:
-        files: |
-          nagari-binaries-*/nag-*
-          nagari-binaries-*/nagari-lsp-*
-          nagari-binaries-*/nagari-registry-*
-          nagari-binaries-*/nagc-*
-          nagari-binaries-*/nagrun-*
+        files: nagari-windows-binaries/*
         draft: false
         prerelease: false
         generate_release_notes: true
