@@ -1,6 +1,7 @@
 use crate::config::NagConfig;
 use crate::package::{
-    DependencySpec, PackageManager, PackageManifest,
+    PackageManager,
+    manifest::{DependencySpec, PackageManifest},
 };
 use std::collections::HashMap;
 use tempfile::TempDir;
@@ -296,7 +297,10 @@ mod tests {
 #[cfg(test)]
 mod resolver_tests {
     use super::*;
-    use crate::package::{DependencyResolver, RegistryClient};
+    use crate::package::{
+        resolver::DependencyResolver,
+        registry::RegistryClient,
+    };
 
     #[tokio::test]
     async fn test_dependency_resolver() {
@@ -332,7 +336,7 @@ mod resolver_tests {
 #[cfg(test)]
 mod cache_tests {
     use super::*;
-    use crate::package::PackageCache;
+    use crate::package::cache::PackageCache;
 
     #[tokio::test]
     async fn test_cache_operations() {
@@ -394,7 +398,7 @@ mod cache_tests {
 #[cfg(test)]
 mod lockfile_tests {
     use super::*;
-    use crate::package::{LockFile, LockedDependency};
+    use crate::package::lockfile::{LockFile, LockedDependency};
 
     #[tokio::test]
     async fn test_lockfile_creation() {

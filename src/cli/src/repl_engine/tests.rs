@@ -1,4 +1,5 @@
-use crate::repl_engine::{ReplEngine, ReplContext, ReplHistory, ReplCompleter};
+use crate::repl_engine::{ReplEngine, ReplConfig, ReplEditor};
+use crate::config::NagConfig;
 use tempfile::TempDir;
 use tokio;
 
@@ -8,10 +9,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_repl_engine_creation() {
-        let temp_dir = TempDir::new().unwrap();
-        let config_path = temp_dir.path().join("config");
+        let config = NagConfig::default();
 
-        let engine = ReplEngine::new(config_path).await.unwrap();
+        let engine = ReplEngine::new(config).unwrap();
         assert!(engine.is_ready());
     }
 
@@ -96,7 +96,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let session_file = temp_dir.path().join("session.json");
 
-        let mut engine = ReplEngine::new(temp_dir.path().to_path_buf()).await.unwrap();
+        let mut engine = ReplEngine::new(NagConfig::default()).unwrap();
 
         // Execute some commands
         let result1 = engine.execute("let x = 42".to_string()).await.unwrap();
@@ -109,7 +109,7 @@ mod tests {
         engine.save_session(&session_file).await.unwrap();
 
         // Create new engine and load session
-        let mut new_engine = ReplEngine::new(temp_dir.path().to_path_buf()).await.unwrap();
+        let mut new_engine = ReplEngine::new(NagConfig::default()).unwrap();
         new_engine.load_session(&session_file).await.unwrap();
 
         // Check if variables are preserved
@@ -121,7 +121,7 @@ mod tests {
     #[tokio::test]
     async fn test_repl_error_handling() {
         let temp_dir = TempDir::new().unwrap();
-        let mut engine = ReplEngine::new(temp_dir.path().to_path_buf()).await.unwrap();
+        let mut engine = ReplEngine::new(NagConfig::default()).unwrap();
 
         // Test syntax error
         let result = engine.execute("let x = ".to_string()).await.unwrap();
@@ -137,7 +137,7 @@ mod tests {
     #[tokio::test]
     async fn test_repl_multiline_input() {
         let temp_dir = TempDir::new().unwrap();
-        let mut engine = ReplEngine::new(temp_dir.path().to_path_buf()).await.unwrap();
+        let mut engine = ReplEngine::new(NagConfig::default()).unwrap();
 
         let multiline_code = r#"
             function factorial(n) {
@@ -174,7 +174,7 @@ mod tests {
             }
         "#).unwrap();
 
-        let mut engine = ReplEngine::new(temp_dir.path().to_path_buf()).await.unwrap();
+        let mut engine = ReplEngine::new(NagConfig::default()).unwrap();
 
         // Test importing the module
         let import_code = format!("import {{ add, multiply }} from '{}'", module_file.display());
@@ -199,7 +199,8 @@ mod editor_tests {
 
     #[tokio::test]
     async fn test_editor_basic_operations() {
-        let mut editor = ReplEditor::new().await.unwrap();
+        let config = ReplConfig::default();
+        let mut editor = ReplEditor::new(&config).unwrap();
 
         // Test inserting text
         editor.insert_text("Hello, World!".to_string());
@@ -215,7 +216,8 @@ mod editor_tests {
 
     #[tokio::test]
     async fn test_editor_line_operations() {
-        let mut editor = ReplEditor::new().await.unwrap();
+        let config = ReplConfig::default();
+        let mut editor = ReplEditor::new(&config).unwrap();
 
         let multiline_text = "Line 1\nLine 2\nLine 3";
         editor.insert_text(multiline_text.to_string());
@@ -228,7 +230,8 @@ mod editor_tests {
 
     #[tokio::test]
     async fn test_editor_undo_redo() {
-        let mut editor = ReplEditor::new().await.unwrap();
+        let config = ReplConfig::default();
+        let mut editor = ReplEditor::new(&config).unwrap();
 
         editor.insert_text("Hello".to_string());
         editor.insert_text(" World".to_string());
@@ -246,7 +249,6 @@ mod editor_tests {
 #[cfg(test)]
 mod highlighter_tests {
     use super::*;
-    use crate::repl_engine::ReplHighlighter;
 
     #[tokio::test]
     async fn test_syntax_highlighting() {

@@ -1,8 +1,7 @@
 use std::fs;
-use std::path::PathBuf;
 use tempfile::TempDir;
 use tokio::process::Command;
-use serde_json::json;
+use tokio::io::AsyncWriteExt;
 
 /// Integration tests for the Nagari CLI
 #[cfg(test)]
@@ -228,7 +227,6 @@ mod package_tests {
 #[cfg(test)]
 mod repl_tests {
     use super::*;
-    use std::io::Write;
     use std::process::Stdio;
 
     #[tokio::test]
