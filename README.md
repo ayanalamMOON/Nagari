@@ -1095,6 +1095,17 @@ git push origin feature/amazing-feature
 - **Collaborate**: Work together to solve problems and share knowledge
 - **Learn Together**: Help newcomers and learn from experienced developers
 
+### Code of Conduct
+
+The Nagari project is committed to fostering an open and welcoming community. All participants are expected to uphold our [Code of Conduct](CODE_OF_CONDUCT.md), which outlines:
+
+- **Our Pledge**: Creating a harassment-free experience for everyone
+- **Standards**: Expected behavior and unacceptable conduct
+- **Enforcement**: Fair and consistent community guidelines
+- **Diversity & Inclusion**: Commitment to welcoming all backgrounds
+
+**Report Issues**: Contact project maintainers at [conduct@nagari.dev](mailto:conduct@nagari.dev)
+
 ### Getting Help
 
 - **💬 Discord**: Join our community chat for real-time discussions
