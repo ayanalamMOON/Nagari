@@ -1,0 +1,4 @@
+# Simple test for format specifiers
+name = "Alice"
+age = 25
+print(f"Hello {name}, you are {age:.2f} years old")

@@ -1,0 +1,47 @@
+# Comprehensive percentage formatting demonstration
+
+# Test various precision levels
+value = 0.123456789
+
+print("=== Different Precision Levels ===")
+print(f"Default (2 digits): {value:%}")
+print(f"No decimals: {value:.0%}")
+print(f"1 decimal: {value:.1%}")
+print(f"2 decimals: {value:.2%}")
+print(f"3 decimals: {value:.3%}")
+print(f"5 decimals: {value:.5%}")
+
+print("\n=== Real-world Examples ===")
+# Tax calculations
+tax_rate = 0.085
+price = 50.00
+tax_amount = price * tax_rate
+total = price + tax_amount
+
+print(f"Item price: ${price:.2f}")
+print(f"Tax rate: {tax_rate:%}")
+print(f"Tax amount: ${tax_amount:.2f}")
+print(f"Total: ${total:.2f}")
+
+print("\n=== Performance Metrics ===")
+# Performance and statistics
+success_rate = 0.947
+error_rate = 0.003
+completion_rate = 0.992
+
+print(f"Success rate: {success_rate:.1%}")
+print(f"Error rate: {error_rate:.3%}")
+print(f"Completion rate: {completion_rate:.1%}")
+
+print("\n=== Mixed Format Test ===")
+# Mixed with other format specifiers
+count = 1500
+percentage = 0.75
+hex_value = 255
+
+print(f"Processed {count} items")
+print(f"Success rate: {percentage:%}")
+print(f"Status code: {hex_value:x}")
+print(f"Binary flag: {15:b}")
+
+print("\n✅ All percentage formatting tests completed successfully!")

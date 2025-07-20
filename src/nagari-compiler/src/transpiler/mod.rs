@@ -74,7 +74,13 @@ impl JSTranspiler {
         }
 
         // Add helper functions at the end
-        let helpers = self.js_runtime.generate_runtime_helpers();
+        let mut helpers = self.js_runtime.generate_runtime_helpers();
+
+        // Add conditional helpers based on what was used
+        if self.used_helpers.contains("centerString") {
+            helpers.push_str(&self.generate_center_string_helper());
+        }
+
         self.output.push_str(&helpers);
 
         Ok(self.output.clone())
@@ -563,6 +569,14 @@ impl JSTranspiler {
                             self.transpile_expression(expr)?;
                             self.output.push('}');
                         }
+                        crate::ast::FStringPart::FormattedExpression {
+                            expression,
+                            format_spec,
+                        } => {
+                            self.output.push_str("${");
+                            self.transpile_formatted_expression(expression, format_spec)?;
+                            self.output.push('}');
+                        }
                     }
                 }
                 self.output.push('`');
@@ -986,6 +1000,233 @@ impl JSTranspiler {
                 Ok(())
             }
         }
+    }
+
+    fn transpile_formatted_expression(
+        &mut self,
+        expression: &Expression,
+        format_spec: &str,
+    ) -> Result<(), NagariError> {
+        // Convert Python format specifiers to JavaScript formatting
+        // Examples:
+        // {var:.2f} -> var.toFixed(2)
+        // {var:04d} -> var.toString().padStart(4, '0')
+        // {var:>10s} -> var.toString().padStart(10, ' ')
+        // {var:<10s} -> var.toString().padEnd(10, ' ')
+
+        if format_spec.is_empty() {
+            // No formatting, just transpile the expression
+            self.transpile_expression(expression)?;
+            return Ok(());
+        }
+
+        // Parse format specifier
+        // Format: [[fill]align][sign][#][0][width][,][.precision][type]
+        // Examples: ".2f", "04d", ">10s", "^15", ".1%"
+
+        let fill_char = ' ';
+        let mut align = None;
+        let mut width = None;
+        let mut precision = None;
+        let mut format_type = None;
+
+        // Skip alignment parsing for now and focus on precision and type
+        let spec = format_spec;
+
+        // Look for precision (starts with .)
+        if let Some(dot_pos) = spec.find('.') {
+            let precision_part = &spec[dot_pos + 1..];
+
+            // Find the format type (last alphabetic character or %)
+            if let Some(last_char) = precision_part.chars().last() {
+                if last_char.is_ascii_alphabetic() || last_char == '%' {
+                    format_type = Some(last_char);
+                    // Parse precision (everything before the type character)
+                    let precision_str = &precision_part[..precision_part.len() - 1];
+                    if !precision_str.is_empty() {
+                        if let Ok(p) = precision_str.parse::<u32>() {
+                            precision = Some(p);
+                        }
+                    }
+                } else {
+                    // No type, just precision
+                    if let Ok(p) = precision_part.parse::<u32>() {
+                        precision = Some(p);
+                    }
+                }
+            }
+
+            // Parse width from before the dot
+            let width_part = &spec[..dot_pos];
+            if !width_part.is_empty() {
+                // Handle alignment and width
+                let mut width_str = width_part;
+                if let Some(first_char) = width_part.chars().next() {
+                    if matches!(first_char, '<' | '>' | '^' | '=') {
+                        align = Some(first_char);
+                        width_str = &width_part[1..];
+                    }
+                }
+                if !width_str.is_empty() {
+                    if let Ok(w) = width_str.parse::<u32>() {
+                        width = Some(w);
+                    }
+                }
+            }
+        } else {
+            // No precision, parse width and type
+            let mut remaining = spec;
+
+            // Handle alignment first
+            if let Some(first_char) = remaining.chars().next() {
+                if matches!(first_char, '<' | '>' | '^' | '=') {
+                    align = Some(first_char);
+                    remaining = &remaining[1..];
+                }
+            }
+
+            // Handle zero padding
+            let zero_padding = remaining.starts_with('0');
+            if zero_padding {
+                remaining = &remaining[1..];
+            }
+
+            // Find format type (last alphabetic character or %)
+            if let Some(last_char) = remaining.chars().last() {
+                if last_char.is_ascii_alphabetic() || last_char == '%' {
+                    format_type = Some(last_char);
+                    remaining = &remaining[..remaining.len() - 1];
+                }
+            }
+
+            // Parse width
+            if !remaining.is_empty() {
+                if let Ok(w) = remaining.parse::<u32>() {
+                    width = Some(w);
+                }
+            }
+        } // Generate JavaScript formatting code
+        match format_type {
+            Some('f') => {
+                // Floating point: {var:.2f} -> var.toFixed(2)
+                self.output.push('(');
+                self.transpile_expression(expression)?;
+                self.output.push_str(").toFixed(");
+                self.output.push_str(&precision.unwrap_or(6).to_string());
+                self.output.push(')');
+            }
+            Some('d') => {
+                // Integer with zero padding: {var:04d} -> var.toString().padStart(4, '0')
+                if width.is_some() && format_spec.starts_with('0') {
+                    self.output.push('(');
+                    self.transpile_expression(expression)?;
+                    self.output.push_str(").toString().padStart(");
+                    self.output.push_str(&width.unwrap().to_string());
+                    self.output.push_str(", '0')");
+                } else {
+                    self.transpile_expression(expression)?;
+                }
+            }
+            Some('s') => {
+                // String formatting with alignment
+                match align {
+                    Some('>') => {
+                        // Right align: {var:>10s} -> var.toString().padStart(10, ' ')
+                        self.output.push('(');
+                        self.transpile_expression(expression)?;
+                        self.output.push_str(").toString().padStart(");
+                        self.output.push_str(&width.unwrap_or(0).to_string());
+                        self.output.push_str(", '");
+                        self.output.push(fill_char);
+                        self.output.push_str("')");
+                    }
+                    Some('<') | None => {
+                        // Left align: {var:<10s} -> var.toString().padEnd(10, ' ')
+                        if let Some(w) = width {
+                            self.output.push('(');
+                            self.transpile_expression(expression)?;
+                            self.output.push_str(").toString().padEnd(");
+                            self.output.push_str(&w.to_string());
+                            self.output.push_str(", '");
+                            self.output.push(fill_char);
+                            self.output.push_str("')");
+                        } else {
+                            self.output.push('(');
+                            self.transpile_expression(expression)?;
+                            self.output.push_str(").toString()");
+                        }
+                    }
+                    Some('^') => {
+                        // Center align - more complex, use a helper function
+                        self.used_helpers.insert("centerString".to_string());
+                        self.output.push_str("centerString(");
+                        self.transpile_expression(expression)?;
+                        self.output.push_str(", ");
+                        self.output.push_str(&width.unwrap_or(0).to_string());
+                        self.output.push_str(", '");
+                        self.output.push(fill_char);
+                        self.output.push_str("')");
+                    }
+                    _ => {
+                        self.transpile_expression(expression)?;
+                    }
+                }
+            }
+            Some('x') => {
+                // Hexadecimal: {var:x} -> var.toString(16)
+                self.output.push('(');
+                self.transpile_expression(expression)?;
+                self.output.push_str(").toString(16)");
+            }
+            Some('X') => {
+                // Uppercase hexadecimal: {var:X} -> var.toString(16).toUpperCase()
+                self.output.push('(');
+                self.transpile_expression(expression)?;
+                self.output.push_str(").toString(16).toUpperCase()");
+            }
+            Some('o') => {
+                // Octal: {var:o} -> var.toString(8)
+                self.output.push('(');
+                self.transpile_expression(expression)?;
+                self.output.push_str(").toString(8)");
+            }
+            Some('b') => {
+                // Binary: {var:b} -> var.toString(2)
+                self.output.push('(');
+                self.transpile_expression(expression)?;
+                self.output.push_str(").toString(2)");
+            }
+            Some('%') => {
+                // Percentage: {var:%} -> (var * 100).toFixed(2) + '%'
+                self.output.push('(');
+                self.transpile_expression(expression)?;
+                self.output.push_str(" * 100).toFixed(");
+                self.output.push_str(&precision.unwrap_or(2).to_string());
+                self.output.push_str(") + '%'");
+            }
+            _ => {
+                // Unknown format type, just transpile the expression
+                self.transpile_expression(expression)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn generate_center_string_helper(&self) -> String {
+        r#"
+// Helper function for center-aligned string formatting
+function centerString(str, width, fill = ' ') {
+    const s = str.toString();
+    if (s.length >= width) return s;
+    const padding = width - s.length;
+    const leftPad = Math.floor(padding / 2);
+    const rightPad = padding - leftPad;
+    return fill.repeat(leftPad) + s + fill.repeat(rightPad);
+}
+
+"#
+        .to_string()
     }
 
     // Add other transpilation methods (if, while, for, etc.) here...

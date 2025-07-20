@@ -524,6 +524,17 @@ impl BuiltinMapper {
                 is_method: false,
             },
         );
+
+        // Special Python variables
+        self.add_mapping(
+            "__name__",
+            BuiltinMapping {
+                js_equivalent: "\"__main__\"".to_string(),
+                requires_import: None,
+                requires_helper: false,
+                is_method: false,
+            },
+        );
     }
 
     fn add_mapping(&mut self, name: &str, mapping: BuiltinMapping) {

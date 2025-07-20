@@ -1,0 +1,135 @@
+# Test file for math operations and algorithms
+# Testing mathematical functions and computational accuracy
+
+def test_fibonacci_accuracy():
+    """Test Fibonacci implementation for accuracy"""
+    print("Testing Fibonacci accuracy...")
+
+    def fibonacci(n):
+        if n <= 0:
+            return 0
+        if n == 1:
+            return 1
+        return fibonacci(n - 1) + fibonacci(n - 2)
+
+    # Test known Fibonacci values
+    expected_values = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+
+    for i in range(len(expected_values)):
+        result = fibonacci(i)
+        expected = expected_values[i]
+        if result == expected:
+            print(f"✅ fibonacci({i}) = {result} (correct)")
+        else:
+            print(f"❌ fibonacci({i}) = {result}, expected {expected}")
+            return False
+
+    return True
+
+def test_prime_numbers():
+    """Test prime number detection"""
+    print("Testing prime number detection...")
+
+    def is_prime(n):
+        if n < 2:
+            return False
+        if n == 2:
+            return True
+        if n % 2 == 0:
+            return False
+
+        i = 3
+        while i * i <= n:
+            if n % i == 0:
+                return False
+            i += 2
+        return True
+
+    # Test known primes and non-primes
+    test_cases = [
+        (2, True), (3, True), (4, False), (5, True),
+        (6, False), (7, True), (8, False), (9, False),
+        (10, False), (11, True), (17, True), (25, False)
+    ]
+
+    for num, expected in test_cases:
+        result = is_prime(num)
+        if result == expected:
+            print(f"✅ is_prime({num}) = {result} (correct)")
+        else:
+            print(f"❌ is_prime({num}) = {result}, expected {expected}")
+            return False
+
+    return True
+
+def test_list_operations():
+    """Test list comprehensions and operations"""
+    print("Testing list operations...")
+
+    # Test list comprehension
+    squares = [x * x for x in range(5)]
+    expected_squares = [0, 1, 4, 9, 16]
+
+    if squares == expected_squares:
+        print(f"✅ List comprehension: {squares}")
+    else:
+        print(f"❌ List comprehension failed: {squares}, expected {expected_squares}")
+        return False
+
+    # Test filtering
+    evens = [x for x in range(10) if x % 2 == 0]
+    expected_evens = [0, 2, 4, 6, 8]
+
+    if evens == expected_evens:
+        print(f"✅ List filtering: {evens}")
+    else:
+        print(f"❌ List filtering failed: {evens}, expected {expected_evens}")
+        return False
+
+    return True
+
+def main():
+    """Run all mathematical tests"""
+    print("=== Mathematical Function Tests ===")
+
+    all_passed = True
+
+    try:
+        if test_fibonacci_accuracy():
+            print("✅ Fibonacci test passed")
+        else:
+            print("❌ Fibonacci test failed")
+            all_passed = False
+    except Exception as e:
+        print(f"❌ Fibonacci test error: {e}")
+        all_passed = False
+
+    try:
+        if test_prime_numbers():
+            print("✅ Prime number test passed")
+        else:
+            print("❌ Prime number test failed")
+            all_passed = False
+    except Exception as e:
+        print(f"❌ Prime number test error: {e}")
+        all_passed = False
+
+    try:
+        if test_list_operations():
+            print("✅ List operations test passed")
+        else:
+            print("❌ List operations test failed")
+            all_passed = False
+    except Exception as e:
+        print(f"❌ List operations test error: {e}")
+        all_passed = False
+
+    if all_passed:
+        print("🎉 All mathematical tests passed!")
+    else:
+        print("⚠️ Some mathematical tests failed!")
+
+    print("=== Mathematical tests completed ===")
+
+if __name__ == "__main__":
+    main()

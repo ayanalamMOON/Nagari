@@ -1,0 +1,25 @@
+# Simple comprehensive percentage test
+
+value = 0.123456789
+
+print("=== Different Precision Levels ===")
+print(f"Default: {value:%}")
+print(f"No decimals: {value:.0%}")
+print(f"1 decimal: {value:.1%}")
+print(f"3 decimals: {value:.3%}")
+
+print("\n=== Real-world Examples ===")
+tax_rate = 0.085
+price = 50.00
+
+print(f"Tax rate: {tax_rate:%}")
+print(f"Item price: ${price:.2f}")
+
+print("\n=== Performance Metrics ===")
+success_rate = 0.947
+error_rate = 0.003
+
+print(f"Success rate: {success_rate:.1%}")
+print(f"Error rate: {error_rate:.3%}")
+
+print("\n✅ All percentage tests completed!")

@@ -1,0 +1,96 @@
+# Simple test file for basic Nagari functionality
+# Testing core language features that are known to work
+
+def test_basic_math():
+    """Test basic mathematical operations"""
+    print("Testing basic math operations...")
+
+    # Basic arithmetic
+    a = 5
+    b = 3
+
+    addition = a + b
+    subtraction = a - b
+    multiplication = a * b
+    division = a / b
+
+    print(f"Addition: {a} + {b} = {addition}")
+    print(f"Subtraction: {a} - {b} = {subtraction}")
+    print(f"Multiplication: {a} * {b} = {multiplication}")
+    print(f"Division: {a} / {b} = {division}")
+
+    return True
+
+def test_fibonacci():
+    """Test Fibonacci sequence"""
+    print("Testing Fibonacci sequence...")
+
+    def fibonacci(n):
+        if n <= 0:
+            return 0
+        if n == 1:
+            return 1
+        return fibonacci(n - 1) + fibonacci(n - 2)
+
+    # Test first 10 Fibonacci numbers
+    for i in range(10):
+        result = fibonacci(i)
+        print(f"fibonacci({i}) = {result}")
+
+    return True
+
+def test_lists():
+    """Test list operations"""
+    print("Testing list operations...")
+
+    # Create and modify lists
+    numbers = [1, 2, 3, 4, 5]
+    print(f"Original list: {numbers}")
+
+    # List comprehension
+    squares = [x * x for x in numbers]
+    print(f"Squares: {squares}")
+
+    # Filter even numbers
+    evens = [x for x in numbers if x % 2 == 0]
+    print(f"Even numbers: {evens}")
+
+    return True
+
+def test_strings():
+    """Test string operations"""
+    print("Testing string operations...")
+
+    greeting = "Hello"
+    name = "Nagari"
+
+    # String concatenation
+    message = greeting + " " + name
+    print(f"Concatenated: {message}")
+
+    # F-string formatting
+    formatted = f"Welcome to {name}!"
+    print(f"Formatted: {formatted}")
+
+    return True
+
+def main():
+    """Run all basic tests"""
+    print("=== Basic Nagari Functionality Tests ===")
+
+    test_basic_math()
+    print()
+
+    test_fibonacci()
+    print()
+
+    test_lists()
+    print()
+
+    test_strings()
+    print()
+
+    print("=== All basic tests completed! ===")
+
+if __name__ == "__main__":
+    main()

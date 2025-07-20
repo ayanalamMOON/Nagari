@@ -1,0 +1,171 @@
+# Test file for string operations and formatting
+# Testing string functions, formatting, and manipulation
+
+def test_string_formatting():
+    """Test f-string and string formatting"""
+    print("Testing string formatting...")
+
+    name = "Nagari"
+    version = "0.2.1"
+    year = 2025
+
+    # Test f-string formatting
+    message = f"Welcome to {name} v{version} ({year})"
+    expected = "Welcome to Nagari v0.2.1 (2025)"
+
+    if message == expected:
+        print(f"✅ F-string formatting: '{message}'")
+    else:
+        print(f"❌ F-string failed: '{message}', expected '{expected}'")
+        return False
+
+    # Test numeric formatting
+    pi = 3.14159
+    formatted_pi = f"Pi is approximately {pi:.2f}"
+    expected_pi = "Pi is approximately 3.14"
+
+    if formatted_pi == expected_pi:
+        print(f"✅ Numeric formatting: '{formatted_pi}'")
+    else:
+        print(f"❌ Numeric formatting failed: '{formatted_pi}', expected '{expected_pi}'")
+        return False
+
+    return True
+
+def test_string_operations():
+    """Test string manipulation functions"""
+    print("Testing string operations...")
+
+    # Test string concatenation
+    first = "Hello"
+    second = "World"
+    combined = first + " " + second
+
+    if combined == "Hello World":
+        print(f"✅ String concatenation: '{combined}'")
+    else:
+        print(f"❌ String concatenation failed: '{combined}'")
+        return False
+
+    # Test string methods
+    text = "  Python-style Programming  "
+    trimmed = text.strip()
+
+    if trimmed == "Python-style Programming":
+        print(f"✅ String strip: '{trimmed}'")
+    else:
+        print(f"❌ String strip failed: '{trimmed}'")
+        return False
+
+    # Test string case operations
+    lower_text = trimmed.lower()
+    upper_text = trimmed.upper()
+
+    if lower_text == "python-style programming" and upper_text == "PYTHON-STYLE PROGRAMMING":
+        print(f"✅ String case operations: '{lower_text}' / '{upper_text}'")
+    else:
+        print(f"❌ String case operations failed")
+        return False
+
+    return True
+
+def test_string_splitting():
+    """Test string splitting and joining"""
+    print("Testing string splitting and joining...")
+
+    # Test string split
+    sentence = "Nagari is a Python-style language"
+    words = sentence.split(" ")
+    expected_words = ["Nagari", "is", "a", "Python-style", "language"]
+
+    if words == expected_words:
+        print(f"✅ String split: {words}")
+    else:
+        print(f"❌ String split failed: {words}, expected {expected_words}")
+        return False
+
+    # Test string join
+    rejoined = " ".join(words)
+
+    if rejoined == sentence:
+        print(f"✅ String join: '{rejoined}'")
+    else:
+        print(f"❌ String join failed: '{rejoined}', expected '{sentence}'")
+        return False
+
+    return True
+
+def test_multiline_strings():
+    """Test multiline string handling"""
+    print("Testing multiline strings...")
+
+    multiline = """This is a
+multiline string
+in Nagari"""
+
+    lines = multiline.split("\n")
+    expected_lines = ["This is a", "multiline string", "in Nagari"]
+
+    if lines == expected_lines:
+        print(f"✅ Multiline string: {len(lines)} lines")
+    else:
+        print(f"❌ Multiline string failed: {lines}")
+        return False
+
+    return True
+
+def main():
+    """Run all string tests"""
+    print("=== String Function Tests ===")
+
+    all_passed = True
+
+    try:
+        if test_string_formatting():
+            print("✅ String formatting test passed")
+        else:
+            print("❌ String formatting test failed")
+            all_passed = False
+    except Exception as e:
+        print(f"❌ String formatting test error: {e}")
+        all_passed = False
+
+    try:
+        if test_string_operations():
+            print("✅ String operations test passed")
+        else:
+            print("❌ String operations test failed")
+            all_passed = False
+    except Exception as e:
+        print(f"❌ String operations test error: {e}")
+        all_passed = False
+
+    try:
+        if test_string_splitting():
+            print("✅ String splitting test passed")
+        else:
+            print("❌ String splitting test failed")
+            all_passed = False
+    except Exception as e:
+        print(f"❌ String splitting test error: {e}")
+        all_passed = False
+
+    try:
+        if test_multiline_strings():
+            print("✅ Multiline strings test passed")
+        else:
+            print("❌ Multiline strings test failed")
+            all_passed = False
+    except Exception as e:
+        print(f"❌ Multiline strings test error: {e}")
+        all_passed = False
+
+    if all_passed:
+        print("🎉 All string tests passed!")
+    else:
+        print("⚠️ Some string tests failed!")
+
+    print("=== String tests completed ===")
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,3 @@
+value = 0.123
+print(f"Basic: {value:%}")
+print(f"Precision: {value:.1%}")

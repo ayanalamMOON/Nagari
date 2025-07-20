@@ -776,9 +776,8 @@ impl Parser {
     fn parse_type(&mut self) -> Result<Type, NagariError> {
         match self.advance() {
             Token::Identifier(type_name) => {
-                let mut base_type = Type::from_string(&type_name).ok_or_else(|| {
-                    NagariError::ParseError(format!("Unknown type: {type_name}"))
-                })?;
+                let mut base_type = Type::from_string(&type_name)
+                    .ok_or_else(|| NagariError::ParseError(format!("Unknown type: {type_name}")))?;
 
                 // Handle generic types like list[int], dict[str, int]
                 if self.check(&Token::LeftBracket) {
@@ -1850,13 +1849,27 @@ impl Parser {
                     expr_content.push(ch);
                 }
 
-                // Parse the expression content
-                if !expr_content.trim().is_empty() {
-                    // Create a simple identifier expression for now
-                    // In a full implementation, we'd parse this as a complete expression
-                    parts.push(FStringPart::Expression(Expression::Identifier(
-                        expr_content.trim().to_string(),
-                    )));
+                // Check for format specifier (colon separator)
+                if let Some(colon_pos) = expr_content.find(':') {
+                    let (var_part, format_spec) = expr_content.split_at(colon_pos);
+                    let format_spec = &format_spec[1..]; // Remove the colon
+
+                    if !var_part.trim().is_empty() {
+                        // Create formatted expression with format specifier
+                        parts.push(FStringPart::FormattedExpression {
+                            expression: Expression::Identifier(var_part.trim().to_string()),
+                            format_spec: format_spec.trim().to_string(),
+                        });
+                    }
+                } else {
+                    // Parse the expression content without format specifier
+                    if !expr_content.trim().is_empty() {
+                        // Create a simple identifier expression for now
+                        // In a full implementation, we'd parse this as a complete expression
+                        parts.push(FStringPart::Expression(Expression::Identifier(
+                            expr_content.trim().to_string(),
+                        )));
+                    }
                 }
             } else {
                 current_text.push(ch);

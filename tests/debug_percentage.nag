@@ -1,0 +1,4 @@
+# Debug percentage test
+value = 0.75
+print(f"Debug percentage: {value:.1%}")
+print(f"Debug manual: {value * 100:.1f}%")

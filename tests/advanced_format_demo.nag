@@ -1,0 +1,36 @@
+# Advanced format specifier test
+
+# Test more complex formatting
+price = 1234.5678
+large_num = 1000000
+binary_num = 15
+
+print("=== Advanced Format Specifier Tests ===")
+
+# Currency formatting
+print(f"Price: ${price:.2f}")
+print(f"Formatted price: ${price:>10.2f}")
+
+# Scientific-style formatting
+print(f"Large number: {large_num:,d}")  # This might not work yet
+print(f"Binary: {binary_num:b}")
+print(f"Octal: {binary_num:o}")
+
+# String formatting with custom fill
+name = "World"
+print(f"Custom fill: '{name:*^15s}'")
+print(f"Custom fill right: '{name:=>12s}'")
+
+# Multiple formats in one string
+quantity = 5
+total = price * quantity
+print(f"Order: {quantity} items at ${price:.2f} each = ${total:.2f} total")
+
+# Percentage with different precisions
+accuracy = 0.95789
+print(f"Accuracy: {accuracy:.0%}")
+print(f"Accuracy: {accuracy:.1%}")
+print(f"Accuracy: {accuracy:.2%}")
+print(f"Accuracy: {accuracy:.3%}")
+
+print("=== Advanced tests completed ===")

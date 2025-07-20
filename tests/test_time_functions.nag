@@ -1,0 +1,57 @@
+# Test file for time-related functions
+# Testing datetime operations and time utilities
+
+def test_basic_time():
+    """Test basic time operations"""
+    print("Testing basic time functions...")
+
+    # Test current time
+    current_time = now()
+    print(f"Current timestamp: {current_time}")
+
+    # Test datetime creation
+    dt = DateTime(2025, 7, 20, 14, 30, 0)
+    print(f"Created datetime: {dt.year}-{dt.month}-{dt.day} {dt.hour}:{dt.minute}:{dt.second}")
+
+    # Test timestamp conversion
+    timestamp = dt.timestamp()
+    print(f"DateTime timestamp: {timestamp}")
+
+    return True
+
+def test_sleep_function():
+    """Test sleep functionality"""
+    print("Testing sleep function...")
+
+    start_time = now()
+    print(f"Sleep start: {start_time}")
+
+    # Sleep for 1 second
+    sleep(1.0)
+
+    end_time = now()
+    print(f"Sleep end: {end_time}")
+    print(f"Sleep duration: {end_time - start_time} seconds")
+
+    return True
+
+def main():
+    """Run all time tests"""
+    print("=== Time Function Tests ===")
+
+    try:
+        test_basic_time()
+        print("✅ Basic time test passed")
+    except Exception as e:
+        print(f"❌ Basic time test failed: {e}")
+
+    try:
+        test_sleep_function()
+        print("✅ Sleep test passed")
+    except Exception as e:
+        print(f"❌ Sleep test failed: {e}")
+
+    print("=== Time tests completed ===")
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,32 @@
+# Final comprehensive test of percentage format specifiers in Nagari
+
+# Test basic percentage formatting
+rate = 0.15
+efficiency = 0.892
+error_margin = 0.001
+
+print(f"Interest rate: {rate:%}")
+print(f"Efficiency: {efficiency:.1%}")
+print(f"Error margin: {error_margin:.3%}")
+
+# Test with calculations
+base_value = 100
+discount = 0.25
+final_price = base_value * (1 - discount)
+savings = base_value - final_price
+
+print(f"Original price: ${base_value}")
+print(f"Discount: {discount:%}")
+print(f"Final price: ${final_price}")
+print(f"You save: ${savings} ({discount:.0%})")
+
+# Test edge cases
+perfect_score = 1.0
+zero_rate = 0.0
+over_hundred = 1.5
+
+print(f"Perfect score: {perfect_score:%}")
+print(f"Zero rate: {zero_rate:%}")
+print(f"Over 100%: {over_hundred:%}")
+
+print("All percentage formatting tests completed!")

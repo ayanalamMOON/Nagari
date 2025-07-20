@@ -485,4 +485,8 @@ pub struct FStringExpression {
 pub enum FStringPart {
     Text(String),
     Expression(Expression),
+    FormattedExpression {
+        expression: Expression,
+        format_spec: String, // e.g., ".2f", "04d", ">10s"
+    },
 }

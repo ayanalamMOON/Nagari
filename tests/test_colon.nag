@@ -1,0 +1,2 @@
+value = 42
+print(f"Test: {value:04d}")

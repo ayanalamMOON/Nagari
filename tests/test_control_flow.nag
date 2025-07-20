@@ -1,0 +1,182 @@
+# Test file for control flow and syntax features
+# Testing conditionals, loops, and language constructs
+
+def test_conditional_statements():
+    """Test if/elif/else statements"""
+    print("Testing conditional statements...")
+
+    def check_number(n):
+        if n > 0:
+            return "positive"
+        elif n < 0:
+            return "negative"
+        else:
+            return "zero"
+
+    # Test different cases
+    test_cases = [(5, "positive"), (-3, "negative"), (0, "zero")]
+
+    for num, expected in test_cases:
+        result = check_number(num)
+        if result == expected:
+            print(f"✅ check_number({num}) = {result}")
+        else:
+            print(f"❌ check_number({num}) = {result}, expected {expected}")
+            return False
+
+    return True
+
+def test_loops():
+    """Test for and while loops"""
+    print("Testing loops...")
+
+    # Test for loop with range
+    sum_result = 0
+    for i in range(5):
+        sum_result += i
+
+    expected_sum = 10  # 0 + 1 + 2 + 3 + 4
+    if sum_result == expected_sum:
+        print(f"✅ For loop sum: {sum_result}")
+    else:
+        print(f"❌ For loop sum failed: {sum_result}, expected {expected_sum}")
+        return False
+
+    # Test while loop
+    count = 0
+    i = 0
+    while i < 3:
+        count += 1
+        i += 1
+
+    if count == 3:
+        print(f"✅ While loop count: {count}")
+    else:
+        print(f"❌ While loop count failed: {count}, expected 3")
+        return False
+
+    # Test for loop with list
+    items = ["a", "b", "c"]
+    collected = []
+    for item in items:
+        collected.append(item)
+
+    if collected == items:
+        print(f"✅ For loop with list: {collected}")
+    else:
+        print(f"❌ For loop with list failed: {collected}, expected {items}")
+        return False
+
+    return True
+
+def test_function_definitions():
+    """Test function definitions and calls"""
+    print("Testing function definitions...")
+
+    def add(a, b):
+        return a + b
+
+    def multiply(x, y=2):
+        return x * y
+
+    # Test basic function
+    result1 = add(3, 4)
+    if result1 == 7:
+        print(f"✅ Function add(3, 4) = {result1}")
+    else:
+        print(f"❌ Function add failed: {result1}, expected 7")
+        return False
+
+    # Test function with default parameter
+    result2 = multiply(5)
+    result3 = multiply(5, 3)
+
+    if result2 == 10 and result3 == 15:
+        print(f"✅ Function with defaults: multiply(5) = {result2}, multiply(5, 3) = {result3}")
+    else:
+        print(f"❌ Function with defaults failed")
+        return False
+
+    return True
+
+def test_data_structures():
+    """Test lists and dictionaries"""
+    print("Testing data structures...")
+
+    # Test list operations
+    numbers = [1, 2, 3]
+    numbers.append(4)
+
+    if numbers == [1, 2, 3, 4]:
+        print(f"✅ List append: {numbers}")
+    else:
+        print(f"❌ List append failed: {numbers}")
+        return False
+
+    # Test dictionary operations
+    person = {"name": "Alice", "age": 30}
+    person["city"] = "New York"
+
+    if person["name"] == "Alice" and person["city"] == "New York":
+        print(f"✅ Dictionary operations: {person}")
+    else:
+        print(f"❌ Dictionary operations failed: {person}")
+        return False
+
+    return True
+
+def main():
+    """Run all control flow tests"""
+    print("=== Control Flow and Syntax Tests ===")
+
+    all_passed = True
+
+    try:
+        if test_conditional_statements():
+            print("✅ Conditional statements test passed")
+        else:
+            print("❌ Conditional statements test failed")
+            all_passed = False
+    except Exception as e:
+        print(f"❌ Conditional statements test error: {e}")
+        all_passed = False
+
+    try:
+        if test_loops():
+            print("✅ Loops test passed")
+        else:
+            print("❌ Loops test failed")
+            all_passed = False
+    except Exception as e:
+        print(f"❌ Loops test error: {e}")
+        all_passed = False
+
+    try:
+        if test_function_definitions():
+            print("✅ Function definitions test passed")
+        else:
+            print("❌ Function definitions test failed")
+            all_passed = False
+    except Exception as e:
+        print(f"❌ Function definitions test error: {e}")
+        all_passed = False
+
+    try:
+        if test_data_structures():
+            print("✅ Data structures test passed")
+        else:
+            print("❌ Data structures test failed")
+            all_passed = False
+    except Exception as e:
+        print(f"❌ Data structures test error: {e}")
+        all_passed = False
+
+    if all_passed:
+        print("🎉 All control flow tests passed!")
+    else:
+        print("⚠️ Some control flow tests failed!")
+
+    print("=== Control flow tests completed ===")
+
+if __name__ == "__main__":
+    main()

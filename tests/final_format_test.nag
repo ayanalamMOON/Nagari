@@ -1,0 +1,18 @@
+value = 0.123
+percent_simple = 0.5
+precision_test = 0.777
+
+print(f"Basic percentage: {value:%}")
+print(f"Custom precision: {value:.1%}")
+print(f"High precision: {precision_test:.3%}")
+print(f"Simple percent: {percent_simple:%}")
+
+# Test other formats still work
+print(f"Float: {value:.2f}")
+print(f"Integer: {42:04d}")
+print(f"Hex: {255:x}")
+print(f"Binary: {15:b}")
+
+# Test combinations
+combined_value = 0.25
+print(f"Combined test: Value {combined_value:.2f} is {combined_value:.1%} as percentage")

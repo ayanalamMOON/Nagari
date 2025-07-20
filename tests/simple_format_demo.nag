@@ -1,0 +1,18 @@
+# Simple format specifier test
+name = "Alice"
+age = 25
+pi = 3.14159
+num = 42
+
+print("=== Format Specifier Tests ===")
+print(f"Basic: Hello {name}, you are {age} years old")
+print(f"Float: Pi = {pi:.2f}")
+print(f"Zero pad: Number = {num:04d}")
+print(f"Hex: {num:x} (hex), {num:X} (HEX)")
+print(f"Left align: '{name:<10s}'")
+print(f"Right align: '{name:>10s}'")
+print(f"Center: '{name:^10s}'")
+
+percentage = 0.85
+print(f"Percentage: {percentage:.1%}")
+print("=== Tests completed ===")

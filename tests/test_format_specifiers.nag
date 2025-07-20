@@ -1,0 +1,106 @@
+# Test file for Python-style format specifiers in f-strings
+# Testing various formatting options
+
+def test_basic_formatting():
+    """Test basic format specifiers"""
+    print("=== Basic Format Specifier Tests ===")
+
+    # Basic variable substitution
+    name = "Alice"
+    age = 25
+    print(f"Hello, {name}! You are {age} years old.")
+
+    # Floating point formatting
+    pi = 3.14159265359
+    print(f"Pi to 2 decimal places: {pi:.2f}")
+    print(f"Pi to 4 decimal places: {pi:.4f}")
+
+    # Integer formatting with zero padding
+    number = 42
+    print(f"Zero-padded number: {number:04d}")
+    print(f"Regular number: {number:d}")
+
+    # String formatting with alignment
+    text = "Hello"
+    print(f"Left aligned (10 chars): '{text:<10s}'")
+    print(f"Right aligned (10 chars): '{text:>10s}'")
+    print(f"Center aligned (10 chars): '{text:^10s}'")
+
+    # Custom fill character
+    print(f"Custom fill: '{text:*^15s}'")
+
+    return True
+
+def test_number_bases():
+    """Test number base formatting"""
+    print("=== Number Base Format Tests ===")
+
+    num = 255
+    print(f"Decimal: {num:d}")
+    print(f"Hexadecimal (lowercase): {num:x}")
+    print(f"Hexadecimal (uppercase): {num:X}")
+    print(f"Octal: {num:o}")
+    print(f"Binary: {num:b}")
+
+    return True
+
+def test_percentage_formatting():
+    """Test percentage formatting"""
+    print("=== Percentage Format Tests ===")
+
+    ratio = 0.85
+    print(f"Percentage: {ratio:%}")
+    print(f"Percentage (1 decimal): {ratio:.1%}")
+    print(f"Percentage (3 decimals): {ratio:.3%}")
+
+    return True
+
+def test_combined_formatting():
+    """Test combination of different format options"""
+    print("=== Combined Format Tests ===")
+
+    price = 19.99
+    quantity = 3
+    total = price * quantity
+
+    print(f"Item: $${price:.2f} x {quantity} = $${total:.2f}")
+    print(f"Formatted total: $${total:>8.2f}")
+
+    # Mixed formatting in one string
+    progress = 0.73
+    print(f"Progress: {progress:>6.1%} ({progress:.3f})")
+
+    return True
+
+def main():
+    """Run all format specifier tests"""
+    print("=== Python-Style Format Specifier Tests ===")
+
+    try:
+        test_basic_formatting()
+        print("✅ Basic formatting tests passed")
+    except Exception as e:
+        print(f"❌ Basic formatting tests failed: {e}")
+
+    try:
+        test_number_bases()
+        print("✅ Number base tests passed")
+    except Exception as e:
+        print(f"❌ Number base tests failed: {e}")
+
+    try:
+        test_percentage_formatting()
+        print("✅ Percentage formatting tests passed")
+    except Exception as e:
+        print(f"❌ Percentage formatting tests failed: {e}")
+
+    try:
+        test_combined_formatting()
+        print("✅ Combined formatting tests passed")
+    except Exception as e:
+        print(f"❌ Combined formatting tests failed: {e}")
+
+    print("=== Format specifier tests completed ===")
+
+if __name__ == "__main__":
+    main()

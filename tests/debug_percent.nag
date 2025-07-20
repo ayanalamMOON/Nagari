@@ -1,0 +1,4 @@
+value = 0.123
+print(f"Test percent: {value:%}")
+print(f"Test percent with precision: {value:.1%}")
+print(f"Test normal float: {value:.2f}")
