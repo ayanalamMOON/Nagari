@@ -323,7 +323,7 @@ The Nagari project is organized into focused, production-ready components:
 
 ```
 Nagari/
-├── src/                        # 📂 Source code (organized by component)
+├── src/                        # 📂 All source code (clean organization)
 │   ├── cli/                    # 🔧 Command-line interface (Rust)
 │   │   ├── src/
 │   │   │   ├── main.rs         # CLI entry point
@@ -331,55 +331,83 @@ Nagari/
 │   │   │   ├── repl_engine/    # Advanced REPL system
 │   │   │   ├── package/        # Package management
 │   │   │   └── tools/          # Development tools (linter, formatter)
+│   │   └── Cargo.toml          # CLI crate configuration
 │   ├── nagari-compiler/        # 🦀 Core compiler (Rust)
 │   │   ├── src/
 │   │   │   ├── lexer.rs        # Lexical analysis with proper tokenization
 │   │   │   ├── parser.rs       # Syntax parsing with error recovery
 │   │   │   ├── transpiler/     # JavaScript code generation
 │   │   │   └── ast.rs          # Abstract syntax tree definitions
-│   ├── nagari-runtime/         # 📦 Runtime package (TypeScript) [npm published]
+│   │   └── Cargo.toml          # Compiler crate configuration
+│   ├── nagari-parser/          # � Language parser (Rust)
 │   │   ├── src/
-│   │   │   ├── index.ts        # Main runtime exports
-│   │   │   ├── interop.ts      # JavaScript ↔ Nagari interoperability
-│   │   │   ├── builtins.ts     # Python-like built-in functions
-│   │   │   └── types.ts        # Type conversion utilities
-│   │   ├── dist/               # Compiled JavaScript output
-│   │   └── package.json        # npm package configuration
+│   │   │   ├── lib.rs          # Parser library exports
+│   │   │   ├── lexer.rs        # Token analysis
+│   │   │   └── parser.rs       # Syntax tree building
+│   │   └── Cargo.toml          # Parser crate configuration
+│   ├── nagari-vm/              # ⚡ Virtual machine (Rust)
+│   │   ├── src/
+│   │   │   ├── lib.rs          # VM library exports
+│   │   │   ├── env.rs          # Environment management
+│   │   │   └── value.rs        # Value types and operations
+│   │   └── Cargo.toml          # VM crate configuration
+│   ├── nagari-wasm/            # 🌐 WebAssembly bindings (Rust)
+│   │   ├── src/
+│   │   │   └── lib.rs          # WASM interface
+│   │   └── Cargo.toml          # WASM crate configuration
+│   ├── nagari-embedded/        # 🔌 Embedded systems support (Rust)
+│   │   ├── src/
+│   │   │   └── lib.rs          # Embedded runtime
+│   │   └── Cargo.toml          # Embedded crate configuration
 │   ├── lsp-server/             # 🔍 Language Server Protocol (Rust)
 │   │   ├── src/
+│   │   │   ├── main.rs         # LSP server entry point
 │   │   │   ├── backend.rs      # LSP protocol implementation
 │   │   │   ├── completion.rs   # Code completion engine
-│   │   │   ├── diagnostics.rs  # Real-time error detection
-│   │   │   └── navigation.rs   # Go-to-definition, references
-│   ├── nagari-vm/              # ⚡ Virtual machine (Rust)
-│   ├── nagari-wasm/            # 🌐 WebAssembly bindings (Rust)
-│   ├── nagari-embedded/        # 🔌 Embedded systems support (Rust)
-│   └── registry-server/        # 📦 Package registry server (Rust)
-├── build/                      # 🏗️ Build outputs and artifacts
-│   ├── target/                 # Cargo build directory
-│   └── dist/                   # Distribution builds
+│   │   │   └── diagnostics.rs  # Real-time error detection
+│   │   └── Cargo.toml          # LSP crate configuration
+│   ├── registry-server/        # 📦 Package registry server (Rust)
+│   │   ├── src/
+│   │   │   ├── main.rs         # Registry server entry point
+│   │   │   └── middleware.rs   # HTTP middleware
+│   │   └── Cargo.toml          # Registry crate configuration
+│   └── nagari-runtime/         # � Runtime package (TypeScript) [npm published]
+│       ├── src/
+│       │   ├── index.ts        # Main runtime exports
+│       │   ├── interop.ts      # JavaScript ↔ Nagari interoperability
+│       │   ├── builtins.ts     # Python-like built-in functions
+│       │   └── types.ts        # Type conversion utilities
+│       ├── dist/               # Compiled JavaScript output
+│       └── package.json        # npm package configuration
+├── target/                     # 🏗️ Cargo build outputs
 ├── scripts/                    # 🔨 Build and development scripts
-│   ├── tools/                  # Development utilities
-│   └── run-tests.*             # Test runners for different platforms
+│   ├── build.sh               # Cross-platform build script
+│   ├── run-tests.sh           # Test runners
+│   └── tools/                 # Development utilities
 ├── examples/                   # 📝 Working example projects
-│   ├── async_demo.nag          # ✅ HTTP requests with async/await
-│   ├── react_todo_app.nag      # React application with hooks
-│   ├── express_server.nag      # Express.js REST API
-│   └── algorithms.nag          # Data structures and algorithms
-├── temp/                       # 🧪 Temporary files and test outputs
-│   ├── tests/                  # Test fixtures and debugging
-│   └── dev-tools/              # Development utilities
+│   ├── async_demo.nag         # ✅ HTTP requests with async/await
+│   ├── react_todo_app.nag     # React application with hooks
+│   ├── express_server.nag     # Express.js REST API
+│   └── algorithms.nag         # Data structures and algorithms
+├── tests/                      # 🧪 Test files and outputs
+│   ├── fixtures/              # Test Nagari source files
+│   └── outputs/               # Generated JavaScript files
 ├── docs/                       # 📚 Comprehensive documentation
-│   ├── getting-started.md      # Quick start guide
-│   ├── api-reference.md        # Complete API documentation
-│   ├── tutorials.md            # Step-by-step tutorials
-│   └── troubleshooting.md      # Common issues and solutions
+│   ├── getting-started.md     # Quick start guide
+│   ├── api-reference.md       # Complete API documentation
+│   ├── tutorials.md           # Step-by-step tutorials
+│   └── troubleshooting.md     # Common issues and solutions
 ├── stdlib/                     # 📖 Standard library (.nag files)
 │   ├── core.nag              # Built-in functions and types
 │   ├── math.nag              # Mathematical operations
 │   ├── http.nag              # HTTP client/server utilities
 │   └── json.nag              # JSON parsing/serialization
-└── tools/                      # 🔨 Build and development scripts
+├── specs/                      # � Language specifications
+│   ├── grammar.bnf            # Complete BNF grammar
+│   └── language-spec.md       # Comprehensive language reference
+├── Cargo.toml                  # 🦀 Workspace configuration
+├── Cargo.lock                  # 🔒 Dependency lock file
+└── README.md                   # 📖 This file
 from fs import read_file, exists
 from json import parse, stringify
 
@@ -471,95 +499,156 @@ asyncio.run(main())
 ## 📁 Enhanced Project Structure
 
 ```text
-Nagari/
-├── cli/                          # Enhanced CLI tool with commands
-│   ├── src/
-│   │   ├── commands/            # CLI command handlers
-│   │   ├── package/             # Advanced package manager
-│   │   │   ├── manifest.rs      # Package manifest handling
-│   │   │   ├── manager.rs       # Package lifecycle management
-│   │   │   ├── registry.rs      # Registry client with auth
-│   │   │   ├── resolver.rs      # Dependency resolution
-│   │   │   ├── cache.rs         # Intelligent caching
-│   │   │   └── lockfile.rs      # Deterministic builds
-│   │   ├── repl_engine/         # Advanced REPL system
-│   │   │   ├── engine.rs        # Core REPL engine
-│   │   │   ├── editor.rs        # Multi-line editor
-│   │   │   ├── evaluator.rs     # Code evaluation
-│   │   │   ├── completer.rs     # Intelligent completion
-│   │   │   ├── highlighter.rs   # Syntax highlighting
-│   │   │   └── session.rs       # Session persistence
-│   │   └── main.rs              # CLI entry point
-│   └── tests/                   # Comprehensive test suite
-├── nagari-compiler/             # Rust-based compiler
-│   ├── src/
-│   │   ├── lexer.rs            # Enhanced lexical analysis
-│   │   ├── parser.rs           # Advanced syntax parsing
-│   │   ├── ast.rs              # Abstract syntax tree
-│   │   ├── transpiler.rs       # JavaScript code generation
-│   │   └── types.rs            # Type system implementation
-├── nagari-runtime/              # Runtime utilities and polyfills
-│   └── src/                    # TypeScript runtime implementation
-├── nagari-vm/                   # Virtual machine for execution
-├── nagari-parser/               # Alternative parser implementation
-├── nagari-embedded/             # Embedded systems support
-├── nagari-wasm/                 # WebAssembly compilation target
-├── registry-server/             # Production registry server
-│   ├── src/
-│   │   ├── handlers/           # REST API endpoints
-│   │   ├── models.rs           # Data models
-│   │   ├── auth.rs             # JWT authentication
-│   │   └── storage.rs          # Package storage backends
-├── lsp-server/                  # Language Server Protocol
-│   ├── src/
-│   │   ├── backend.rs          # LSP protocol implementation
-│   │   ├── completion.rs       # Code completion engine
-│   │   ├── diagnostics.rs      # Error detection
-│   │   └── navigation.rs       # Go-to-definition, references
-├── stdlib/                      # Comprehensive standard library
-│   ├── core.nag               # Built-in functions and types
-│   ├── math.nag               # Mathematical operations
-│   ├── http.nag               # HTTP client/server utilities
-│   ├── fs.nag                 # File system operations
-│   ├── json.nag               # JSON parsing/serialization
-│   ├── crypto.nag             # Cryptographic functions
-│   ├── db.nag                 # Database connectivity
-│   ├── os.nag                 # Operating system interface
-│   └── time.nag               # Date/time manipulation
-├── examples/                    # Comprehensive example projects
-│   ├── react_todo_app.nag     # React application with hooks
-│   ├── express_server.nag     # Express.js REST API
-│   ├── vue_task_app.nag       # Vue.js application
-│   ├── async_demo.nag         # Async programming patterns
-│   ├── js_interop_demo.nag    # JavaScript interoperability
-│   ├── algorithms.nag         # Data structures and algorithms
-│   └── cli_demo.nag           # Command-line applications
-├── tests/                       # Test files and utilities
-│   ├── fixtures/               # Test Nagari source files
-│   ├── outputs/                # Generated JavaScript files
-│   ├── debug/                  # Debug utilities and tools
-│   └── README.md               # Testing documentation
-├── dev-tools/                   # Development utilities
-│   ├── test-*/                 # Temporary test projects
-│   └── README.md               # Development tools documentation
-├── specs/                       # Enhanced language specification
-│   ├── grammar.bnf            # Complete BNF grammar
-│   └── language-spec.md       # Comprehensive language reference
-├── docs/                        # Complete documentation suite
-│   ├── getting-started.md     # Installation and setup
-│   ├── language-guide.md      # Language features and syntax
-│   ├── api-reference.md       # Standard library documentation
-│   ├── ecosystem-guide.md     # CLI, REPL, and tooling
-│   ├── interop-guide.md       # JavaScript integration
-│   └── troubleshooting.md     # Common issues and solutions
-├── tools/                       # Development and build tools
-│   ├── setup-nagpkg.sh       # Package manager setup (Unix)
-│   ├── setup-nagpkg.bat      # Package manager setup (Windows)
-│   ├── build.sh              # Cross-platform build script
-│   ├── run-tests.sh          # Comprehensive test runner
-│   └── test-*.sh             # Specialized testing tools
-└── assets/                      # Project assets and resources
-    └── docs.css               # Documentation styling
+Nagari/                              # 🚀 Root project directory
+├── src/                             # 📂 All source code (clean, consolidated)
+│   ├── cli/                         # 🔧 Enhanced CLI tool with commands
+│   │   ├── src/
+│   │   │   ├── main.rs             # CLI entry point and argument parsing
+│   │   │   ├── commands/           # CLI command handlers
+│   │   │   │   └── mod.rs          # Command routing and organization
+│   │   │   ├── package/            # Advanced package manager
+│   │   │   │   ├── manifest.rs     # Package manifest handling
+│   │   │   │   ├── manager.rs      # Package lifecycle management
+│   │   │   │   ├── registry.rs     # Registry client with auth
+│   │   │   │   ├── resolver.rs     # Dependency resolution
+│   │   │   │   ├── cache.rs        # Intelligent caching
+│   │   │   │   └── lockfile.rs     # Deterministic builds
+│   │   │   ├── repl_engine/        # Advanced REPL system
+│   │   │   │   ├── engine.rs       # Core REPL engine
+│   │   │   │   ├── commands.rs     # REPL command handling
+│   │   │   │   ├── editor.rs       # Multi-line editor
+│   │   │   │   ├── evaluator.rs    # Code evaluation
+│   │   │   │   ├── completer.rs    # Intelligent completion
+│   │   │   │   ├── highlighter.rs  # Syntax highlighting
+│   │   │   │   └── session.rs      # Session persistence
+│   │   │   ├── tools/              # Development tools
+│   │   │   │   ├── formatter.rs    # Code formatting
+│   │   │   │   ├── linter.rs       # Code quality checks
+│   │   │   │   └── doc_generator.rs # Documentation generation
+│   │   │   ├── config.rs           # Configuration management
+│   │   │   └── utils.rs            # Utility functions
+│   │   ├── tests/                  # Comprehensive CLI test suite
+│   │   └── Cargo.toml              # CLI crate configuration
+│   ├── nagari-compiler/            # 🦀 Rust-based compiler
+│   │   ├── src/
+│   │   │   ├── lib.rs              # Compiler library exports
+│   │   │   ├── main.rs             # Standalone compiler binary
+│   │   │   ├── lexer.rs            # Enhanced lexical analysis
+│   │   │   ├── parser.rs           # Advanced syntax parsing
+│   │   │   ├── ast.rs              # Abstract syntax tree
+│   │   │   ├── transpiler/         # JavaScript code generation
+│   │   │   │   ├── mod.rs          # Transpiler main module
+│   │   │   │   ├── builtin_map.rs  # Built-in function mapping
+│   │   │   │   └── modules.rs      # Module system handling
+│   │   │   └── types.rs            # Type system implementation
+│   │   └── Cargo.toml              # Compiler crate configuration
+│   ├── nagari-parser/              # 📝 Alternative parser implementation
+│   │   ├── src/
+│   │   │   ├── lib.rs              # Parser library exports
+│   │   │   ├── lexer.rs            # Token analysis and scanning
+│   │   │   ├── parser.rs           # Syntax tree building
+│   │   │   ├── token.rs            # Token definitions
+│   │   │   └── test_indentation.rs # Indentation parsing tests
+│   │   └── Cargo.toml              # Parser crate configuration
+│   ├── nagari-vm/                  # ⚡ Virtual machine for execution
+│   │   ├── src/
+│   │   │   ├── lib.rs              # VM library exports
+│   │   │   ├── main.rs             # Standalone VM binary
+│   │   │   ├── env.rs              # Environment management
+│   │   │   └── value.rs            # Value types and operations
+│   │   └── Cargo.toml              # VM crate configuration
+│   ├── nagari-wasm/                # 🌐 WebAssembly compilation target
+│   │   ├── src/
+│   │   │   └── lib.rs              # WASM bindings and interface
+│   │   └── Cargo.toml              # WASM crate configuration
+│   ├── nagari-embedded/            # 🔌 Embedded systems support
+│   │   ├── src/
+│   │   │   ├── lib.rs              # Embedded runtime
+│   │   │   └── main.rs             # Embedded example binary
+│   │   └── Cargo.toml              # Embedded crate configuration
+│   ├── lsp-server/                 # 🔍 Language Server Protocol
+│   │   ├── src/
+│   │   │   ├── main.rs             # LSP server entry point
+│   │   │   ├── backend.rs          # LSP protocol implementation
+│   │   │   ├── completion.rs       # Code completion engine
+│   │   │   ├── diagnostics.rs     # Error detection and reporting
+│   │   │   ├── document.rs         # Document management
+│   │   │   └── navigation.rs       # Go-to-definition, references
+│   │   └── Cargo.toml              # LSP crate configuration
+│   ├── registry-server/            # 📦 Production registry server
+│   │   ├── src/
+│   │   │   ├── main.rs             # Registry server entry point
+│   │   │   └── middleware.rs       # HTTP middleware and routing
+│   │   └── Cargo.toml              # Registry crate configuration
+│   └── nagari-runtime/             # 📦 Runtime utilities and polyfills
+│       ├── src/                    # TypeScript runtime implementation
+│       │   ├── index.ts            # Main runtime exports
+│       │   ├── interop.ts          # JavaScript ↔ Nagari interoperability
+│       │   ├── builtins.ts         # Python-like built-in functions
+│       │   └── types.ts            # Type conversion utilities
+│       ├── dist/                   # Compiled JavaScript output
+│       ├── tests/                  # Runtime test suite
+│       ├── package.json            # npm package configuration
+│       └── tsconfig.json           # TypeScript configuration
+├── examples/                       # 📝 Comprehensive example projects
+│   ├── hello.nag                  # Simple hello world example
+│   ├── algorithms.nag             # Data structures and algorithms
+│   ├── async_demo.nag             # Async programming patterns
+│   ├── react_todo_app.nag         # React application with hooks
+│   ├── express_server.nag         # Express.js REST API
+│   ├── vue_task_app.nag           # Vue.js application
+│   ├── js_interop_demo.nag        # JavaScript interoperability
+│   ├── math_demo.nag              # Mathematical computations
+│   ├── file_operations.nag        # File system operations
+│   └── cli_demo.nag               # Command-line applications
+├── tests/                          # 🧪 Test files and utilities
+│   ├── fixtures/                  # Test Nagari source files
+│   ├── outputs/                   # Generated JavaScript files
+│   ├── debug/                     # Debug utilities and tools
+│   └── README.md                  # Testing documentation
+├── docs/                           # 📚 Complete documentation suite
+│   ├── getting-started.md         # Installation and setup
+│   ├── language-guide.md          # Language features and syntax
+│   ├── api-reference.md           # Standard library documentation
+│   ├── cli-reference.md           # CLI commands and options
+│   ├── repl-guide.md              # REPL usage and features
+│   ├── lsp-guide.md               # LSP integration guide
+│   ├── interop-guide.md           # JavaScript integration
+│   ├── architecture.md            # System architecture overview
+│   ├── development-guide.md       # Contributor guide
+│   └── troubleshooting.md         # Common issues and solutions
+├── stdlib/                         # 📖 Comprehensive standard library
+│   ├── core.nag                  # Built-in functions and types
+│   ├── math.nag                  # Mathematical operations
+│   ├── http.nag                  # HTTP client/server utilities
+│   ├── fs.nag                    # File system operations
+│   ├── json.nag                  # JSON parsing/serialization
+│   ├── crypto.nag                # Cryptographic functions
+│   ├── db.nag                    # Database connectivity
+│   ├── os.nag                    # Operating system interface
+│   └── time.nag                  # Date/time manipulation
+├── scripts/                        # 🔨 Development and build tools
+│   ├── build.sh                  # Cross-platform build script
+│   ├── build.bat                 # Windows build script
+│   ├── run-tests.sh              # Comprehensive test runner
+│   ├── run-tests.bat             # Windows test runner
+│   ├── tools/                    # Specialized development utilities
+│   └── dev-tools/                # Development helpers and setup
+├── specs/                          # 📋 Enhanced language specification
+│   ├── grammar.bnf               # Complete BNF grammar
+│   ├── language-spec.md          # Comprehensive language reference
+│   └── bytecode-format.md        # VM bytecode specification
+├── target/                         # 🏗️ Cargo build outputs (generated)
+├── .github/                        # 🔄 GitHub Actions and templates
+│   └── workflows/                 # CI/CD pipeline definitions
+├── .gitignore                      # 🚫 Git ignore patterns
+├── Cargo.toml                      # 🦀 Workspace configuration
+├── Cargo.lock                      # 🔒 Dependency lock file
+├── LICENSE                         # 📄 MIT license
+├── CHANGELOG.md                    # 📅 Version history
+├── CONTRIBUTING.md                 # 🤝 Contribution guidelines
+├── CREDITS.md                      # 🙏 Acknowledgments
+└── README.md                       # 📖 This comprehensive guide
 ```
 
 ## 🚀 Installation & Setup
@@ -584,13 +673,13 @@ cd nagari
 
 ```bash
 # Build CLI only for immediate use
-cd cli && cargo build --release
+cd src/cli && cargo build --release
 
 # Build and link runtime
 cd ../nagari-runtime && npm install && npm run build && npm link
 
 # Test with a simple program
-cd .. && echo 'print("Hello, Nagari!")' > hello.nag
+cd ../.. && echo 'print("Hello, Nagari!")' > hello.nag
 ./target/release/nag run hello.nag
 ```
 
