@@ -13,9 +13,14 @@ import { ReactInterop } from './jsx.js';
 if (typeof globalThis !== 'undefined') {
     // Initialize Nagari runtime globals
     (globalThis as any).__nagari__ = {
-        version: '0.1.0',
+        version: '0.3.1',
         runtime: 'js',
-        interop: InteropRegistry
+        interop: InteropRegistry,
+        features: {
+            formatSpecifiers: true,
+            percentageFormatting: true,
+            pythonCompatibility: true
+        }
     };
 
     // Initialize interop registry

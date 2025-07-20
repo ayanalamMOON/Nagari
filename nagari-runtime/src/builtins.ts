@@ -206,17 +206,17 @@ export function str_count(s: string, substring: string): number {
     if (substring.length === 0) {
         return s.length + 1;
     }
-    
+
     let count = 0;
     let pos = 0;
-    
+
     while (true) {
         const index = s.indexOf(substring, pos);
         if (index === -1) break;
         count++;
         pos = index + 1;
     }
-    
+
     return count;
 }
 
@@ -224,10 +224,10 @@ export function str_pad_left(s: string, width: number, fillchar: string = ' '): 
     if (s.length >= width) {
         return s;
     }
-    
+
     const paddingNeeded = width - s.length;
     const char = fillchar.length === 0 ? ' ' : fillchar.charAt(0);
-    
+
     return char.repeat(paddingNeeded) + s;
 }
 
@@ -235,10 +235,10 @@ export function str_pad_right(s: string, width: number, fillchar: string = ' '):
     if (s.length >= width) {
         return s;
     }
-    
+
     const paddingNeeded = width - s.length;
     const char = fillchar.length === 0 ? ' ' : fillchar.charAt(0);
-    
+
     return s + char.repeat(paddingNeeded);
 }
 
@@ -246,12 +246,38 @@ export function str_center(s: string, width: number, fillchar: string = ' '): st
     if (s.length >= width) {
         return s;
     }
-    
+
     const paddingNeeded = width - s.length;
     const char = fillchar.length === 0 ? ' ' : fillchar.charAt(0);
-    
+
     const leftPadding = Math.floor(paddingNeeded / 2);
     const rightPadding = paddingNeeded - leftPadding;
-    
+
     return char.repeat(leftPadding) + s + char.repeat(rightPadding);
+}
+
+// Format helper functions for enhanced f-string support
+export function format_percentage(value: number, precision: number = 2): string {
+    return (value * 100).toFixed(precision) + '%';
+}
+
+export function format_currency(value: number, precision: number = 2, symbol: string = '$'): string {
+    return symbol + value.toFixed(precision);
+}
+
+export function format_number_with_commas(value: number): string {
+    return value.toLocaleString();
+}
+
+export function format_scientific(value: number, precision: number = 2): string {
+    return value.toExponential(precision);
+}
+
+export function center_string(str: string, width: number, fill: string = ' '): string {
+    const s = str.toString();
+    if (s.length >= width) return s;
+    const padding = width - s.length;
+    const leftPad = Math.floor(padding / 2);
+    const rightPad = padding - leftPad;
+    return fill.repeat(leftPad) + s + fill.repeat(rightPad);
 }

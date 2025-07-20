@@ -1,10 +1,10 @@
 // Basic test for nagari-runtime
-import { str_capitalize, str_center, str_count, str_pad_left, str_pad_right, str_reverse, str_title } from '../dist/index.js';
+import { format_currency, format_percentage, str_capitalize, str_center, str_count, str_pad_left, str_pad_right, str_reverse, str_title } from '../dist/index.js';
 
 describe('Nagari Runtime String Functions', () => {
     test('str_capitalize should capitalize first character', () => {
         expect(str_capitalize('hello world')).toBe('Hello world');
-        expect(str_capitalize('HELLO')).toBe('HELLO');
+        expect(str_capitalize('HELLO')).toBe('Hello');
         expect(str_capitalize('')).toBe('');
     });
 
@@ -20,7 +20,7 @@ describe('Nagari Runtime String Functions', () => {
     });
 
     test('str_count should count substring occurrences', () => {
-        expect(str_count('programming with nagari is amazing', 'a')).toBe(4);
+        expect(str_count('programming with nagari is amazing', 'a')).toBe(5);
         expect(str_count('hello hello hello', 'hello')).toBe(3);
         expect(str_count('test', 'xyz')).toBe(0);
     });
@@ -38,6 +38,21 @@ describe('Nagari Runtime String Functions', () => {
     test('str_center should center string', () => {
         expect(str_center('Nagari', 10)).toBe('  Nagari  ');
         expect(str_center('test', 8, '*')).toBe('**test**');
+    });
+});
+
+describe('Formatting Functions', () => {
+    test('format_percentage should format as percentage', () => {
+        expect(format_percentage(0.25)).toBe('25.00%');
+        expect(format_percentage(0.1534, 1)).toBe('15.3%');
+        expect(format_percentage(0.123456, 3)).toBe('12.346%');
+        expect(format_percentage(1.0)).toBe('100.00%');
+    });
+
+    test('format_currency should format as currency', () => {
+        expect(format_currency(123.45)).toBe('$123.45');
+        expect(format_currency(99.9, 1)).toBe('$99.9');
+        expect(format_currency(50, 2, '€')).toBe('€50.00');
     });
 });
 
