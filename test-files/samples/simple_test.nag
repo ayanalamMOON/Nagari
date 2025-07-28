@@ -1,0 +1,3 @@
+// Simple test program for our parser
+let x = 42
+print(x)

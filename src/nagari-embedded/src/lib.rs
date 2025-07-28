@@ -67,11 +67,6 @@ impl EmbeddedRuntime {
         })
     }
     pub fn run_script(&mut self, script: &str) -> Result<EmbeddedValue, String> {
-        let _vm = self
-            .vm
-            .lock()
-            .map_err(|e| format!("Failed to lock VM: {}", e))?;
-
         // Apply runtime config constraints
         if let Some(_timeout) = self.config.execution_timeout {
             // In a real implementation, this would set up execution timeout
@@ -89,19 +84,15 @@ impl EmbeddedRuntime {
             return Err("Network operations not allowed".to_string());
         }
 
-        // For now, simulate script execution - in real implementation this would:
-        // 1. Compile script to bytecode
-        // 2. Load bytecode into VM
-        // 3. Run VM
+        // Simple script evaluation - similar to WASM implementation
         if self.config.debug_mode {
             eprintln!("Executing script: {}", &script[..script.len().min(50)]);
         }
 
-        // Return a placeholder result
-        Ok(EmbeddedValue::String(format!(
-            "Script executed: {}",
-            script.len()
-        )))
+        // Use the same compilation and execution logic as WASM
+        let result = self.compile_and_run_embedded_source(script)?;
+
+        Ok(EmbeddedValue::from_nagari(result))
     }
 
     pub fn call_function(
@@ -109,20 +100,18 @@ impl EmbeddedRuntime {
         name: &str,
         args: Vec<EmbeddedValue>,
     ) -> Result<EmbeddedValue, String> {
-        let _vm = self
-            .vm
-            .lock()
-            .map_err(|e| format!("Failed to lock VM: {}", e))?;
-
-        // Convert args to NagariValue for future use
-        let _nagari_args: Vec<NagariValue> = args.into_iter().map(|v| v.to_nagari()).collect();
+        // Convert args to NagariValue
+        let nagari_args: Vec<NagariValue> = args.into_iter().map(|v| v.to_nagari()).collect();
 
         // In a real implementation, this would look up and call the function
         if self.config.debug_mode {
-            eprintln!("Calling function: {}", name);
+            eprintln!("Calling function: {} with {} args", name, nagari_args.len());
         }
 
-        Ok(EmbeddedValue::None)
+        // Call embedded function using similar logic to WASM implementation
+        let result = self.call_embedded_function(name, nagari_args)?;
+
+        Ok(EmbeddedValue::from_nagari(result))
     }
 
     pub fn load_module(&mut self, name: &str, code: &str) -> Result<(), String> {
@@ -205,6 +194,212 @@ impl EmbeddedRuntime {
         }
 
         Ok(())
+    }
+
+    // Helper methods for embedded execution
+    fn compile_and_run_embedded_source(&mut self, source: &str) -> Result<NagariValue, String> {
+        // Simple expression evaluator for basic operations
+        // This mirrors the WASM implementation but for embedded use
+        let trimmed = source.trim();
+
+        // Handle simple numeric literals
+        if let Ok(num) = trimmed.parse::<i64>() {
+            return Ok(NagariValue::Int(num));
+        }
+
+        if let Ok(num) = trimmed.parse::<f64>() {
+            return Ok(NagariValue::Float(num));
+        }
+
+        // Handle string literals
+        if trimmed.starts_with('"') && trimmed.ends_with('"') {
+            let string_content = &trimmed[1..trimmed.len()-1];
+            return Ok(NagariValue::String(string_content.to_string()));
+        }
+
+        // Handle boolean literals
+        if trimmed == "true" {
+            return Ok(NagariValue::Bool(true));
+        }
+        if trimmed == "false" {
+            return Ok(NagariValue::Bool(false));
+        }
+        if trimmed == "null" || trimmed == "None" {
+            return Ok(NagariValue::None);
+        }
+
+        // Handle simple variable lookups through VM
+        if let Ok(vm) = self.vm.lock() {
+            if let Some(value) = vm.get_global(trimmed) {
+                return Ok(value.clone());
+            }
+        }
+
+        // Handle simple arithmetic expressions (a + b)
+        if let Some(pos) = trimmed.find(" + ") {
+            let left_str = &trimmed[..pos].trim();
+            let right_str = &trimmed[pos + 3..].trim();
+
+            if let (Ok(left), Ok(right)) = (self.compile_and_run_embedded_source(left_str), self.compile_and_run_embedded_source(right_str)) {
+                return left.add(&right);
+            }
+        }
+
+        // Handle simple function calls like print("hello")
+        if trimmed.starts_with("print(") && trimmed.ends_with(")") {
+            let args_str = &trimmed[6..trimmed.len()-1];
+            let arg_value = self.compile_and_run_embedded_source(args_str)?;
+
+            // Simple print implementation for embedded
+            match &arg_value {
+                NagariValue::String(s) => println!("{}", s),
+                NagariValue::Int(i) => println!("{}", i),
+                NagariValue::Float(f) => println!("{}", f),
+                NagariValue::Bool(b) => println!("{}", b),
+                NagariValue::None => println!("None"),
+                _ => println!("{:?}", arg_value),
+            }
+
+            return Ok(NagariValue::None);
+        }
+
+        // For unhandled expressions, return None with debug info
+        if self.config.debug_mode {
+            eprintln!("Unhandled expression in embedded mode: {}", trimmed);
+        }
+
+        Ok(NagariValue::None)
+    }
+
+    fn call_embedded_function(&mut self, function_name: &str, args: Vec<NagariValue>) -> Result<NagariValue, String> {
+        // Check if it's a built-in function (reusing logic from WASM)
+        match function_name {
+            "print" => {
+                for (i, arg) in args.iter().enumerate() {
+                    if i > 0 {
+                        print!(" ");
+                    }
+                    match arg {
+                        NagariValue::String(s) => print!("{}", s),
+                        NagariValue::Int(i) => print!("{}", i),
+                        NagariValue::Float(f) => print!("{}", f),
+                        NagariValue::Bool(b) => print!("{}", b),
+                        NagariValue::None => print!("None"),
+                        NagariValue::List(l) => print!("{:?}", l),
+                        NagariValue::Dict(d) => print!("{:?}", d),
+                        _ => print!("{:?}", arg),
+                    }
+                }
+                println!();
+                Ok(NagariValue::None)
+            }
+            "len" => {
+                if args.len() != 1 {
+                    return Err("len() takes exactly one argument".to_string());
+                }
+                match &args[0] {
+                    NagariValue::String(s) => Ok(NagariValue::Int(s.len() as i64)),
+                    NagariValue::List(l) => Ok(NagariValue::Int(l.len() as i64)),
+                    NagariValue::Dict(d) => Ok(NagariValue::Int(d.len() as i64)),
+                    _ => Err(format!("object of type '{}' has no len()", args[0].type_name())),
+                }
+            }
+            "str" => {
+                if args.len() != 1 {
+                    return Err("str() takes exactly one argument".to_string());
+                }
+                let string_repr = match &args[0] {
+                    NagariValue::String(s) => s.clone(),
+                    NagariValue::Int(i) => i.to_string(),
+                    NagariValue::Float(f) => f.to_string(),
+                    NagariValue::Bool(b) => b.to_string(),
+                    NagariValue::None => "None".to_string(),
+                    _ => format!("{:?}", args[0]),
+                };
+                Ok(NagariValue::String(string_repr))
+            }
+            "int" => {
+                if args.len() != 1 {
+                    return Err("int() takes exactly one argument".to_string());
+                }
+                match &args[0] {
+                    NagariValue::Int(i) => Ok(NagariValue::Int(*i)),
+                    NagariValue::Float(f) => Ok(NagariValue::Int(*f as i64)),
+                    NagariValue::String(s) => {
+                        s.parse::<i64>()
+                            .map(NagariValue::Int)
+                            .map_err(|_| format!("invalid literal for int(): '{}'", s))
+                    }
+                    NagariValue::Bool(b) => Ok(NagariValue::Int(if *b { 1 } else { 0 })),
+                    _ => Err(format!("int() argument must be a string or a number, not '{}'", args[0].type_name())),
+                }
+            }
+            "float" => {
+                if args.len() != 1 {
+                    return Err("float() takes exactly one argument".to_string());
+                }
+                match &args[0] {
+                    NagariValue::Float(f) => Ok(NagariValue::Float(*f)),
+                    NagariValue::Int(i) => Ok(NagariValue::Float(*i as f64)),
+                    NagariValue::String(s) => {
+                        s.parse::<f64>()
+                            .map(NagariValue::Float)
+                            .map_err(|_| format!("could not convert string to float: '{}'", s))
+                    }
+                    _ => Err(format!("float() argument must be a string or a number, not '{}'", args[0].type_name())),
+                }
+            }
+            "memory_usage" => {
+                // Embedded-specific function to check memory usage
+                if let Some(limit) = self.config.memory_limit {
+                    // Simplified memory reporting
+                    Ok(NagariValue::Dict(std::collections::HashMap::from([
+                        ("limit".to_string(), NagariValue::Int(limit as i64)),
+                        ("used".to_string(), NagariValue::Int(0)), // Placeholder
+                        ("available".to_string(), NagariValue::Int(limit as i64)),
+                    ])))
+                } else {
+                    Ok(NagariValue::String("No memory limit set".to_string()))
+                }
+            }
+            "get_config" => {
+                // Return runtime configuration
+                Ok(NagariValue::Dict(std::collections::HashMap::from([
+                    ("allow_io".to_string(), NagariValue::Bool(self.config.allow_io)),
+                    ("allow_network".to_string(), NagariValue::Bool(self.config.allow_network)),
+                    ("sandbox_mode".to_string(), NagariValue::Bool(self.config.sandbox_mode)),
+                    ("debug_mode".to_string(), NagariValue::Bool(self.config.debug_mode)),
+                ])))
+            }
+            _ => {
+                // Check if it's a user-defined function in VM
+                if let Ok(vm) = self.vm.lock() {
+                    if let Some(value) = vm.get_global(function_name) {
+                        match value {
+                            NagariValue::Function(_) => {
+                                // For now, just return None since we can't execute user functions yet
+                                if self.config.debug_mode {
+                                    eprintln!("Called user function '{}' (not fully implemented)", function_name);
+                                }
+                                Ok(NagariValue::None)
+                            }
+                            NagariValue::Builtin(_) => {
+                                // For now, just return None since we can't execute builtins directly
+                                if self.config.debug_mode {
+                                    eprintln!("Called builtin function '{}' (not fully implemented)", function_name);
+                                }
+                                Ok(NagariValue::None)
+                            }
+                            _ => Err(format!("'{}' object is not callable", value.type_name())),
+                        }
+                    } else {
+                        Err(format!("name '{}' is not defined", function_name))
+                    }
+                } else {
+                    Err("VM lock failed".to_string())
+                }
+            }
+        }
     }
 }
 
@@ -320,8 +515,6 @@ impl AsyncEmbeddedRuntime {
         })
     }
     pub async fn run_script(&self, script: &str) -> Result<EmbeddedValue, String> {
-        let mut vm = self.vm.write().await;
-
         // Apply runtime config constraints
         if let Some(_timeout) = self.config.execution_timeout {
             if self.config.debug_mode {
@@ -338,12 +531,10 @@ impl AsyncEmbeddedRuntime {
             return Err("Network operations not allowed".to_string());
         }
 
-        // TODO: The current VM only supports bytecode execution, not direct source code
-        // For now, return a placeholder until we integrate with the compiler
-        match vm.run().await {
-            Ok(()) => Ok(EmbeddedValue::None), // VM run returns (), not a value
-            Err(e) => Err(format!("Script execution error: {:?}", e)),
-        }
+        // Simple script evaluation for async context
+        let result = self.compile_and_run_async_source(script).await?;
+
+        Ok(EmbeddedValue::from_nagari(result))
     }
 
     pub async fn load_module_async(&self, name: &str, code: &str) -> Result<(), String> {
@@ -372,14 +563,174 @@ impl AsyncEmbeddedRuntime {
     }
     pub async fn call_function_async(
         &self,
-        _name: &str,
-        _args: Vec<EmbeddedValue>,
+        name: &str,
+        args: Vec<EmbeddedValue>,
     ) -> Result<EmbeddedValue, String> {
-        let _vm = self.vm.write().await;
+        // Convert args to NagariValue
+        let nagari_args: Vec<NagariValue> = args.into_iter().map(|v| v.to_nagari()).collect();
 
-        // TODO: The current VM doesn't support function calling API
-        // For now, return a placeholder until we implement function calls
-        Ok(EmbeddedValue::None)
+        if self.config.debug_mode {
+            eprintln!("Calling async function: {} with {} args", name, nagari_args.len());
+        }
+
+        // Call async function
+        let result = self.call_async_function(name, nagari_args).await?;
+
+        Ok(EmbeddedValue::from_nagari(result))
+    }
+
+    // Async helper methods
+    async fn compile_and_run_async_source(&self, source: &str) -> Result<NagariValue, String> {
+        // Simple expression evaluator for async operations
+        let trimmed = source.trim();
+
+        // Handle simple numeric literals
+        if let Ok(num) = trimmed.parse::<i64>() {
+            return Ok(NagariValue::Int(num));
+        }
+
+        if let Ok(num) = trimmed.parse::<f64>() {
+            return Ok(NagariValue::Float(num));
+        }
+
+        // Handle string literals
+        if trimmed.starts_with('"') && trimmed.ends_with('"') {
+            let string_content = &trimmed[1..trimmed.len()-1];
+            return Ok(NagariValue::String(string_content.to_string()));
+        }
+
+        // Handle boolean literals
+        if trimmed == "true" {
+            return Ok(NagariValue::Bool(true));
+        }
+        if trimmed == "false" {
+            return Ok(NagariValue::Bool(false));
+        }
+        if trimmed == "null" || trimmed == "None" {
+            return Ok(NagariValue::None);
+        }
+
+        // Handle simple variable lookups through VM
+        {
+            let vm = self.vm.read().await;
+            if let Some(value) = vm.get_global(trimmed) {
+                return Ok(value.clone());
+            }
+        }
+
+        // Handle async function calls
+        if trimmed.starts_with("await ") {
+            let inner_expr = &trimmed[6..].trim();
+            return Box::pin(self.compile_and_run_async_source(inner_expr)).await;
+        }
+
+        // Handle simple function calls like print("hello")
+        if trimmed.starts_with("print(") && trimmed.ends_with(")") {
+            let args_str = &trimmed[6..trimmed.len()-1];
+            let arg_value = Box::pin(self.compile_and_run_async_source(args_str)).await?;
+
+            // Simple print implementation for async
+            match &arg_value {
+                NagariValue::String(s) => println!("{}", s),
+                NagariValue::Int(i) => println!("{}", i),
+                NagariValue::Float(f) => println!("{}", f),
+                NagariValue::Bool(b) => println!("{}", b),
+                NagariValue::None => println!("None"),
+                _ => println!("{:?}", arg_value),
+            }
+
+            return Ok(NagariValue::None);
+        }
+
+        // For unhandled expressions, return None with debug info
+        if self.config.debug_mode {
+            eprintln!("Unhandled async expression: {}", trimmed);
+        }
+
+        Ok(NagariValue::None)
+    }
+
+    async fn call_async_function(&self, function_name: &str, args: Vec<NagariValue>) -> Result<NagariValue, String> {
+        // Async versions of builtin functions
+        match function_name {
+            "print" => {
+                for (i, arg) in args.iter().enumerate() {
+                    if i > 0 {
+                        print!(" ");
+                    }
+                    match arg {
+                        NagariValue::String(s) => print!("{}", s),
+                        NagariValue::Int(i) => print!("{}", i),
+                        NagariValue::Float(f) => print!("{}", f),
+                        NagariValue::Bool(b) => print!("{}", b),
+                        NagariValue::None => print!("None"),
+                        NagariValue::List(l) => print!("{:?}", l),
+                        NagariValue::Dict(d) => print!("{:?}", d),
+                        _ => print!("{:?}", arg),
+                    }
+                }
+                println!();
+                Ok(NagariValue::None)
+            }
+            "sleep" => {
+                // Async sleep function for embedded
+                if args.len() != 1 {
+                    return Err("sleep() takes exactly one argument".to_string());
+                }
+
+                let duration = match &args[0] {
+                    NagariValue::Int(ms) => *ms as u64,
+                    NagariValue::Float(ms) => *ms as u64,
+                    _ => return Err("sleep() argument must be a number".to_string()),
+                };
+
+                tokio::time::sleep(tokio::time::Duration::from_millis(duration)).await;
+                Ok(NagariValue::None)
+            }
+            "fetch" => {
+                // Async HTTP fetch for embedded (simplified)
+                if !self.config.allow_network {
+                    return Err("Network operations not allowed".to_string());
+                }
+
+                if args.len() != 1 {
+                    return Err("fetch() takes exactly one argument".to_string());
+                }
+
+                let url = match &args[0] {
+                    NagariValue::String(s) => s,
+                    _ => return Err("fetch() argument must be a string URL".to_string()),
+                };
+
+                // Simple placeholder - would use reqwest or similar in real implementation
+                Ok(NagariValue::String(format!("Response from {}", url)))
+            }
+            _ => {
+                // Check if it's a user-defined function in VM
+                {
+                    let vm = self.vm.read().await;
+                    if let Some(value) = vm.get_global(function_name) {
+                        match value {
+                            NagariValue::Function(_) => {
+                                if self.config.debug_mode {
+                                    eprintln!("Called async user function '{}' (not fully implemented)", function_name);
+                                }
+                                Ok(NagariValue::None)
+                            }
+                            NagariValue::Builtin(_) => {
+                                if self.config.debug_mode {
+                                    eprintln!("Called async builtin function '{}' (not fully implemented)", function_name);
+                                }
+                                Ok(NagariValue::None)
+                            }
+                            _ => Err(format!("'{}' object is not callable", value.type_name())),
+                        }
+                    } else {
+                        Err(format!("name '{}' is not defined", function_name))
+                    }
+                }
+            }
+        }
     }
 }
 

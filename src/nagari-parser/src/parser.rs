@@ -17,8 +17,12 @@ impl Parser {
     pub fn parse_program(&mut self) -> Result<Program, ParseError> {
         let mut statements = Vec::new();
         while !self.is_at_end() {
-            // Skip newlines at the top level
-            if self.check(&Token::Newline) {
+            // Skip newlines, indentation tokens, and EOF tokens at the top level
+            if self.check(&Token::Newline)
+                || self.check(&Token::Indent)
+                || self.check(&Token::Dedent)
+                || self.check(&Token::Eof)
+            {
                 let _ = self.advance();
                 continue;
             }
@@ -34,6 +38,11 @@ impl Parser {
     }
 
     fn parse_statement(&mut self) -> Result<Statement, ParseError> {
+        // Skip any indentation tokens before parsing the statement
+        while self.check(&Token::Indent) || self.check(&Token::Dedent) {
+            let _ = self.advance();
+        }
+
         match self.peek_token()?.map(|t| t.token.clone()) {
             Some(Token::ExportNamed) => {
                 let exports = self.parse_named_exports()?;
@@ -59,6 +68,17 @@ impl Parser {
             Some(Token::While) => self.parse_while_statement(),
             Some(Token::For) => self.parse_for_statement(),
             Some(Token::Class) => self.parse_class_statement(),
+            Some(Token::Identifier(_)) => {
+                // Check if this is a Python-style typed variable declaration: identifier: type = value
+                if self.is_typed_variable_declaration() {
+                    self.parse_typed_variable_declaration()
+                } else {
+                    // Regular expression statement
+                    let expr = self.parse_expression()?;
+                    self.consume_statement_terminator()?;
+                    Ok(Statement::Expression(expr))
+                }
+            }
             _ => {
                 let expr = self.parse_expression()?;
                 self.consume_statement_terminator()?;
@@ -258,16 +278,76 @@ impl Parser {
 
     fn parse_if_statement(&mut self) -> Result<Statement, ParseError> {
         self.consume(&Token::If, "Expected 'if'")?;
-        self.consume(&Token::LeftParen, "Expected '('")?;
+
+        // Check for JavaScript-style syntax: if (condition)
+        let has_parentheses = self.check(&Token::LeftParen);
+        if has_parentheses {
+            self.consume(&Token::LeftParen, "Expected '('")?;
+        }
+
+        // Parse condition
         let condition = self.parse_expression()?;
-        self.consume(&Token::RightParen, "Expected ')'")?;
-        self.consume(&Token::LeftBrace, "Expected '{'")?;
 
-        let then_body = self.parse_block()?;
+        if has_parentheses {
+            self.consume(&Token::RightParen, "Expected ')'")?;
+        }
 
-        let else_body = if self.match_token(&Token::Else) {
+        // Check for syntax style: Python (:) or JavaScript ({})
+        let is_python_style = self.check(&Token::Colon);
+
+        let then_body = if is_python_style {
+            // Python-style: if condition:
+            self.consume(&Token::Colon, "Expected ':'")?;
+            self.consume(&Token::Newline, "Expected newline after ':'")?;
+            self.consume(&Token::Indent, "Expected indented block")?;
+
+            let mut statements = Vec::new();
+            while !self.check(&Token::Dedent) && !self.is_at_end() {
+                if self.check(&Token::Newline) {
+                    let _ = self.advance();
+                    continue;
+                }
+                statements.push(self.parse_statement()?);
+            }
+
+            if self.check(&Token::Dedent) {
+                let _ = self.advance();
+            }
+
+            statements
+        } else {
+            // JavaScript-style: if (condition) { }
             self.consume(&Token::LeftBrace, "Expected '{'")?;
-            Some(self.parse_block()?)
+            self.parse_block()?
+        };
+
+        // Check for else clause
+        let else_body = if self.match_token(&Token::Else) {
+            if is_python_style {
+                // Python-style else
+                self.consume(&Token::Colon, "Expected ':' after else")?;
+                self.consume(&Token::Newline, "Expected newline after ':'")?;
+                self.consume(&Token::Indent, "Expected indented block")?;
+
+                let mut else_statements = Vec::new();
+                while !self.check(&Token::Dedent) && !self.is_at_end() {
+                    if self.check(&Token::Newline) {
+                        let _ = self.advance();
+                        continue;
+                    }
+                    else_statements.push(self.parse_statement()?);
+                }
+
+                if self.check(&Token::Dedent) {
+                    let _ = self.advance();
+                }
+
+                Some(else_statements)
+            } else {
+                // JavaScript-style else
+                self.consume(&Token::LeftBrace, "Expected '{'")?;
+                Some(self.parse_block()?)
+            }
         } else {
             None
         };
@@ -281,26 +361,125 @@ impl Parser {
 
     fn parse_while_statement(&mut self) -> Result<Statement, ParseError> {
         self.consume(&Token::While, "Expected 'while'")?;
-        self.consume(&Token::LeftParen, "Expected '('")?;
-        let condition = self.parse_expression()?;
-        self.consume(&Token::RightParen, "Expected ')'")?;
-        self.consume(&Token::LeftBrace, "Expected '{'")?;
 
-        let body = self.parse_block()?;
+        // Check for JavaScript-style syntax: while (condition)
+        let has_parentheses = self.check(&Token::LeftParen);
+        if has_parentheses {
+            self.consume(&Token::LeftParen, "Expected '('")?;
+        }
+
+        let condition = self.parse_expression()?;
+
+        if has_parentheses {
+            self.consume(&Token::RightParen, "Expected ')'")?;
+        }
+
+        // Check for syntax style: Python (:) or JavaScript ({})
+        let is_python_style = self.check(&Token::Colon);
+
+        let body = if is_python_style {
+            // Python-style: while condition:
+            self.consume(&Token::Colon, "Expected ':'")?;
+            self.consume(&Token::Newline, "Expected newline after ':'")?;
+            self.consume(&Token::Indent, "Expected indented block")?;
+
+            let mut statements = Vec::new();
+            while !self.check(&Token::Dedent) && !self.is_at_end() {
+                if self.check(&Token::Newline) {
+                    let _ = self.advance();
+                    continue;
+                }
+                statements.push(self.parse_statement()?);
+            }
+
+            if self.check(&Token::Dedent) {
+                let _ = self.advance();
+            }
+
+            statements
+        } else {
+            // JavaScript-style: while (condition) { }
+            self.consume(&Token::LeftBrace, "Expected '{'")?;
+            self.parse_block()?
+        };
 
         Ok(Statement::While { condition, body })
     }
 
     fn parse_for_statement(&mut self) -> Result<Statement, ParseError> {
         self.consume(&Token::For, "Expected 'for'")?;
-        self.consume(&Token::LeftParen, "Expected '('")?;
-        let variable = self.consume_identifier("Expected variable name")?;
-        // TODO: Support more for loop variants
-        self.consume(&Token::RightParen, "Expected ')'")?;
-        self.consume(&Token::LeftBrace, "Expected '{'")?;
 
-        let iterable = Expression::Literal(Literal::Null); // Placeholder
-        let body = self.parse_block()?;
+        // Check for JavaScript-style syntax: for (variable in iterable)
+        let has_parentheses = self.check(&Token::LeftParen);
+        if has_parentheses {
+            self.consume(&Token::LeftParen, "Expected '('")?;
+        }
+
+        // Parse variable name
+        let variable = self.consume_identifier("Expected variable name")?;
+
+        // Expect 'in' keyword
+        if let Ok(Some(token_with_pos)) = self.peek_token() {
+            if let Token::Identifier(ident) = &token_with_pos.token {
+                if ident == "in" {
+                    let _ = self.advance(); // consume 'in'
+                } else {
+                    return Err(ParseError::UnexpectedToken {
+                        token: format!("{:?}", ident),
+                        line: token_with_pos.line,
+                        column: token_with_pos.column,
+                    });
+                }
+            } else {
+                return Err(ParseError::UnexpectedToken {
+                    token: format!("{:?}", token_with_pos.token),
+                    line: token_with_pos.line,
+                    column: token_with_pos.column,
+                });
+            }
+        } else {
+            return Err(ParseError::UnexpectedToken {
+                token: "EOF".to_string(),
+                line: 0,
+                column: 0,
+            });
+        }
+
+        // Parse the iterable expression
+        let iterable = self.parse_expression()?;
+
+        if has_parentheses {
+            self.consume(&Token::RightParen, "Expected ')'")?;
+        }
+
+        // Check for syntax style: Python (:) or JavaScript ({})
+        let is_python_style = self.check(&Token::Colon);
+
+        let body = if is_python_style {
+            // Python-style: for variable in iterable:
+            self.consume(&Token::Colon, "Expected ':'")?;
+            self.consume(&Token::Newline, "Expected newline after ':'")?;
+            self.consume(&Token::Indent, "Expected indented block")?;
+
+            let mut statements = Vec::new();
+            while !self.check(&Token::Dedent) && !self.is_at_end() {
+                if self.check(&Token::Newline) {
+                    let _ = self.advance();
+                    continue;
+                }
+                statements.push(self.parse_statement()?);
+            }
+
+            if self.check(&Token::Dedent) {
+                let _ = self.advance();
+            }
+
+            statements
+        } else {
+            // JavaScript-style: for (variable in iterable) { }
+            self.consume(&Token::LeftBrace, "Expected '{'")?;
+            self.parse_block()?
+        };
 
         Ok(Statement::For {
             variable,
@@ -332,7 +511,11 @@ impl Parser {
     fn parse_block(&mut self) -> Result<Vec<Statement>, ParseError> {
         let mut statements = Vec::new();
         while !self.check(&Token::RightBrace) && !self.is_at_end() {
-            if self.check(&Token::Newline) {
+            // Skip newlines and indentation tokens in blocks
+            if self.check(&Token::Newline)
+                || self.check(&Token::Indent)
+                || self.check(&Token::Dedent)
+            {
                 let _ = self.advance();
                 continue;
             }
@@ -638,16 +821,39 @@ impl Parser {
                     Ok(Expression::Literal(Literal::String(value)))
                 }
                 Token::TemplateStart(s) => self.parse_template_literal(s.clone()),
+                Token::Async => {
+                    // Check if this is an async arrow function
+                    self.parse_async_arrow_function()
+                }
                 Token::Identifier(name) => {
                     let name = name.clone();
                     self.advance()?;
-                    Ok(Expression::Identifier(name))
+                    // Check if this is an arrow function
+                    if self.check(&Token::Arrow) {
+                        // Single parameter arrow function: param => expr
+                        self.advance()?; // consume =>
+                        let body = if self.check(&Token::LeftBrace) {
+                            ArrowFunctionBody::Block(self.parse_arrow_function_block_body()?)
+                        } else {
+                            ArrowFunctionBody::Expression(Box::new(self.parse_assignment()?))
+                        };
+                        Ok(Expression::Arrow {
+                            parameters: vec![FunctionParameter {
+                                name,
+                                type_annotation: None,
+                                default_value: None,
+                            }],
+                            body,
+                            is_async: false,
+                            return_type: None,
+                        })
+                    } else {
+                        Ok(Expression::Identifier(name))
+                    }
                 }
                 Token::LeftParen => {
-                    self.advance()?;
-                    let expr = self.parse_expression()?;
-                    self.consume(&Token::RightParen, "Expected ')'")?;
-                    Ok(expr)
+                    // Could be a grouped expression or arrow function parameters
+                    self.parse_parenthesized_expression_or_arrow_function()
                 }
                 Token::LeftBracket => self.parse_array_literal(),
                 Token::LeftBrace => self.parse_object_literal(),
@@ -738,6 +944,11 @@ impl Parser {
     }
 
     fn consume_statement_terminator(&mut self) -> Result<(), ParseError> {
+        // Skip any indentation tokens that might appear
+        while self.check(&Token::Indent) || self.check(&Token::Dedent) {
+            let _ = self.advance();
+        }
+
         if self.match_token(&Token::Semicolon)
             || self.match_token(&Token::Newline)
             || self.check(&Token::Dedent)
@@ -1059,6 +1270,293 @@ impl Parser {
 
     fn try_consume_string_literal(&mut self) -> Result<String, ParseError> {
         self.consume_string_literal()
+    }
+
+    /// Check if current position looks like a typed variable declaration: identifier: type = value
+    fn is_typed_variable_declaration(&mut self) -> bool {
+        // Look ahead to see if we have: identifier : type = value
+        if self.current + 2 >= self.tokens.len() {
+            return false;
+        }
+
+        // Check if second token is a colon
+        matches!(self.tokens[self.current + 1].token, Token::Colon)
+    }
+
+    /// Parse a Python-style typed variable declaration: identifier: type = value
+    fn parse_typed_variable_declaration(&mut self) -> Result<Statement, ParseError> {
+        // Parse identifier name
+        let name = self.consume_identifier("Expected variable name")?;
+
+        // Consume colon
+        self.consume(&Token::Colon, "Expected ':'")?;
+
+        // Skip type annotation (we'll parse it but not use it for now)
+        self.skip_type_annotation()?;
+
+        // Expect assignment
+        self.consume(&Token::Assign, "Expected '='")?;
+
+        // Parse value
+        let value = self.parse_expression()?;
+
+        // Consume statement terminator
+        self.consume_statement_terminator()?;
+
+        Ok(Statement::Let { name, value })
+    }
+
+    /// Parse async arrow function: async (params) => body or async param => body
+    fn parse_async_arrow_function(&mut self) -> Result<Expression, ParseError> {
+        // The 'async' token has already been detected by the caller
+        self.advance()?; // consume 'async'
+
+        // Check if we have parentheses for parameters or a single parameter
+        if self.check(&Token::LeftParen) {
+            // Parse parenthesized parameters: async (param1, param2) => body
+            self.advance()?; // consume '('
+
+            let mut parameters = Vec::new();
+            if !self.check(&Token::RightParen) {
+                loop {
+                    let name = self.consume_identifier("Expected parameter name")?;
+                    let type_annotation = if self.match_token(&Token::Colon) {
+                        Some(self.consume_identifier("Expected type annotation")?)
+                    } else {
+                        None
+                    };
+
+                    let default_value = if self.match_token(&Token::Assign) {
+                        Some(self.parse_assignment()?)
+                    } else {
+                        None
+                    };
+
+                    parameters.push(FunctionParameter {
+                        name,
+                        type_annotation,
+                        default_value,
+                    });
+
+                    if !self.match_token(&Token::Comma) {
+                        break;
+                    }
+                }
+            }
+
+            self.consume(&Token::RightParen, "Expected ')'")?;
+            self.consume(&Token::Arrow, "Expected '=>'")?;
+
+            // Parse body - could be an expression or a block
+            let body = if self.check(&Token::LeftBrace) {
+                // Block body: { statements... }
+                ArrowFunctionBody::Block(self.parse_arrow_function_block_body()?)
+            } else {
+                // Expression body: expression
+                ArrowFunctionBody::Expression(Box::new(self.parse_assignment()?))
+            };
+
+            Ok(Expression::Arrow {
+                parameters,
+                body,
+                is_async: true,
+                return_type: None,
+            })
+        } else {
+            // Single parameter: async param => body
+            let name = self.consume_identifier("Expected parameter name")?;
+            self.consume(&Token::Arrow, "Expected '=>'")?;
+
+            // Parse body - could be an expression or a block
+            let body = if self.check(&Token::LeftBrace) {
+                // Block body: { statements... }
+                ArrowFunctionBody::Block(self.parse_arrow_function_block_body()?)
+            } else {
+                // Expression body: expression
+                ArrowFunctionBody::Expression(Box::new(self.parse_assignment()?))
+            };
+
+            Ok(Expression::Arrow {
+                parameters: vec![FunctionParameter {
+                    name,
+                    type_annotation: None,
+                    default_value: None,
+                }],
+                body,
+                is_async: true,
+                return_type: None,
+            })
+        }
+    }
+
+    /// Parse parenthesized expression or arrow function parameters
+    fn parse_parenthesized_expression_or_arrow_function(
+        &mut self,
+    ) -> Result<Expression, ParseError> {
+        self.advance()?; // consume '('
+
+        // Handle empty parentheses: () => body
+        if self.check(&Token::RightParen) {
+            self.advance()?; // consume ')'
+            if self.check(&Token::Arrow) {
+                self.advance()?; // consume '=>'
+
+                // Parse body - could be an expression or a block
+                let body = if self.check(&Token::LeftBrace) {
+                    // Block body: { statements... }
+                    ArrowFunctionBody::Block(self.parse_arrow_function_block_body()?)
+                } else {
+                    // Expression body: expression
+                    ArrowFunctionBody::Expression(Box::new(self.parse_assignment()?))
+                };
+
+                return Ok(Expression::Arrow {
+                    parameters: Vec::new(),
+                    body,
+                    is_async: false,
+                    return_type: None,
+                });
+            } else {
+                return Err(ParseError::UnexpectedToken {
+                    token: "Expected '=>' or expression".to_string(),
+                    line: 0,
+                    column: 0,
+                });
+            }
+        }
+
+        // Parse first element (could be parameter or expression)
+        let first_expr = self.parse_expression()?;
+
+        // Check if we have a comma (indicating multiple parameters)
+        if self.match_token(&Token::Comma) {
+            // This is definitely arrow function parameters
+            let mut parameters = Vec::new();
+
+            // Add first parameter
+            if let Expression::Identifier(name) = first_expr {
+                parameters.push(FunctionParameter {
+                    name,
+                    type_annotation: None,
+                    default_value: None,
+                });
+            } else {
+                return Err(ParseError::SyntaxError {
+                    message: "Invalid parameter in arrow function".to_string(),
+                    line: 0,
+                    column: 0,
+                });
+            }
+
+            // Parse remaining parameters
+            if !self.check(&Token::RightParen) {
+                loop {
+                    let name = self.consume_identifier("Expected parameter name")?;
+                    let type_annotation = if self.match_token(&Token::Colon) {
+                        Some(self.consume_identifier("Expected type annotation")?)
+                    } else {
+                        None
+                    };
+
+                    let default_value = if self.match_token(&Token::Assign) {
+                        Some(self.parse_assignment()?)
+                    } else {
+                        None
+                    };
+
+                    parameters.push(FunctionParameter {
+                        name,
+                        type_annotation,
+                        default_value,
+                    });
+
+                    if !self.match_token(&Token::Comma) {
+                        break;
+                    }
+                }
+            }
+
+            self.consume(&Token::RightParen, "Expected ')'")?;
+            self.consume(&Token::Arrow, "Expected '=>'")?;
+
+            // Parse body - could be an expression or a block
+            let body = if self.check(&Token::LeftBrace) {
+                // Block body: { statements... }
+                ArrowFunctionBody::Block(self.parse_arrow_function_block_body()?)
+            } else {
+                // Expression body: expression
+                ArrowFunctionBody::Expression(Box::new(self.parse_assignment()?))
+            };
+
+            Ok(Expression::Arrow {
+                parameters,
+                body,
+                is_async: false,
+                return_type: None,
+            })
+        } else {
+            // Check if we have ')' => which indicates single parameter arrow function
+            self.consume(&Token::RightParen, "Expected ')'")?;
+
+            if self.check(&Token::Arrow) {
+                self.advance()?; // consume '=>'
+
+                // This is a single parameter arrow function
+                if let Expression::Identifier(name) = first_expr {
+                    // Parse body - could be an expression or a block
+                    let body = if self.check(&Token::LeftBrace) {
+                        // Block body: { statements... }
+                        ArrowFunctionBody::Block(self.parse_arrow_function_block_body()?)
+                    } else {
+                        // Expression body: expression
+                        ArrowFunctionBody::Expression(Box::new(self.parse_assignment()?))
+                    };
+
+                    Ok(Expression::Arrow {
+                        parameters: vec![FunctionParameter {
+                            name,
+                            type_annotation: None,
+                            default_value: None,
+                        }],
+                        body,
+                        is_async: false,
+                        return_type: None,
+                    })
+                } else {
+                    return Err(ParseError::SyntaxError {
+                        message: "Invalid parameter in arrow function".to_string(),
+                        line: 0,
+                        column: 0,
+                    });
+                }
+            } else {
+                // This is just a grouped expression
+                Ok(first_expr)
+            }
+        }
+    }
+
+    /// Parse arrow function block body: { statements... }
+    fn parse_arrow_function_block_body(&mut self) -> Result<Vec<Statement>, ParseError> {
+        self.consume(&Token::LeftBrace, "Expected '{'")?;
+
+        let mut statements = Vec::new();
+
+        while !self.check(&Token::RightBrace) && !self.is_at_end() {
+            // Skip newlines and indentation tokens in blocks
+            if self.check(&Token::Newline)
+                || self.check(&Token::Indent)
+                || self.check(&Token::Dedent)
+            {
+                let _ = self.advance();
+                continue;
+            }
+            statements.push(self.parse_statement()?);
+        }
+
+        self.consume(&Token::RightBrace, "Expected '}'")?;
+
+        Ok(statements)
     }
 }
 

@@ -1,8 +1,0 @@
-def fibonacci(n):
-    if n <= 0:
-        return 0
-    return 1
-
-print("Testing...")
-result = fibonacci(5)
-print("Result:", result)

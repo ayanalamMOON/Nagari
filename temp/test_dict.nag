@@ -1,5 +1,0 @@
-def test_dict():
-    data: dict = {"name": "Mock User", "id": 1}
-    print("Data:", data["name"])
-
-test_dict()

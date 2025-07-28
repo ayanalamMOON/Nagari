@@ -1,0 +1,25 @@
+// Test our parser enhancements
+let x = 42
+
+// Test if statements with indentation
+if x > 0:
+    print("positive number")
+    let y = x * 2
+    print(y)
+
+// Test for loops (traditional)
+for i in range(5):
+    print("Count:", i)
+
+// Test for loops (range syntax)
+for j in 0..3:
+    print("Range:", j)
+
+// Test for loops (key-value)
+for key, value in items:
+    print(key, "=", value)
+
+// Test function definition
+fn test_function(a, b):
+    let result = a + b
+    return result

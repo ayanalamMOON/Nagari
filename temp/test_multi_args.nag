@@ -1,6 +1,0 @@
-def test_multi_args():
-    result = 42
-    status = "PASS"
-    print("Result:", result, "| Status:", status)
-
-test_multi_args()

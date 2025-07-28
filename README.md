@@ -27,7 +27,7 @@ Nagari transpiles to clean, readable JavaScript while providing advanced feature
 ✅ **Fibonacci Algorithm Test Passed** - Successfully implemented and tested recursive/iterative Fibonacci with perfect accuracy
 ✅ **Variable Assignment Bug Fixed** - Resolved critical transpiler bug in variable scoping and reassignment
 ✅ **Runtime Package Published** - `nagari-runtime` available on npm with comprehensive documentation
-✅ **Project Organization Complete** - Clean directory structure with proper test/dev file organization
+✅ **Repository Organization Complete** - Clean directory structure with test files properly organized in `test-files/`
 ✅ **Toolchain Fully Functional** - CLI `run`, `build`, `transpile` commands working perfectly
 ✅ **Documentation Enhanced** - Professional README, API docs, and examples for all components
 
@@ -402,12 +402,25 @@ Nagari/
 │   ├── math.nag              # Mathematical operations
 │   ├── http.nag              # HTTP client/server utilities
 │   └── json.nag              # JSON parsing/serialization
-├── specs/                      # � Language specifications
+├── specs/                      # 📋 Language specifications
 │   ├── grammar.bnf            # Complete BNF grammar
 │   └── language-spec.md       # Comprehensive language reference
+├── test-files/                 # 🧪 Organized testing files
+│   ├── samples/               # .nag test files showcasing language features
+│   ├── integration/           # Cross-language integration tests
+│   ├── temp/                  # Temporary test configurations and artifacts
+│   └── test_parser_project/   # Dedicated parser testing project
+├── dist/                       # 🏗️ Compiled JavaScript output and build artifacts
+├── nagari-runtime/             # 📦 Runtime npm package source
+├── nagari-runtime-global/      # 🌐 Global runtime configuration
+├── dev-tools/                  # 🔧 Development utilities and tools
+├── assets/                     # 🎨 Documentation and project assets
+├── .vscode/                    # 🔍 VS Code workspace configuration
 ├── Cargo.toml                  # 🦀 Workspace configuration
 ├── Cargo.lock                  # 🔒 Dependency lock file
 └── README.md                   # 📖 This file
+
+**🧹 Recently Organized**: Test files moved from root to `test-files/` directory for cleaner project structure.
 from fs import read_file, exists
 from json import parse, stringify
 

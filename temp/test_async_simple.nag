@@ -1,9 +1,0 @@
-async def test_async():
-    print("This is an async function")
-    return 42
-
-def main():
-    result = test_async()
-    print("Result:", result)
-
-main()

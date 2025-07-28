@@ -1,10 +1,32 @@
 # Nagari Runtime
 
-Production-ready runtime utilities and interoperability layer for the Nagari programming language with enhanced f-string format specifier support, HTTP utilities, Python-like builtins, and comprehensive JavaScript integration.
+Production-ready runtime utilities and interoperability layer for the Nagari programming language with async arrow functions, compound assignment operators, enhanced f-string format specifier support, HTTP utilities, Python-like builtins, and comprehensive JavaScript integration.
 
-## Version 0.3.1
+## Version 0.4.0
 
-### 🎉 New Features
+### 🚀 Latest Features (v0.4.0)
+
+#### **Async Arrow Functions**
+- **Expression Bodies**: `async (x, y) -> x + y`
+- **Block Bodies**: `async (x, y) -> { let result = x * y; return result }`
+- **Context Tracking**: Built-in async context management and promise tracking
+- **Error Handling**: Enhanced error handling with optional retry and timeout support
+
+#### **Arrow Function Utilities**
+- **Regular Arrow Functions**: `(x) -> x * 2` with expression and block bodies
+- **Currying Support**: Automatic function currying with custom arity
+- **Memoization**: Built-in memoization for performance optimization
+- **Throttling/Debouncing**: Rate limiting utilities for arrow functions
+
+#### **Compound Assignment Operators**
+- **Addition Assignment**: `x += 5` with number, string, and array support
+- **Subtraction Assignment**: `x -= 3` with numeric coercion
+- **Multiplication Assignment**: `x *= 2` with string repetition and array duplication
+- **Division Assignment**: `x /= 4` with zero-division protection
+- **Modulo Assignment**: `x %= 3` with comprehensive error handling
+- **Power Assignment**: `x **= 2` with fractional power support
+
+### 🎉 Previous Features (v0.3.1)
 - **Enhanced F-String Support**: Full Python-style format specifier compatibility
 - **Percentage Formatting**: Complete support for percentage format specifiers (`:`, `:.N%`)
 - **Extended Format Utilities**: Additional helper functions for currency, scientific notation, and number formatting
@@ -17,6 +39,8 @@ Production-ready runtime utilities and interoperability layer for the Nagari pro
 - **String Utilities**: Advanced string manipulation functions
 - **Format Specifiers**: Complete Python f-string format specifier support
 - **Async/Await**: Full async/await support with JavaScript interoperability
+- **Arrow Functions**: Complete async and regular arrow function support
+- **Compound Operators**: All compound assignment operators with type safety
 - **Type System**: Runtime type checking and conversion utilities
 
 ### Format Specifiers
@@ -43,6 +67,82 @@ str_reverse("hello");           // "olleh"
 format_percentage(0.1534, 2);   // "15.34%"
 format_currency(123.45);        // "$123.45"
 format_number_with_commas(1234567); // "1,234,567"
+```
+
+### Arrow Functions
+```javascript
+import { createAsyncArrow, createArrow, curry, memoize } from 'nagari-runtime';
+
+// Create async arrow functions
+const fetchData = createAsyncArrow(async (url) => {
+    const response = await fetch(url);
+    return response.json();
+});
+
+// Create regular arrow functions with error handling
+const multiply = createArrow((x, y) => x * y);
+
+// Curry functions
+const add = curry((a, b, c) => a + b + c);
+const addFive = add(5);
+const addFiveAndThree = addFive(3);
+
+// Memoize expensive functions
+const expensiveCalculation = memoize((n) => {
+    return n * n * n; // Only calculated once per input
+});
+```
+
+### Compound Assignment Operators
+```javascript
+import {
+    addAssign,
+    subtractAssign,
+    multiplyAssign,
+    divideAssign,
+    CompoundAssignmentOperators
+} from 'nagari-runtime';
+
+// Numeric operations
+let x = 10;
+x = addAssign(x, 5);        // x = 15
+x = multiplyAssign(x, 2);   // x = 30
+x = divideAssign(x, 3);     // x = 10
+x = subtractAssign(x, 2);   // x = 8
+
+// String operations
+let str = "Hello";
+str = addAssign(str, " World");     // "Hello World"
+str = multiplyAssign("Hi", 3);      // "HiHiHi"
+
+// Array operations
+let arr = [1, 2];
+arr = addAssign(arr, [3, 4]);       // [1, 2, 3, 4]
+arr = multiplyAssign([1, 2], 3);    // [1, 2, 1, 2, 1, 2]
+
+// Using the class methods
+CompoundAssignmentOperators.addAssign(5, 3);  // 8
+```
+
+### Async Context Management
+```javascript
+import { AsyncContext, createAsyncArrow } from 'nagari-runtime';
+
+const context = AsyncContext.getInstance();
+
+// Create tracked async operations
+const asyncOperation = createAsyncArrow(async (data) => {
+    // This promise is automatically tracked
+    return await processData(data);
+}, {
+    timeout: 5000,
+    retries: 3,
+    onError: (error) => console.error('Operation failed:', error)
+});
+
+// Wait for all pending operations
+await context.waitForAll();
+console.log('All operations completed');
 ```
 
 ### Interoperability

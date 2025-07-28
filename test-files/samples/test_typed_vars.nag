@@ -1,0 +1,7 @@
+def test_typed_vars():
+    PI: float = 3.14159
+    name: str = "Nagari"
+    count: int = 42
+    print(PI)
+    print(name)
+    print(count)

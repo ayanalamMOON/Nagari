@@ -1,0 +1,11 @@
+[package]
+name = "parser-test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+nagari-parser = { path = "src/nagari-parser" }
+
+[[bin]]
+name = "test_parser"
+path = "test_enhanced_parser.rs"

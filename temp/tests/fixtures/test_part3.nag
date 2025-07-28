@@ -1,7 +1,0 @@
-def main():
-    rec_result = 5
-    iter_result = 5
-    match = "✓" if rec_result == iter_result else "✗"
-    print("Match:", match)
-
-main()

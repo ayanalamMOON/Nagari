@@ -1,0 +1,8 @@
+def calculate_circle_area(radius):
+    let PI = 3.141592653589793
+    return PI * radius * radius
+
+def main():
+    print("Circle area (radius 5):", calculate_circle_area(5.0))
+
+main()

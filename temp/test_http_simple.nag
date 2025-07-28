@@ -1,8 +1,0 @@
-import http
-
-async def test_http():
-    print("Testing HTTP module...")
-    response = await http.get("https://jsonplaceholder.typicode.com/users/1")
-    print("Response:", response)
-
-test_http()

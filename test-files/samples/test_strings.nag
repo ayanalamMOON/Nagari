@@ -1,0 +1,6 @@
+def test_strings():
+    let text = "hello world"
+    print("Original:", text)
+    print("Length:", len(text))
+
+test_strings()

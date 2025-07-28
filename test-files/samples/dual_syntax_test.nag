@@ -1,0 +1,11 @@
+// Test both JavaScript and Python syntax styles
+let x = 10
+
+// JavaScript-style if statement
+if (x > 5) {
+    print("JavaScript style")
+}
+
+// Python-style if statement
+if x > 5:
+    print("Python style")

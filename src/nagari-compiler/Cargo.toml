@@ -10,6 +10,7 @@ clap = { version = "4.0", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 colored = "2.0"
+nagari-parser = { path = "../nagari-parser" }
 
 [dev-dependencies]
 criterion = "0.5"

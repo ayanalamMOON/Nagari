@@ -1,5 +1,0 @@
-def test_type_annotation():
-    numbers: list[int] = [1, 2, 3, 4, 5]
-    print("Numbers:", numbers)
-
-test_type_annotation()

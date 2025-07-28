@@ -1,0 +1,22 @@
+function test_compound_assignments() {
+    // Test basic assignment
+    let x = 10
+    console.log("x =", x)
+
+    // Test compound assignments
+    x += 5  // Add assign
+    console.log("x += 5:", x)
+
+    x -= 3  // Subtract assign
+    console.log("x -= 3:", x)
+
+    x *= 2  // Multiply assign
+    console.log("x *= 2:", x)
+
+    x /= 4  // Divide assign
+    console.log("x /= 4:", x)
+
+    console.log("All compound assignments working!")
+}
+
+test_compound_assignments()

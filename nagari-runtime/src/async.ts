@@ -76,3 +76,62 @@ export async function retry<T>(
 
     throw lastError!;
 }
+
+// Enhanced async arrow function support
+export class AsyncArrowContext {
+    private static contexts = new WeakMap<Function, AsyncContext>();
+
+    /**
+     * Create an async arrow function with context tracking
+     */
+    static create<T extends any[], R>(
+        fn: (...args: T) => Promise<R>,
+        options?: {
+            timeout?: number;
+            retries?: number;
+            onError?: (error: Error) => void;
+        }
+    ): (...args: T) => Promise<R> {
+        const context = AsyncContext.getInstance();
+
+        const asyncArrow = async (...args: T): Promise<R> => {
+            const promise = Promise.resolve().then(() => fn(...args));
+
+            // Apply timeout if specified
+            const finalPromise = options?.timeout
+                ? withTimeout(promise, options.timeout)
+                : promise;
+
+            // Apply retries if specified
+            const retriedPromise = options?.retries
+                ? retry(() => finalPromise, options.retries)
+                : finalPromise;
+
+            // Track the promise
+            return context.trackPromise(
+                retriedPromise.catch((error: any) => {
+                    if (options?.onError) {
+                        options.onError(error);
+                    }
+                    throw error;
+                })
+            );
+        };
+
+        // Store context reference
+        this.contexts.set(asyncArrow, context);
+
+        return asyncArrow;
+    }
+
+    /**
+     * Get the async context for an arrow function
+     */
+    static getContext(fn: Function): AsyncContext | undefined {
+        return this.contexts.get(fn);
+    }
+}
+
+// Export async arrow function utilities
+export const createAsyncArrowWithContext = AsyncArrowContext.create;
+export const getAsyncContext = AsyncArrowContext.getContext;

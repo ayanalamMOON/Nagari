@@ -1,7 +1,7 @@
 {
     "name": "nagari-runtime",
-    "version": "0.3.1",
-    "description": "Production-ready runtime utilities and interoperability layer for Nagari language with enhanced f-string format specifier support, HTTP utilities, Python-like builtins, and comprehensive JavaScript integration",
+    "version": "0.4.0",
+    "description": "Production-ready runtime utilities and interoperability layer for Nagari language with async arrow functions, compound assignment operators, enhanced f-string format specifier support, HTTP utilities, Python-like builtins, and comprehensive JavaScript integration",
     "type": "module",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -31,7 +31,11 @@
         "http",
         "async",
         "python-like",
-        "modern-js"
+        "modern-js",
+        "arrow-functions",
+        "async-arrow-functions",
+        "compound-assignment",
+        "operators"
     ],
     "author": {
         "name": "Nagari Team",

@@ -1,0 +1,5 @@
+def test_minimal():
+    x = async (y) => y * 2
+    print("Done")
+
+test_minimal()

@@ -1,2 +1,0 @@
-for i in range(10):
-    let x = 5 % 2

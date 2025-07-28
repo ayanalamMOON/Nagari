@@ -1,0 +1,44 @@
+def test_async_arrow_functions():
+    print("Testing async arrow functions...")
+
+    # Test async arrow function with expression body
+    async_double = async (x) => x * 2
+
+    # Test async arrow function with block body
+    async_complex = async (x) => {
+        let doubled = x * 2
+        let result = doubled + 1
+        return result
+    }
+
+    # Test async arrow function with no parameters
+    async_greet = async () => "Hello from async!"
+
+    # Test async arrow function with block body and no parameters
+    async_block_greet = async () => {
+        let greeting = "Hello"
+        let target = "async world"
+        return greeting + " " + target + "!"
+    }
+
+    # Test regular arrow functions for comparison
+    regular_double = (x) => x * 2
+
+    regular_complex = (x) => {
+        let doubled = x * 2
+        return doubled + 1
+    }
+
+    # Test single parameter arrow function (no parentheses)
+    square = x => x * x
+
+    print("async_double defined")
+    print("async_complex defined")
+    print("async_greet defined")
+    print("async_block_greet defined")
+    print("regular_double defined")
+    print("regular_complex defined")
+    print("square defined")
+    print("All arrow functions with block bodies parsed successfully!")
+
+test_async_arrow_functions()

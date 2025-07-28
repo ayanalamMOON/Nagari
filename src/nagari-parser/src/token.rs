@@ -67,8 +67,6 @@ pub enum Token {
     Assign,
     PlusAssign,
     MinusAssign,
-    StarAssign,
-    SlashAssign,
     MultiplyAssign, // *=
     DivideAssign,   // /=
 

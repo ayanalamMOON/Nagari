@@ -1,0 +1,5 @@
+def test_regular_arrow():
+    x = (y) -> y * 2
+    print("Done")
+
+test_regular_arrow()

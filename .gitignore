@@ -45,6 +45,8 @@ tests/outputs/*.js
 tests/outputs/*.js.map
 tests/debug/debug_*
 dev-tools/test-*
+test-files/temp/
+generated/
 
 # Build artifacts
 dist/

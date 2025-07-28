@@ -1,5 +1,0 @@
-def test_spread():
-    numbers = [1, 2, 3, 4, 5]
-    print("Max:", max(*numbers))
-
-test_spread()

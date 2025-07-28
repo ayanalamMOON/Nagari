@@ -1,0 +1,16 @@
+// Test enhanced parser features
+let x = 42
+
+if x > 0:
+    print("positive")
+    let y = x * 2
+    print(y)
+
+for i in range(5):
+    print(i)
+
+fn add(a, b):
+    return a + b
+
+let result = add(10, 20)
+print(result)

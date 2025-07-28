@@ -1,0 +1,30 @@
+// Test async arrow functions with expression bodies
+let add_async = async (x, y) -> x + y
+
+// Test async arrow functions with block bodies
+let multiply_async = async (x, y) -> {
+    let result = x * y
+    return result
+}
+
+// Test simple async arrow function
+let square_async = async (x) -> x * x
+
+// Test async arrow function with complex block
+let complex_async = async (a, b, c) -> {
+    let temp1 = a + b
+    let temp2 = temp1 * c
+    if (temp1 > 10) {
+        return temp2 * 2
+    } else {
+        return temp2
+    }
+}
+
+// Test regular arrow functions for comparison
+let add_regular = (x, y) -> x + y
+let square_regular = (x) -> x * x
+
+console.log("Async arrow functions defined successfully")
+console.log("Regular arrow functions defined successfully")
+console.log("All arrow functions parsed successfully!")

@@ -1,6 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ArrowFunctionBody {
+    Expression(Box<Expression>),
+    Block(Vec<Statement>),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Program {
     pub statements: Vec<Statement>,
 }
@@ -92,7 +98,7 @@ pub enum Expression {
     },
     Arrow {
         parameters: Vec<FunctionParameter>,
-        body: Box<Expression>,
+        body: ArrowFunctionBody,
         is_async: bool,
         return_type: Option<String>,
     },

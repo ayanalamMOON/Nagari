@@ -1,8 +1,0 @@
-def simple_test():
-    return 42
-
-def main():
-    print("Test:", simple_test())
-
-if __name__ == "__main__":
-    main()

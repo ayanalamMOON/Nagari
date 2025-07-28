@@ -1,8 +1,0 @@
-import math
-
-def test_cast():
-    n = 25
-    result = int(math.sqrt(n))
-    print("Result:", result)
-
-test_cast()

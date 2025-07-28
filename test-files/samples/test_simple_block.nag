@@ -1,0 +1,4 @@
+// Test basic arrow function block syntax
+let simple = (x) -> {
+    return x * 2
+}

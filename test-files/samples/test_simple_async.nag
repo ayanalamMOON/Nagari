@@ -1,0 +1,10 @@
+def test_simple_async_arrow():
+    print("Testing simple async arrow...")
+
+    # Test async arrow function with expression body
+    async_double = async (x) => x * 2
+
+    print("async_double defined")
+    print("Simple async arrow function parsed successfully!")
+
+test_simple_async_arrow()

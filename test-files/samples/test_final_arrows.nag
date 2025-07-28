@@ -1,0 +1,21 @@
+// Test complete async arrow function functionality
+console.log("Testing async arrow functions...")
+
+// Expression body
+let add_async = async (x, y) -> x + y
+
+// Block body
+let multiply_async = async (x, y) -> {
+    let result = x * y
+    return result
+}
+
+// Simple expression
+let square = (x) -> x * x
+
+// Regular block
+let double = (x) -> {
+    return x * 2
+}
+
+console.log("All arrow functions defined successfully!")

@@ -1,8 +1,0 @@
-def check_number(n: int):
-    match n:
-        case 0:
-            print("Zero")
-        case 1:
-            print("One")
-        case _:
-            print("Other")

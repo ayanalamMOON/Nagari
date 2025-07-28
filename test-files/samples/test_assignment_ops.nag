@@ -1,0 +1,28 @@
+def test_assignment_operators():
+    # Test basic assignment
+    x = 10
+    print("x =", x)
+
+    # Test compound assignments
+    x += 5  # Add assign
+    print("x += 5:", x)
+
+    x -= 3  # Subtract assign
+    print("x -= 3:", x)
+
+    x *= 2  # Multiply assign
+    print("x *= 2:", x)
+
+    x /= 4  # Divide assign
+    print("x /= 4:", x)
+
+    # Test with async arrow function
+    async_func = async (value) => {
+        return value * 2
+    }
+
+    # Test regular arrow function
+    double = (n) => n * 2
+    print("double(5):", double(5))
+
+test_assignment_operators()

@@ -1,0 +1,32 @@
+// Integration test: Runtime + Compiler features
+console.log("=== Nagari Runtime Integration Test ===")
+
+// Test compound assignment operators
+let x = 10
+x += 5   // This should use compound assignment
+console.log("x after += 5:", x)
+
+x *= 2   // This should use compound assignment
+console.log("x after *= 2:", x)
+
+// Test arrow functions
+let add = (a, b) -> a + b
+console.log("add(3, 7):", add(3, 7))
+
+let multiply = (a, b) -> {
+    let result = a * b
+    return result
+}
+console.log("multiply(4, 5):", multiply(4, 5))
+
+// Test async arrow functions
+let asyncDouble = async (n) -> n * 2
+console.log("asyncDouble defined")
+
+let asyncComplex = async (n) -> {
+    let temp = n * 2
+    return temp + 1
+}
+console.log("asyncComplex defined")
+
+console.log("=== Integration Test Complete ===")

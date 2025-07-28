@@ -1,0 +1,5 @@
+def test_var_types():
+    let PI = 3.14159
+    return PI
+
+print(test_var_types())

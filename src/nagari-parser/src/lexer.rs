@@ -154,7 +154,7 @@ impl Lexer {
             '*' => {
                 if self.peek() == '=' {
                     self.advance();
-                    Ok(Token::StarAssign)
+                    Ok(Token::MultiplyAssign)
                 } else if self.peek() == '*' {
                     self.advance();
                     Ok(Token::Power)
@@ -165,7 +165,7 @@ impl Lexer {
             '/' => {
                 if self.peek() == '=' {
                     self.advance();
-                    Ok(Token::SlashAssign)
+                    Ok(Token::DivideAssign)
                 } else if self.peek() == '/' {
                     // Line comment
                     self.skip_line_comment();
