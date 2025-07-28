@@ -2,31 +2,31 @@
 
 Production-ready runtime utilities and interoperability layer for the Nagari programming language with async arrow functions, compound assignment operators, enhanced f-string format specifier support, HTTP utilities, Python-like builtins, and comprehensive JavaScript integration.
 
-## Version 0.4.0
+## Version 0.5.0
 
-### 🚀 Latest Features (v0.4.0)
+### 🚀 Latest Features (v0.5.0)
 
-#### **Async Arrow Functions**
-- **Expression Bodies**: `async (x, y) -> x + y`
-- **Block Bodies**: `async (x, y) -> { let result = x * y; return result }`
-- **Context Tracking**: Built-in async context management and promise tracking
-- **Error Handling**: Enhanced error handling with optional retry and timeout support
-
-#### **Arrow Function Utilities**
+#### **Complete Arrow Function Ecosystem**
+- **Async Arrow Functions**: `async (x, y) -> x + y` with full promise integration
 - **Regular Arrow Functions**: `(x) -> x * 2` with expression and block bodies
-- **Currying Support**: Automatic function currying with custom arity
-- **Memoization**: Built-in memoization for performance optimization
-- **Throttling/Debouncing**: Rate limiting utilities for arrow functions
+- **Advanced Function Utilities**: Currying, memoization, throttling, and debouncing
+- **Context Management**: Built-in async context tracking and error handling
+- **Performance Optimization**: Automatic function optimization and caching
 
-#### **Compound Assignment Operators**
-- **Addition Assignment**: `x += 5` with number, string, and array support
-- **Subtraction Assignment**: `x -= 3` with numeric coercion
-- **Multiplication Assignment**: `x *= 2` with string repetition and array duplication
-- **Division Assignment**: `x /= 4` with zero-division protection
-- **Modulo Assignment**: `x %= 3` with comprehensive error handling
-- **Power Assignment**: `x **= 2` with fractional power support
+#### **Robust Compound Assignment Operators**
+- **Arithmetic Operations**: `+=`, `-=`, `*=`, `/=`, `%=`, `**=` with comprehensive type safety
+- **String Manipulation**: String concatenation and repetition support
+- **Array Operations**: Array concatenation and duplication with proper typing
+- **Error Handling**: Enhanced error messages and type coercion
+- **Cross-Type Support**: Intelligent handling of mixed data types
 
-### 🎉 Previous Features (v0.3.1)
+#### **Enhanced Runtime Stability**
+- **Memory Management**: Improved garbage collection and memory usage
+- **Error Recovery**: Better error handling and debugging information
+- **Type System**: Enhanced runtime type checking and conversion utilities
+- **Performance**: Optimized execution speed and reduced overhead
+
+### 🎉 Previous Features (v0.4.0)
 - **Enhanced F-String Support**: Full Python-style format specifier compatibility
 - **Percentage Formatting**: Complete support for percentage format specifiers (`:`, `:.N%`)
 - **Extended Format Utilities**: Additional helper functions for currency, scientific notation, and number formatting
@@ -213,7 +213,21 @@ format_scientific(1234.567, 2);  // "1.23e+3"
 
 ## Changelog
 
-### 0.3.1 (Latest)
+### 0.5.0 (Latest)
+- ✅ **Complete Arrow Function Ecosystem**: Full async and regular arrow function support with advanced utilities
+- ✅ **Robust Compound Assignment Operators**: All compound assignment operators with comprehensive type safety
+- ✅ **Enhanced Runtime Stability**: Improved memory management and error recovery
+- ✅ **Performance Optimization**: Automatic function optimization and caching
+- ✅ **Better Type System**: Enhanced runtime type checking and conversion utilities
+- ✅ **Improved Documentation**: Updated examples and comprehensive API documentation
+
+### 0.4.0
+- Enhanced F-String Support with format specifiers
+- Percentage formatting capabilities
+- Extended format utilities for various data types
+- Improved string manipulation functions
+
+### 0.3.1
 - ✅ **Enhanced F-String Support**: Complete Python-style format specifier compatibility
 - ✅ **Percentage Formatting**: Full support for `:` and `:.N%` format specifiers
 - ✅ **New Format Utilities**: `format_percentage()`, `format_currency()`, `format_number_with_commas()`

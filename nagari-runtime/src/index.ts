@@ -17,7 +17,7 @@ import { CompoundAssignmentOperators } from './operators.js';
 if (typeof globalThis !== 'undefined') {
     // Initialize Nagari runtime globals
     (globalThis as any).__nagari__ = {
-        version: '0.3.1',
+        version: '0.5.0',
         runtime: 'js',
         interop: InteropRegistry,
         operators: CompoundAssignmentOperators,

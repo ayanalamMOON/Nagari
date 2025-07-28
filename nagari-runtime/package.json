@@ -1,6 +1,6 @@
 {
     "name": "nagari-runtime",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "description": "Production-ready runtime utilities and interoperability layer for Nagari language with async arrow functions, compound assignment operators, enhanced f-string format specifier support, HTTP utilities, Python-like builtins, and comprehensive JavaScript integration",
     "type": "module",
     "main": "dist/index.js",
@@ -45,7 +45,7 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/ayanalamMOON/Nagari.git",
+        "url": "git+https://github.com/ayanalamMOON/Nagari.git",
         "directory": "nagari-runtime"
     },
     "bugs": {
