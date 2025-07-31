@@ -1,0 +1,16 @@
+def test_multiple_loops():
+    test_inputs = [1, 2, 3]
+
+    i = 0
+    while i < len(test_inputs):
+        n = test_inputs[i]
+        print("First loop: " + str(n))
+        i = i + 1
+
+    i = 0
+    while i < len(test_inputs):
+        n = test_inputs[i]  # This should be a reassignment, not a new declaration
+        print("Second loop: " + str(n))
+        i = i + 1
+
+test_multiple_loops()

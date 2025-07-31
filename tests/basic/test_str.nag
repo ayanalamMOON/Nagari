@@ -1,0 +1,6 @@
+def test_str():
+    count = 5
+    message = "First " + str(count) + " numbers"
+    print(message)
+
+test_str()

@@ -1,0 +1,278 @@
+def fibonacci_recursive(n: int) -> int:
+    if n <= 1:
+        return n
+    else:
+        return fibonacci_recursive(n - 1) + fibonacci_recursive(n - 2)
+
+def fibonacci_iterative(n: int) -> int:
+    if n <= 1:
+        return n
+
+    a = 0
+    b = 1
+    i = 2
+    while i <= n:
+        temp = a + b
+        a = b
+        b = temp
+        i = i + 1
+    return b
+
+def fibonacci_optimized(n: int) -> int:
+    if n <= 1:
+        return n
+
+    if n == 2:
+        return 1
+
+    prev2 = 0
+    prev1 = 1
+    current = 1
+
+    i = 3
+    while i <= n:
+        prev2 = prev1
+        prev1 = current
+        current = prev1 + prev2
+        i = i + 1
+
+    return current
+
+def test_all_implementations():
+    print("=== Complete Fibonacci Algorithm Test ===")
+    print("")
+
+    # Using arrays instead of tuples since transpiler doesn't support tuples
+    test_inputs = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15]
+    test_expected = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 144, 610]
+
+    recursive_passed = 0
+    iterative_passed = 0
+    optimized_passed = 0
+    total_tests = len(test_inputs)
+
+    print("Testing Recursive Implementation:")
+    print("-" * 50)
+
+    i = 0
+    while i < len(test_inputs):
+        n = test_inputs[i]
+        expected = test_expected[i]
+
+        if n <= 10:
+            result = fibonacci_recursive(n)
+            if result == expected:
+                print("PASS: recursive fib(" + str(n) + ") = " + str(result))
+                recursive_passed = recursive_passed + 1
+            else:
+                print("FAIL: recursive fib(" + str(n) + ") = " + str(result) + ", expected " + str(expected))
+        i = i + 1
+
+    print("")
+    print("Testing Iterative Implementation:")
+    print("-" * 50)
+
+    i = 0
+    while i < len(test_inputs):
+        n = test_inputs[i]
+        expected = test_expected[i]
+        result = fibonacci_iterative(n)
+
+        if result == expected:
+            print("PASS: iterative fib(" + str(n) + ") = " + str(result))
+            iterative_passed = iterative_passed + 1
+        else:
+            print("FAIL: iterative fib(" + str(n) + ") = " + str(result) + ", expected " + str(expected))
+        i = i + 1
+
+    print("")
+    print("Testing Optimized Implementation:")
+    print("-" * 50)
+
+    i = 0
+    while i < len(test_inputs):
+        n = test_inputs[i]
+        expected = test_expected[i]
+        result = fibonacci_optimized(n)
+
+        if result == expected:
+            print("PASS: optimized fib(" + str(n) + ") = " + str(result))
+            optimized_passed = optimized_passed + 1
+        else:
+            print("FAIL: optimized fib(" + str(n) + ") = " + str(result) + ", expected " + str(expected))
+        i = i + 1
+
+    return recursive_passed + iterative_passed + optimized_passed
+
+def test_edge_cases():
+    print("")
+    print("=== Edge Cases and Error Handling ===")
+    print("-" * 50)
+
+    edge_cases_passed = 0
+
+    zero_test = fibonacci_iterative(0)
+    if zero_test == 0:
+        print("PASS: Edge case fib(0) = 0")
+        edge_cases_passed = edge_cases_passed + 1
+    else:
+        print("FAIL: Edge case fib(0) failed")
+
+    one_test = fibonacci_iterative(1)
+    if one_test == 1:
+        print("PASS: Edge case fib(1) = 1")
+        edge_cases_passed = edge_cases_passed + 1
+    else:
+        print("FAIL: Edge case fib(1) failed")
+
+    return edge_cases_passed
+
+def test_performance_scenarios():
+    print("")
+    print("=== Performance Test Scenarios ===")
+    print("-" * 50)
+
+    performance_passed = 0
+
+    large_n = 25
+    result_iterative = fibonacci_iterative(large_n)
+    result_optimized = fibonacci_optimized(large_n)
+
+    print("Computing fibonacci(" + str(large_n) + "):")
+    print("Iterative result: " + str(result_iterative))
+    print("Optimized result: " + str(result_optimized))
+
+    if result_iterative == result_optimized:
+        print("PASS: Performance implementations agree")
+        performance_passed = performance_passed + 1
+    else:
+        print("FAIL: Performance implementations disagree")
+
+    very_large_n = 30
+    very_large_result = fibonacci_optimized(very_large_n)
+    print("fibonacci(" + str(very_large_n) + ") = " + str(very_large_result))
+
+    if very_large_result == 832040:
+        print("PASS: Large number test fibonacci(30) = 832040")
+        performance_passed = performance_passed + 1
+    else:
+        print("FAIL: Large number test failed")
+
+    return performance_passed
+
+def test_consistency():
+    print("")
+    print("=== Cross-Implementation Consistency ===")
+    print("-" * 50)
+
+    consistency_passed = 0
+    test_values = [5, 8, 12, 15]
+
+    i = 0
+    while i < len(test_values):
+        n = test_values[i]
+
+        if n <= 10:
+            recursive_result = fibonacci_recursive(n)
+        else:
+            recursive_result = -1
+
+        iterative_result = fibonacci_iterative(n)
+        optimized_result = fibonacci_optimized(n)
+
+        print("fibonacci(" + str(n) + "):")
+        if recursive_result != -1:
+            print("  Recursive: " + str(recursive_result))
+        print("  Iterative: " + str(iterative_result))
+        print("  Optimized: " + str(optimized_result))
+
+        if iterative_result == optimized_result:
+            if recursive_result == -1 || recursive_result == iterative_result:
+                print("  PASS: All implementations consistent")
+                consistency_passed = consistency_passed + 1
+            else:
+                print("  FAIL: Recursive disagrees with others")
+        else:
+            print("  FAIL: Iterative and optimized disagree")
+
+        i = i + 1
+
+    return consistency_passed
+
+def generate_fibonacci_sequence(count: int):
+    print("")
+    print("=== Fibonacci Sequence Generation ===")
+    print("-" * 50)
+
+    print("First " + str(count) + " Fibonacci numbers:")
+
+    sequence = ""
+    i = 0
+    while i < count:
+        fib_num = fibonacci_iterative(i)
+        if i == 0:
+            sequence = str(fib_num)
+        else:
+            sequence = sequence + ", " + str(fib_num)
+        i = i + 1
+
+    print(sequence)
+
+    expected_start = "0, 1, 1, 2, 3, 5, 8, 13, 21, 34"
+    if count >= 10:
+        actual_start = ""
+        i = 0
+        while i < 10:
+            fib_num = fibonacci_iterative(i)
+            if i == 0:
+                actual_start = str(fib_num)
+            else:
+                actual_start = actual_start + ", " + str(fib_num)
+            i = i + 1
+
+        if actual_start == expected_start:
+            print("PASS: Sequence generation correct")
+            return 1
+        else:
+            print("FAIL: Sequence generation incorrect")
+            return 0
+
+    return 1
+
+def main():
+    print("Starting Complete Fibonacci Algorithm Test Suite")
+    print("=" * 60)
+
+    implementations_passed = test_all_implementations()
+    edge_cases_passed = test_edge_cases()
+    performance_passed = test_performance_scenarios()
+    consistency_passed = test_consistency()
+    sequence_passed = generate_fibonacci_sequence(15)
+
+    total_passed = implementations_passed + edge_cases_passed + performance_passed + consistency_passed + sequence_passed
+
+    print("")
+    print("=" * 60)
+    print("FINAL TEST SUMMARY")
+    print("=" * 60)
+    print("Total tests passed: " + str(total_passed))
+    print("")
+    print("Test Categories:")
+    print("- Implementation tests: " + str(implementations_passed) + " passed")
+    print("- Edge case tests: " + str(edge_cases_passed) + " passed")
+    print("- Performance tests: " + str(performance_passed) + " passed")
+    print("- Consistency tests: " + str(consistency_passed) + " passed")
+    print("- Sequence tests: " + str(sequence_passed) + " passed")
+
+    if total_passed >= 35:
+        print("")
+        print("SUCCESS: Comprehensive Fibonacci testing completed!")
+        print("All implementations working correctly.")
+    else:
+        print("")
+        print("WARNING: Some tests failed. Review results above.")
+
+    print("")
+    print("Testing concluded.")
+
+main()

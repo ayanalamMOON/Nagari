@@ -1,0 +1,1 @@
+{"file":"test_scope.js","mappings":"AAAA","sources":["test_scope.nag"],"sourcesContent":["def test_scope():\r\n    i = 0\r\n    while i < 5:\r\n        n = i + 1\r\n        print(n)\r\n        i = i + 1\r\n\r\ntest_scope()\r\n"],"version":3}

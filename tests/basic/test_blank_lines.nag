@@ -1,0 +1,9 @@
+def fibonacci_optimized(n: int) -> int:
+    if n <= 1:
+        return n
+
+    if n == 2:
+        return 1
+
+    prev2 = 0
+    return prev2

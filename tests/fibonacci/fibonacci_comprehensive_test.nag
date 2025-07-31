@@ -1,0 +1,132 @@
+def fibonacci_recursive(n: int) -> int:
+    if n <= 1:
+        return n
+    else:
+        return fibonacci_recursive(n - 1) + fibonacci_recursive(n - 2)
+
+def fibonacci_iterative(n: int) -> int:
+    if n <= 1:
+        return n
+
+    a = 0
+    b = 1
+    for i in range(2, n + 1):
+        temp = a + b
+        a = b
+        b = temp
+    return b
+
+def test_fibonacci_implementations():
+    print("=== Complete Fibonacci Test Suite ===")
+    print("")
+
+    test_values = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15]
+    expected_results = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 610]
+
+    print("Testing Recursive Implementation:")
+    print("-" * 40)
+    recursive_passed = 0
+    recursive_total = 0
+
+    for i in range(len(test_values)):
+        if test_values[i] <= 10:
+            n = test_values[i]
+            expected = expected_results[i]
+            result = fibonacci_recursive(n)
+            recursive_total = recursive_total + 1
+
+            if result == expected:
+                print("PASS: recursive fibonacci(" + str(n) + ") = " + str(result))
+                recursive_passed = recursive_passed + 1
+            else:
+                print("FAIL: recursive fibonacci(" + str(n) + ") = " + str(result) + ", expected " + str(expected))
+
+    print("")
+    print("Testing Iterative Implementation:")
+    print("-" * 40)
+    iterative_passed = 0
+    iterative_total = 0
+
+    for i in range(len(test_values)):
+        n = test_values[i]
+        expected = expected_results[i]
+        result = fibonacci_iterative(n)
+        iterative_total = iterative_total + 1
+
+        if result == expected:
+            print("PASS: iterative fibonacci(" + str(n) + ") = " + str(result))
+            iterative_passed = iterative_passed + 1
+        else:
+            print("FAIL: iterative fibonacci(" + str(n) + ") = " + str(result) + ", expected " + str(expected))
+
+    print("")
+    print("=== Performance Comparison ===")
+    print("Computing fibonacci(20):")
+
+    result_recursive = fibonacci_recursive(20)
+    print("Recursive result: " + str(result_recursive))
+
+    result_iterative = fibonacci_iterative(20)
+    print("Iterative result: " + str(result_iterative))
+
+    if result_recursive == result_iterative:
+        print("PASS: Both implementations agree on fibonacci(20)")
+    else:
+        print("FAIL: Implementations disagree on fibonacci(20)")
+
+    print("")
+    print("=== Test Summary ===")
+    total_passed = recursive_passed + iterative_passed
+    total_tests = recursive_total + iterative_total
+
+    if result_recursive == result_iterative:
+        total_passed = total_passed + 1
+        total_tests = total_tests + 1
+    else:
+        total_tests = total_tests + 1
+
+    print("Total tests: " + str(total_tests))
+    print("Tests passed: " + str(total_passed))
+
+    if total_passed == total_tests:
+        print("SUCCESS: All Fibonacci tests passed!")
+    else:
+        failed = total_tests - total_passed
+        print("FAILURE: " + str(failed) + " tests failed")
+
+    print("")
+    print("=== Large Number Test ===")
+    large_n = 30
+    large_result = fibonacci_iterative(large_n)
+    print("fibonacci(" + str(large_n) + ") = " + str(large_result))
+
+    if large_result == 832040:
+        print("PASS: Large number test passed")
+    else:
+        print("FAIL: Large number test failed, expected 832040")
+
+def edge_case_tests():
+    print("")
+    print("=== Edge Case Tests ===")
+
+    print("Testing edge cases:")
+
+    zero_result = fibonacci_iterative(0)
+    if zero_result == 0:
+        print("PASS: fibonacci(0) = 0")
+    else:
+        print("FAIL: fibonacci(0) = " + str(zero_result) + ", expected 0")
+
+    one_result = fibonacci_iterative(1)
+    if one_result == 1:
+        print("PASS: fibonacci(1) = 1")
+    else:
+        print("FAIL: fibonacci(1) = " + str(one_result) + ", expected 1")
+
+def main():
+    test_fibonacci_implementations()
+    edge_case_tests()
+    print("")
+    print("Fibonacci testing completed!")
+
+main()

@@ -1,0 +1,6 @@
+def test_array_access(arr: list) -> int:
+    return arr[0] + arr[1]
+
+numbers = [1, 2, 3, 4, 5]
+result = test_array_access(numbers)
+print(result)

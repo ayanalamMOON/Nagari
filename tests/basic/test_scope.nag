@@ -1,0 +1,8 @@
+def test_scope():
+    i = 0
+    while i < 5:
+        n = i + 1
+        print(n)
+        i = i + 1
+
+test_scope()

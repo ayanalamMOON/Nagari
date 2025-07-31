@@ -204,6 +204,21 @@ impl JSTranspiler {
         self.output.push_str(") {\n");
         self.indent_level += 1;
 
+        // First pass: collect all variable declarations in the function body
+        let mut function_vars = std::collections::HashSet::<String>::new();
+        self.collect_variable_declarations(&func.body, &mut function_vars);
+
+        // Declare all function-scoped variables at the top (except parameters)
+        for var in &function_vars {
+            if !self.declared_variables.contains(var) {
+                self.add_indent();
+                self.output.push_str("let ");
+                self.output.push_str(var);
+                self.output.push_str(";\n");
+                self.declared_variables.insert(var.clone());
+            }
+        }
+
         // Function body
         for statement in &func.body {
             self.transpile_statement(statement)?;
@@ -218,6 +233,36 @@ impl JSTranspiler {
         self.declared_variables = previous_declared;
 
         Ok(())
+    }
+
+    fn collect_variable_declarations(
+        &self,
+        statements: &[Statement],
+        vars: &mut std::collections::HashSet<String>,
+    ) {
+        for statement in statements {
+            match statement {
+                Statement::Assignment(assign) => {
+                    vars.insert(assign.name.clone());
+                }
+                Statement::While(while_loop) => {
+                    self.collect_variable_declarations(&while_loop.body, vars);
+                }
+                Statement::For(for_loop) => {
+                    self.collect_variable_declarations(&for_loop.body, vars);
+                }
+                Statement::If(if_stmt) => {
+                    self.collect_variable_declarations(&if_stmt.then_branch, vars);
+                    if let Some(else_body) = &if_stmt.else_branch {
+                        self.collect_variable_declarations(else_body, vars);
+                    }
+                }
+                Statement::FunctionDef(_) => {
+                    // Don't collect from nested functions - they have their own scope
+                }
+                _ => {}
+            }
+        }
     }
 
     fn transpile_assignment(&mut self, assign: &Assignment) -> Result<(), NagariError> {
@@ -287,15 +332,8 @@ impl JSTranspiler {
         match expr {
             Expression::Literal(lit) => self.transpile_literal(lit),
             Expression::Identifier(name) => {
-                // Check if this is a builtin that needs mapping
-                if let Some(mapping) = self.builtin_mapper.get_mapping(name) {
-                    if mapping.requires_helper {
-                        self.used_helpers.insert(name.clone());
-                    }
-                    self.output.push_str(&mapping.js_equivalent);
-                } else {
-                    self.output.push_str(name);
-                }
+                // Just output the identifier name - builtin mappings are handled in function calls
+                self.output.push_str(name);
                 Ok(())
             }
             Expression::Binary(binary) => self.transpile_binary(binary),
@@ -592,6 +630,26 @@ impl JSTranspiler {
                     self.transpile_expression(element)?;
                 }
                 self.output.push(']');
+                Ok(())
+            }
+            Expression::Index(index_access) => {
+                // Handle array/object indexing: obj[index] - new format with IndexAccess struct
+                self.transpile_expression(&index_access.object)?;
+                self.output.push('[');
+                self.transpile_expression(&index_access.index)?;
+                self.output.push(']');
+                Ok(())
+            }
+            Expression::Unary(unary) => {
+                // Handle unary expressions: -x, +x, !x, ~x
+                let op = match unary.operator {
+                    crate::ast::UnaryOperator::Plus => "+",
+                    crate::ast::UnaryOperator::Minus => "-",
+                    crate::ast::UnaryOperator::Not => "!",
+                    crate::ast::UnaryOperator::BitwiseNot => "~",
+                };
+                self.output.push_str(op);
+                self.transpile_expression(&unary.operand)?;
                 Ok(())
             }
             // Add catch-all for any remaining expression types
@@ -926,10 +984,26 @@ impl JSTranspiler {
         self.transpile_expression(&for_stmt.iterable)?;
         self.output.push_str(") {\n");
         self.indent_level += 1;
+
+        // Save current scope and mark loop variable as declared
+        let previous_declared = self.declared_variables.clone();
+        self.declared_variables.insert(for_stmt.variable.clone());
+
         for stmt in &for_stmt.body {
             self.transpile_statement(stmt)?;
             self.output.push('\n');
         }
+
+        // Restore previous scope but keep any variables declared in this loop
+        // This allows variables declared in the loop to be available outside
+        for var in &self.declared_variables {
+            if !previous_declared.contains(var) && var != &for_stmt.variable {
+                // Variable was declared in this loop, keep it in the outer scope
+                // This is different from function scope which completely resets
+            }
+        }
+        self.declared_variables = previous_declared;
+
         self.indent_level -= 1;
         self.add_indent();
         self.output.push('}');

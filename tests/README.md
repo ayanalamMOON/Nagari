@@ -1,6 +1,18 @@
-# 🧪 Test Suite Improvement Task for Contributors
+# 🧪 Nagari Test Suite
 
-## 📋 Task Overview
+## 📁 Directory Structure
+
+The test suite is organized into the following directories:
+
+- **`basic/`** - General test files covering various language features
+- **`debug/`** - Debug-specific test files for development
+- **`fibonacci/`** - All Fibonacci algorithm test implementations
+- **`output/`** - Generated output files and temporary test directories
+- **`fixtures/`** - Test data and fixtures
+
+## 🧪 Test Suite Improvement Task for Contributors
+
+### 📋 Task Overview
 
 **Title**: Enhance Nagari Test Suite with Pattern Matching Test Cases
 

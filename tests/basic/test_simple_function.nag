@@ -1,0 +1,11 @@
+def simple_function(n: int) -> int:
+    if n <= 1:
+        return n
+    else:
+        return n * 2
+
+def main():
+    result = simple_function(5)
+    print("Result: " + str(result))
+
+main()

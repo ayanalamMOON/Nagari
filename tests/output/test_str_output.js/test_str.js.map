@@ -1,0 +1,1 @@
+{"file":"test_str.js","mappings":"AAAA","sources":["test_str.nag"],"sourcesContent":["def test_str():\r\n    count = 5\r\n    message = \"First \" + str(count) + \" numbers\"\r\n    print(message)\r\n\r\ntest_str()\r\n"],"version":3}

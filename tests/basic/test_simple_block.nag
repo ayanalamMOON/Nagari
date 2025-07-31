@@ -1,0 +1,16 @@
+def fibonacci_iterative_fixed(n: int) -> int:
+    if n <= 1:
+        return n
+    else:
+        a = 0
+        b = 1
+        i = 2
+        while i <= n:
+            temp = a + b
+            a = b
+            b = temp
+            i = i + 1
+        return b
+
+result = fibonacci_iterative_fixed(10)
+print(result)

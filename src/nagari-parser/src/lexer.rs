@@ -73,41 +73,117 @@ impl Lexer {
         // Handle indentation at the beginning of a line
         if self.at_line_start {
             self.at_line_start = false;
-            let indent_level = self.count_indentation();
 
-            // Skip empty lines and comments
-            if self.is_at_end() || self.peek() == '\n' || self.peek() == '#' {
-                self.skip_to_next_line()?;
-                return self.next_token();
-            }
+            // Skip completely empty lines (including comment-only lines)
+            loop {
+                // Count leading whitespace WITHOUT advancing position
+                let mut spaces = 0;
+                let mut temp_pos = self.position;
 
-            let current_indent = *self.indent_stack.last().unwrap();
-
-            if indent_level > current_indent {
-                // Increase indentation
-                self.indent_stack.push(indent_level);
-                return Ok(Token::Indent);
-            } else if indent_level < current_indent {
-                // Decrease indentation - might need multiple DEDENT tokens
-                while let Some(&stack_indent) = self.indent_stack.last() {
-                    if stack_indent <= indent_level {
+                while temp_pos < self.input.len() {
+                    let ch = self.input.chars().nth(temp_pos).unwrap();
+                    if ch == ' ' {
+                        spaces += 1;
+                        temp_pos += 1;
+                    } else if ch == '\t' {
+                        spaces += 8;
+                        temp_pos += 1;
+                    } else {
                         break;
                     }
-                    self.indent_stack.pop();
-                    self.pending_tokens.push_back(Token::Dedent);
                 }
 
-                // Check if we found a matching indentation level
-                if self.indent_stack.last() != Some(&indent_level) {
-                    return Err(ParseError::SyntaxError {
-                        message: "Indentation does not match any outer indentation level"
-                            .to_string(),
-                        line: self.line,
-                        column: self.column,
-                    });
+                // Check what follows the whitespace
+                if temp_pos >= self.input.len() {
+                    return Ok(Token::Eof);
                 }
 
-                return self.next_token(); // This will return the first DEDENT
+                let next_char = self.input.chars().nth(temp_pos).unwrap();
+                if next_char == '\n' || next_char == '\r' {
+                    // This is an empty line (only whitespace + newline/carriage return) - skip it entirely
+                    // But don't use skip_to_next_line() because it sets at_line_start = true
+                    // Instead, manually advance past the line ending
+                    self.position = temp_pos; // move to the line ending
+                    if self.peek() == '\r' {
+                        self.advance(); // consume \r
+                        if !self.is_at_end() && self.peek() == '\n' {
+                            self.advance(); // consume \n
+                        }
+                    } else if self.peek() == '\n' {
+                        self.advance(); // consume \n
+                    }
+                    self.line += 1;
+                    self.column = 1;
+                    // DON'T set at_line_start = true here since we're still processing indentation
+
+                    if self.is_at_end() {
+                        return Ok(Token::Eof);
+                    }
+                    // Continue to next line without processing indentation
+                    continue;
+                } else if next_char == '#' {
+                    // This is a comment line - skip it entirely
+                    // But don't use skip_to_next_line() because it sets at_line_start = true
+                    self.position = temp_pos; // move to the # character
+                    while !self.is_at_end() && self.peek() != '\n' && self.peek() != '\r' {
+                        self.advance();
+                    }
+                    if !self.is_at_end() {
+                        // Handle both \r\n (Windows) and \n (Unix) line endings
+                        if self.peek() == '\r' {
+                            self.advance(); // consume \r
+                            if !self.is_at_end() && self.peek() == '\n' {
+                                self.advance(); // consume \n
+                            }
+                        } else if self.peek() == '\n' {
+                            self.advance(); // consume \n
+                        }
+                        self.line += 1;
+                        self.column = 1;
+                        // DON'T set at_line_start = true here since we're still processing indentation
+                    }
+                    if self.is_at_end() {
+                        return Ok(Token::Eof);
+                    }
+                    // Continue to next line without processing indentation
+                    continue;
+                } else {
+                    // This line has actual content - NOW advance position to after whitespace
+                    self.position = temp_pos;
+                    self.column += spaces;
+
+                    // Process indentation
+                    let current_indent = *self.indent_stack.last().unwrap();
+
+                    if spaces > current_indent {
+                        // Increase indentation
+                        self.indent_stack.push(spaces);
+                        return Ok(Token::Indent);
+                    } else if spaces < current_indent {
+                        // Decrease indentation - might need multiple DEDENT tokens
+                        while let Some(&stack_indent) = self.indent_stack.last() {
+                            if stack_indent <= spaces {
+                                break;
+                            }
+                            self.indent_stack.pop();
+                            self.pending_tokens.push_back(Token::Dedent);
+                        }
+
+                        // Check if we found a matching indentation level
+                        if self.indent_stack.last() != Some(&spaces) {
+                            return Err(ParseError::SyntaxError {
+                                message: "Indentation does not match any outer indentation level"
+                                    .to_string(),
+                                line: self.line,
+                                column: self.column,
+                            });
+                        }
+
+                        return self.next_token(); // This will return the first DEDENT
+                    }
+                    // Same indentation level - continue normally
+                    break;
+                }
             }
         }
 
@@ -241,6 +317,16 @@ impl Lexer {
                 self.at_line_start = true;
                 Ok(Token::Newline)
             }
+            '\r' => {
+                // Handle Windows line endings - peek ahead for \n
+                if self.peek() == '\n' {
+                    self.advance(); // consume the \n
+                }
+                self.line += 1;
+                self.column = 1;
+                self.at_line_start = true;
+                Ok(Token::Newline)
+            }
             '#' => {
                 // Handle comments - skip to end of line
                 self.skip_line_comment();
@@ -363,31 +449,20 @@ impl Lexer {
         }
     }
 
-    fn count_indentation(&mut self) -> usize {
-        let mut indent = 0;
-
-        while !self.is_at_end() {
-            let ch = self.peek();
-            if ch == ' ' {
-                indent += 1;
-                self.advance();
-            } else if ch == '\t' {
-                indent += 8; // Tab counts as 8 spaces
-                self.advance();
-            } else {
-                break;
-            }
-        }
-
-        indent
-    }
-
     fn skip_to_next_line(&mut self) -> Result<(), ParseError> {
-        while !self.is_at_end() && self.peek() != '\n' {
+        while !self.is_at_end() && self.peek() != '\n' && self.peek() != '\r' {
             self.advance();
         }
         if !self.is_at_end() {
-            self.advance(); // consume newline
+            // Handle both \r\n (Windows) and \n (Unix) line endings
+            if self.peek() == '\r' {
+                self.advance(); // consume \r
+                if !self.is_at_end() && self.peek() == '\n' {
+                    self.advance(); // consume \n
+                }
+            } else if self.peek() == '\n' {
+                self.advance(); // consume \n
+            }
             self.line += 1;
             self.column = 1;
             self.at_line_start = true;
@@ -396,7 +471,7 @@ impl Lexer {
     }
 
     fn skip_line_comment(&mut self) {
-        while !self.is_at_end() && self.peek() != '\n' {
+        while !self.is_at_end() && self.peek() != '\n' && self.peek() != '\r' {
             self.advance();
         }
     }

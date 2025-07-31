@@ -1,0 +1,5 @@
+def test_logical_or(a: int, b: int) -> bool:
+    return a == 5 || b == 3
+
+result = test_logical_or(5, 2)
+print(result)
