@@ -1,15 +1,13 @@
+
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
+use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
+use std::sync::Arc;
 use tower_lsp::lsp_types::*;
 use tower_lsp::Client;
-use std::sync::Arc;
-use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 
-use crate::{
-    document::DocumentManager,
-    workspace::WorkspaceManager,
-};
+use crate::{document::DocumentManager, workspace::WorkspaceManager};
 
 pub struct CompletionProvider {
     client: Client,
@@ -67,8 +65,14 @@ impl CompletionProvider {
 
         // Sort by relevance
         completions.sort_by(|a, b| {
-            let score_a = self.matcher.fuzzy_match(&a.label, &current_word).unwrap_or(0);
-            let score_b = self.matcher.fuzzy_match(&b.label, &current_word).unwrap_or(0);
+            let score_a = self
+                .matcher
+                .fuzzy_match(&a.label, &current_word)
+                .unwrap_or(0);
+            let score_b = self
+                .matcher
+                .fuzzy_match(&b.label, &current_word)
+                .unwrap_or(0);
             score_b.cmp(&score_a)
         });
 
@@ -95,12 +99,44 @@ impl CompletionProvider {
 
     fn get_keyword_completions(&self, prefix: &str) -> Vec<CompletionItem> {
         let keywords = vec![
-            "function", "let", "const", "var", "if", "else", "while", "for",
-            "return", "break", "continue", "switch", "case", "default",
-            "try", "catch", "finally", "throw", "import", "export",
-            "class", "interface", "enum", "type", "namespace", "module",
-            "public", "private", "protected", "static", "async", "await",
-            "true", "false", "null", "undefined", "this", "super",
+            "function",
+            "let",
+            "const",
+            "var",
+            "if",
+            "else",
+            "while",
+            "for",
+            "return",
+            "break",
+            "continue",
+            "switch",
+            "case",
+            "default",
+            "try",
+            "catch",
+            "finally",
+            "throw",
+            "import",
+            "export",
+            "class",
+            "interface",
+            "enum",
+            "type",
+            "namespace",
+            "module",
+            "public",
+            "private",
+            "protected",
+            "static",
+            "async",
+            "await",
+            "true",
+            "false",
+            "null",
+            "undefined",
+            "this",
+            "super",
         ];
 
         keywords
@@ -110,9 +146,10 @@ impl CompletionProvider {
                 label: keyword.to_string(),
                 kind: Some(CompletionItemKind::KEYWORD),
                 detail: Some("Nagari keyword".to_string()),
-                documentation: Some(Documentation::String(
-                    format!("Nagari language keyword: {}", keyword)
-                )),
+                documentation: Some(Documentation::String(format!(
+                    "Nagari language keyword: {}",
+                    keyword
+                ))),
                 insert_text: Some(keyword.to_string()),
                 ..Default::default()
             })
@@ -199,7 +236,8 @@ impl CompletionProvider {
             .collect()
     }
 
-    async fn get_workspace_completions(&self, prefix: &str) -> Vec<CompletionItem> {        let symbols = self.workspace_manager.get_workspace_symbols(prefix).await;
+    async fn get_workspace_completions(&self, prefix: &str) -> Vec<CompletionItem> {
+        let symbols = self.workspace_manager.get_workspace_symbols(prefix).await;
 
         symbols
             .into_iter()
@@ -214,38 +252,330 @@ impl CompletionProvider {
     }
 
     async fn get_package_completions(&self, prefix: &str) -> Vec<CompletionItem> {
-        // TODO: Implement package completion based on installed packages
-        // This would read from nagari.toml and suggest available packages
-        Vec::new()
-    }
+        let mut completions = Vec::new();
 
-    fn extract_document_symbols(&self, text: &str) -> Vec<DocumentSymbol> {
-        // TODO: Use actual Nagari parser to extract symbols
-        // For now, use simple regex-based extraction
-        let mut symbols = Vec::new();
+        // Standard library packages
+        let stdlib_packages = vec![
+            ("core", "Core utilities and basic functions"),
+            ("fs", "File system operations"),
+            ("http", "HTTP client and server functionality"),
+            ("json", "JSON parsing and serialization"),
+            ("math", "Mathematical functions and constants"),
+            ("os", "Operating system interface"),
+            ("time", "Date and time utilities"),
+            ("crypto", "Cryptographic functions"),
+            ("db", "Database connectivity"),
+        ];
 
-        // Extract function declarations
-        let function_regex = regex::Regex::new(r"function\s+(\w+)\s*\(").unwrap();
-        for captures in function_regex.captures_iter(text) {
-            if let Some(name) = captures.get(1) {
-                symbols.push(DocumentSymbol {
-                    name: name.as_str().to_string(),
-                    kind: CompletionItemKind::FUNCTION,
-                    detail: Some("Function".to_string()),
-                    documentation: None,
+        for (name, description) in stdlib_packages {
+            if name.starts_with(prefix) || prefix.is_empty() {
+                completions.push(CompletionItem {
+                    label: name.to_string(),
+                    kind: Some(CompletionItemKind::MODULE),
+                    detail: Some("Standard library".to_string()),
+                    documentation: Some(Documentation::String(description.to_string())),
+                    insert_text: Some(name.to_string()),
+                    ..Default::default()
                 });
             }
         }
 
-        // Extract variable declarations
-        let var_regex = regex::Regex::new(r"(?:let|const|var)\s+(\w+)").unwrap();
-        for captures in var_regex.captures_iter(text) {
+        // Read nagari.toml to find workspace-specific packages
+        let workspace_folders = self.workspace_manager.get_workspace_folders().await;
+        for folder in workspace_folders {
+            if let Ok(workspace_path) = folder.uri.to_file_path() {
+                let nagari_toml_path = workspace_path.join("nagari.toml");
+                if let Ok(toml_content) = std::fs::read_to_string(&nagari_toml_path) {
+                    // Simple parsing of dependencies section without toml crate
+                    let mut in_dependencies = false;
+                    for line in toml_content.lines() {
+                        let line = line.trim();
+
+                        if line == "[dependencies]" {
+                            in_dependencies = true;
+                            continue;
+                        }
+
+                        if line.starts_with('[') && line != "[dependencies]" {
+                            in_dependencies = false;
+                            continue;
+                        }
+
+                        if in_dependencies && !line.is_empty() && !line.starts_with('#') {
+                            if let Some(eq_pos) = line.find('=') {
+                                let dep_name = line[..eq_pos].trim().trim_matches('"');
+                                let dep_value = line[eq_pos + 1..].trim().trim_matches('"');
+
+                                if dep_name.starts_with(prefix) || prefix.is_empty() {
+                                    let version = if dep_value.starts_with('{') {
+                                        // Handle complex dependency specification
+                                        "complex"
+                                    } else {
+                                        dep_value
+                                    };
+
+                                    completions.push(CompletionItem {
+                                        label: dep_name.to_string(),
+                                        kind: Some(CompletionItemKind::MODULE),
+                                        detail: Some(format!("Package ({})", version)),
+                                        documentation: Some(Documentation::String(format!(
+                                            "External package: {} version {}",
+                                            dep_name, version
+                                        ))),
+                                        insert_text: Some(dep_name.to_string()),
+                                        ..Default::default()
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        completions
+    }
+
+    fn extract_document_symbols(&self, text: &str) -> Vec<DocumentSymbol> {
+        let mut symbols = Vec::new();
+
+        // Use the Nagari parser to extract symbols
+        match nagari_parser::parse(text) {
+            Ok(program) => {
+                self.extract_symbols_from_statements(&program.statements, &mut symbols);
+            }
+            Err(_) => {
+                // If parsing fails, fall back to regex-based extraction
+                tracing::debug!("Parser failed, falling back to regex extraction");
+                return self.extract_symbols_with_regex(text);
+            }
+        }
+
+        symbols
+    }
+
+    fn extract_symbols_from_statements(
+        &self,
+        statements: &[nagari_parser::Statement],
+        symbols: &mut Vec<DocumentSymbol>,
+    ) {
+        for statement in statements {
+            match statement {
+                nagari_parser::Statement::Function {
+                    name,
+                    parameters,
+                    is_async,
+                    return_type,
+                    ..
+                } => {
+                    let param_list = parameters
+                        .iter()
+                        .map(|p| p.name.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ");
+
+                    let detail = if *is_async {
+                        format!("async function({})", param_list)
+                    } else {
+                        format!("function({})", param_list)
+                    };
+
+                    let detail_with_return = if let Some(ret_type) = return_type {
+                        format!("{}: {}", detail, ret_type)
+                    } else {
+                        detail
+                    };
+
+                    symbols.push(DocumentSymbol {
+                        name: name.clone(),
+                        kind: CompletionItemKind::FUNCTION,
+                        detail: Some(detail_with_return),
+                        documentation: Some(format!("Function {}", name)),
+                    });
+                }
+                nagari_parser::Statement::Let { name, .. } => {
+                    symbols.push(DocumentSymbol {
+                        name: name.clone(),
+                        kind: CompletionItemKind::VARIABLE,
+                        detail: Some("let variable".to_string()),
+                        documentation: Some(format!("Variable {}", name)),
+                    });
+                }
+                nagari_parser::Statement::Const { name, .. } => {
+                    symbols.push(DocumentSymbol {
+                        name: name.clone(),
+                        kind: CompletionItemKind::CONSTANT,
+                        detail: Some("const variable".to_string()),
+                        documentation: Some(format!("Constant {}", name)),
+                    });
+                }
+                nagari_parser::Statement::Class {
+                    name,
+                    superclass,
+                    methods,
+                } => {
+                    let detail = if let Some(super_name) = superclass {
+                        format!("class {} extends {}", name, super_name)
+                    } else {
+                        format!("class {}", name)
+                    };
+
+                    symbols.push(DocumentSymbol {
+                        name: name.clone(),
+                        kind: CompletionItemKind::CLASS,
+                        detail: Some(detail),
+                        documentation: Some(format!("Class {}", name)),
+                    });
+
+                    // Extract methods from the class
+                    self.extract_symbols_from_statements(methods, symbols);
+                }
+                nagari_parser::Statement::Import { source, items } => {
+                    for item in items {
+                        let symbol_name = item.alias.as_ref().unwrap_or(&item.name);
+                        symbols.push(DocumentSymbol {
+                            name: symbol_name.clone(),
+                            kind: CompletionItemKind::MODULE,
+                            detail: Some(format!("imported from {}", source)),
+                            documentation: Some(format!("Import {} from {}", item.name, source)),
+                        });
+                    }
+                }
+                nagari_parser::Statement::If {
+                    then_body,
+                    else_body,
+                    ..
+                } => {
+                    // Extract symbols from if/else blocks
+                    self.extract_symbols_from_statements(then_body, symbols);
+                    if let Some(else_stmts) = else_body {
+                        self.extract_symbols_from_statements(else_stmts, symbols);
+                    }
+                }
+                nagari_parser::Statement::While { body, .. }
+                | nagari_parser::Statement::For { body, .. } => {
+                    // Extract symbols from loop bodies
+                    self.extract_symbols_from_statements(body, symbols);
+                }
+                _ => {
+                    // Handle other statement types as needed
+                }
+            }
+        }
+    }
+
+    fn extract_symbols_with_regex(&self, text: &str) -> Vec<DocumentSymbol> {
+        let mut symbols = Vec::new();
+
+        // Extract function declarations
+        let function_regex = regex::Regex::new(r"function\s+(\w+)\s*\(([^)]*)\)").unwrap();
+        for captures in function_regex.captures_iter(text) {
+            if let Some(name) = captures.get(1) {
+                let params = captures.get(2).map_or("", |m| m.as_str());
+                symbols.push(DocumentSymbol {
+                    name: name.as_str().to_string(),
+                    kind: CompletionItemKind::FUNCTION,
+                    detail: Some(format!("function({})", params)),
+                    documentation: Some(format!("Function {}", name.as_str())),
+                });
+            }
+        }
+
+        // Extract async function declarations
+        let async_function_regex =
+            regex::Regex::new(r"async\s+function\s+(\w+)\s*\(([^)]*)\)").unwrap();
+        for captures in async_function_regex.captures_iter(text) {
+            if let Some(name) = captures.get(1) {
+                let params = captures.get(2).map_or("", |m| m.as_str());
+                symbols.push(DocumentSymbol {
+                    name: name.as_str().to_string(),
+                    kind: CompletionItemKind::FUNCTION,
+                    detail: Some(format!("async function({})", params)),
+                    documentation: Some(format!("Async function {}", name.as_str())),
+                });
+            }
+        }
+
+        // Extract class declarations
+        let class_regex = regex::Regex::new(r"class\s+(\w+)(?:\s+extends\s+(\w+))?").unwrap();
+        for captures in class_regex.captures_iter(text) {
+            if let Some(name) = captures.get(1) {
+                let detail = if let Some(superclass) = captures.get(2) {
+                    format!("class {} extends {}", name.as_str(), superclass.as_str())
+                } else {
+                    format!("class {}", name.as_str())
+                };
+                symbols.push(DocumentSymbol {
+                    name: name.as_str().to_string(),
+                    kind: CompletionItemKind::CLASS,
+                    detail: Some(detail),
+                    documentation: Some(format!("Class {}", name.as_str())),
+                });
+            }
+        }
+
+        // Extract let variable declarations
+        let let_regex = regex::Regex::new(r"let\s+(\w+)").unwrap();
+        for captures in let_regex.captures_iter(text) {
             if let Some(name) = captures.get(1) {
                 symbols.push(DocumentSymbol {
                     name: name.as_str().to_string(),
                     kind: CompletionItemKind::VARIABLE,
-                    detail: Some("Variable".to_string()),
-                    documentation: None,
+                    detail: Some("let variable".to_string()),
+                    documentation: Some(format!("Variable {}", name.as_str())),
+                });
+            }
+        }
+
+        // Extract const variable declarations
+        let const_regex = regex::Regex::new(r"const\s+(\w+)").unwrap();
+        for captures in const_regex.captures_iter(text) {
+            if let Some(name) = captures.get(1) {
+                symbols.push(DocumentSymbol {
+                    name: name.as_str().to_string(),
+                    kind: CompletionItemKind::CONSTANT,
+                    detail: Some("const variable".to_string()),
+                    documentation: Some(format!("Constant {}", name.as_str())),
+                });
+            }
+        }
+
+        // Extract import statements
+        let import_regex = regex::Regex::new(
+            r#"import\s+(?:\{([^}]+)\}|\*\s+as\s+(\w+)|(\w+))\s+from\s+["']([^"']+)["']"#,
+        )
+        .unwrap();
+        for captures in import_regex.captures_iter(text) {
+            let source = captures.get(4).map_or("", |m| m.as_str());
+
+            if let Some(named_imports) = captures.get(1) {
+                // Named imports: import { a, b, c } from "module"
+                for import_name in named_imports.as_str().split(',') {
+                    let name = import_name.trim();
+                    if !name.is_empty() {
+                        symbols.push(DocumentSymbol {
+                            name: name.to_string(),
+                            kind: CompletionItemKind::MODULE,
+                            detail: Some(format!("imported from {}", source)),
+                            documentation: Some(format!("Import {} from {}", name, source)),
+                        });
+                    }
+                }
+            } else if let Some(namespace_import) = captures.get(2) {
+                // Namespace import: import * as name from "module"
+                symbols.push(DocumentSymbol {
+                    name: namespace_import.as_str().to_string(),
+                    kind: CompletionItemKind::MODULE,
+                    detail: Some(format!("namespace import from {}", source)),
+                    documentation: Some(format!("Namespace import from {}", source)),
+                });
+            } else if let Some(default_import) = captures.get(3) {
+                // Default import: import name from "module"
+                symbols.push(DocumentSymbol {
+                    name: default_import.as_str().to_string(),
+                    kind: CompletionItemKind::MODULE,
+                    detail: Some(format!("default import from {}", source)),
+                    documentation: Some(format!("Default import from {}", source)),
                 });
             }
         }
@@ -255,22 +585,36 @@ impl CompletionProvider {
 
     /// Send completion capabilities to client
     pub async fn notify_completion_capabilities(&self) -> Result<(), tower_lsp::jsonrpc::Error> {
-        let message = format!("Completion provider initialized with {} capabilities",
-                             if self.matcher.fuzzy_match("test", "test").is_some() { "fuzzy matching" } else { "basic" });
+        let message = format!(
+            "Completion provider initialized with {} capabilities",
+            if self.matcher.fuzzy_match("test", "test").is_some() {
+                "fuzzy matching"
+            } else {
+                "basic"
+            }
+        );
         self.client.log_message(MessageType::INFO, message).await;
         Ok(())
     }
 
     /// Show completion statistics to client
     pub async fn show_completion_stats(&self, uri: &Url) -> Result<(), tower_lsp::jsonrpc::Error> {
-        let stats = format!("Completion stats for {}: Available completions generated", uri);
+        let stats = format!(
+            "Completion stats for {}: Available completions generated",
+            uri
+        );
         self.client.show_message(MessageType::INFO, stats).await;
         Ok(())
     }
 
     /// Send diagnostic message about completion to client
-    pub async fn send_completion_diagnostic(&self, message: &str) -> Result<(), tower_lsp::jsonrpc::Error> {
-        self.client.log_message(MessageType::WARNING, format!("Completion: {}", message)).await;
+    pub async fn send_completion_diagnostic(
+        &self,
+        message: &str,
+    ) -> Result<(), tower_lsp::jsonrpc::Error> {
+        self.client
+            .log_message(MessageType::WARNING, format!("Completion: {}", message))
+            .await;
         Ok(())
     }
 }

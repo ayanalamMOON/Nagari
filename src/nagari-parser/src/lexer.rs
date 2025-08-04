@@ -244,7 +244,7 @@ impl Lexer {
                     Ok(Token::DivideAssign)
                 } else if self.peek() == '/' {
                     // Line comment
-                    self.skip_line_comment();
+                    self.skip_to_next_line()?;
                     self.next_token()
                 } else if self.peek() == '*' {
                     // Block comment
@@ -329,7 +329,7 @@ impl Lexer {
             }
             '#' => {
                 // Handle comments - skip to end of line
-                self.skip_line_comment();
+                self.skip_to_next_line()?;
                 self.next_token() // Get next token after comment
             }
             '"' => self.string_literal(),
@@ -468,12 +468,6 @@ impl Lexer {
             self.at_line_start = true;
         }
         Ok(())
-    }
-
-    fn skip_line_comment(&mut self) {
-        while !self.is_at_end() && self.peek() != '\n' && self.peek() != '\r' {
-            self.advance();
-        }
     }
 
     fn skip_block_comment(&mut self) -> Result<(), ParseError> {

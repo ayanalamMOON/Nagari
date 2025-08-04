@@ -46,14 +46,35 @@ impl NagariLanguageServer {
                 workspace_manager.clone(),
             ),
             diagnostics_provider: DiagnosticsProvider::new(),
-            goto_provider: GotoProvider::new(),
-            hover_provider: HoverProvider::new(),
-            references_provider: ReferenceProvider::new(),
-            rename_provider: RenameProvider::new(),
-            symbols_provider: SymbolProvider::new(),
+            goto_provider: GotoProvider::with_managers(
+                document_manager.clone(),
+                workspace_manager.clone(),
+            ),
+            hover_provider: HoverProvider::with_managers(
+                document_manager.clone(),
+                workspace_manager.clone(),
+            ),
+            references_provider: ReferenceProvider::with_managers(
+                document_manager.clone(),
+                workspace_manager.clone(),
+            ),
+            rename_provider: RenameProvider::with_managers(
+                document_manager.clone(),
+                workspace_manager.clone(),
+            ),
+            symbols_provider: SymbolProvider::with_managers(
+                document_manager.clone(),
+                workspace_manager.clone(),
+            ),
             formatting_provider: FormattingProvider::new(),
-            semantic_tokens_provider: SemanticTokensProvider::new(),
-            inlay_hints_provider: InlayHintsProvider::new(),
+            semantic_tokens_provider: SemanticTokensProvider::with_managers(
+                document_manager.clone(),
+                workspace_manager.clone(),
+            ),
+            inlay_hints_provider: InlayHintsProvider::with_managers(
+                document_manager.clone(),
+                workspace_manager.clone(),
+            ),
             code_actions_provider: CodeActionsProvider::new(),
             document_manager,
             workspace_manager,
@@ -247,6 +268,24 @@ impl LanguageServer for NagariLanguageServer {
         Ok(result)
     }
 
+    async fn prepare_rename(
+        &self,
+        params: TextDocumentPositionParams,
+    ) -> tower_lsp::jsonrpc::Result<Option<PrepareRenameResponse>> {
+        let result = self
+            .rename_provider
+            .prepare_rename(params)
+            .await
+            .unwrap_or(None);
+
+        // Convert Range to PrepareRenameResponse
+        if let Some(range) = result {
+            Ok(Some(PrepareRenameResponse::Range(range)))
+        } else {
+            Ok(None)
+        }
+    }
+
     async fn rename(
         &self,
         params: RenameParams,
@@ -266,6 +305,19 @@ impl LanguageServer for NagariLanguageServer {
             .unwrap_or(None);
         Ok(result)
     }
+
+    async fn symbol(
+        &self,
+        params: WorkspaceSymbolParams,
+    ) -> tower_lsp::jsonrpc::Result<Option<Vec<SymbolInformation>>> {
+        let result = self
+            .symbols_provider
+            .workspace_symbols(params)
+            .await
+            .unwrap_or(None);
+        Ok(result)
+    }
+
     async fn formatting(
         &self,
         params: DocumentFormattingParams,
@@ -326,6 +378,27 @@ impl LanguageServer for NagariLanguageServer {
         Ok(result)
     }
 
+    async fn inlay_hint_resolve(&self, hint: InlayHint) -> tower_lsp::jsonrpc::Result<InlayHint> {
+        let result = self
+            .inlay_hints_provider
+            .inlay_hint_resolve(hint)
+            .await
+            .unwrap_or_else(|_| InlayHint {
+                position: Position {
+                    line: 0,
+                    character: 0,
+                },
+                label: InlayHintLabel::String("Error".to_string()),
+                kind: None,
+                text_edits: None,
+                tooltip: None,
+                padding_left: None,
+                padding_right: None,
+                data: None,
+            });
+        Ok(result)
+    }
+
     async fn code_action(
         &self,
         params: CodeActionParams,
@@ -338,13 +411,35 @@ impl LanguageServer for NagariLanguageServer {
         Ok(result)
     }
 
-    async fn did_change_workspace_folders(&self, _params: DidChangeWorkspaceFoldersParams) {
-        // TODO: Implement workspace folder management
-        // for folder in params.event.added {
-        //     self.workspace_manager.add_workspace_folder(folder).await;
-        // }
-        // for folder in params.event.removed {
-        //     self.workspace_manager.remove_workspace_folder(&folder.uri).await;
-        // }
+    async fn did_change_workspace_folders(&self, params: DidChangeWorkspaceFoldersParams) {
+        tracing::info!("Workspace folders changed");
+
+        // Add new workspace folders
+        for folder in params.event.added {
+            tracing::info!("Adding workspace folder: {}", folder.name);
+            self.workspace_manager.add_workspace_folder(folder).await;
+        }
+
+        // Remove workspace folders
+        for folder in params.event.removed {
+            tracing::info!("Removing workspace folder: {}", folder.name);
+            self.workspace_manager
+                .remove_workspace_folder(&folder.uri)
+                .await;
+        }
+
+        // Re-index the workspace to update the symbol table
+        self.workspace_manager.index_workspace().await;
+
+        // Log the current workspace state
+        let current_folders = self.workspace_manager.get_workspace_folders().await;
+        tracing::info!(
+            "Current workspace folders: {}",
+            current_folders
+                .iter()
+                .map(|f| f.name.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
     }
 }
