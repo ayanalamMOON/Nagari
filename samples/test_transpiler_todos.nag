@@ -1,0 +1,86 @@
+# Test file to verify our TODO implementations
+
+# Test with statement (context management)
+with open("file.txt") as f:
+    content = f.read()
+
+# Test try-catch-finally
+try:
+    result = risky_operation()
+except ValueError as e:
+    print(f"Error: {e}")
+finally:
+    cleanup()
+
+# Test raise statement
+if error_condition:
+    raise ValueError("Something went wrong")
+
+# Test type alias
+type StringList = list[str]
+
+# Test yield and generator expressions
+def fibonacci():
+    a, b = 0, 1
+    while True:
+        yield a
+        a, b = b, a + b
+
+# Test yield from
+def delegated_generator():
+    yield from fibonacci()
+
+# Test class definition with inheritance
+class Animal:
+    def __init__(self, name):
+        self.name = name
+
+class Dog(Animal):
+    def bark(self):
+        return f"{self.name} barks!"
+
+# Test destructuring assignment
+{x, y} = point
+[a, b, c] = coordinates
+
+# Test array destructuring
+[first, second, *rest] = numbers
+
+# Test export statements
+export default MyClass
+export {function1, function2}
+export * from "other_module"
+
+# Test enhanced expressions
+result = condition ? true_value : false_value
+numbers_set = {1, 2, 3, 4}
+sliced = array[1:5:2]
+template = f"Hello {name}, you are {age} years old"
+
+# Test async expression
+async_result = async fetch("https://api.example.com")
+
+# Test spread operator
+new_array = [...old_array, ...other_array]
+
+# Test walrus operator (named expression)
+if (n := len(data)) > 10:
+    print(f"Large dataset with {n} items")
+
+# Test generator expression
+squares = (x**2 for x in range(10) if x % 2 == 0)
+
+# Test enhanced pattern matching
+match value:
+    case (x, y) if x > 0:
+        print("Positive tuple")
+    case [first, *rest]:
+        print(f"List starting with {first}")
+    case {"name": n, "age": a}:
+        print(f"Person: {n}, {a} years old")
+    case Point(x, y):
+        print(f"Point at ({x}, {y})")
+    case range(1, 10):
+        print("Number between 1 and 10")
+    case _:
+        print("Something else")

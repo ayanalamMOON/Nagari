@@ -1,0 +1,286 @@
+name: SEO and Social Media Optimization
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'README.md'
+      - 'docs/**'
+      - 'examples/**'
+      - 'CHANGELOG.md'
+  release:
+    types: [published]
+  schedule:
+    # Run weekly to update sitemap and check SEO health
+    - cron: '0 0 * * 0'
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  seo-optimization:
+    name: SEO Health Check and Optimization
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: 'nagari-runtime/package.json'
+
+    - name: Validate HTML and Meta Tags
+      run: |
+        # Install HTML validator
+        npm install -g html-validate
+        
+        # Validate index.html for SEO compliance
+        if [ -f "index.html" ]; then
+          html-validate index.html || echo "HTML validation warnings found"
+        fi
+
+    - name: Check meta tag completeness
+      run: |
+        echo "Checking for essential SEO meta tags..."
+        
+        if [ -f "index.html" ]; then
+          # Check for essential meta tags
+          grep -q "meta.*description" index.html && echo "✅ Description meta tag found" || echo "❌ Description meta tag missing"
+          grep -q "meta.*keywords" index.html && echo "✅ Keywords meta tag found" || echo "❌ Keywords meta tag missing"
+          grep -q "og:title" index.html && echo "✅ Open Graph title found" || echo "❌ Open Graph title missing"
+          grep -q "og:description" index.html && echo "✅ Open Graph description found" || echo "❌ Open Graph description missing"
+          grep -q "twitter:card" index.html && echo "✅ Twitter Card found" || echo "❌ Twitter Card missing"
+          grep -q "application/ld+json" index.html && echo "✅ JSON-LD structured data found" || echo "❌ JSON-LD structured data missing"
+        fi
+
+    - name: Analyze README for SEO
+      run: |
+        echo "Analyzing README.md for SEO optimization..."
+        
+        # Check README structure
+        if [ -f "README.md" ]; then
+          # Count headings
+          h1_count=$(grep -c "^# " README.md || echo "0")
+          h2_count=$(grep -c "^## " README.md || echo "0")
+          
+          echo "📊 README Structure Analysis:"
+          echo "   H1 headings: $h1_count"
+          echo "   H2 headings: $h2_count"
+          
+          # Check for key SEO elements
+          grep -q "programming language" README.md && echo "✅ Target keyword 'programming language' found" || echo "❌ Target keyword missing"
+          grep -q "Python.*JavaScript" README.md && echo "✅ Value proposition clearly stated" || echo "❌ Value proposition needs improvement"
+          grep -q "installation\|install\|setup" README.md -i && echo "✅ Installation instructions found" || echo "❌ Installation instructions missing"
+          grep -q "example\|demo" README.md -i && echo "✅ Examples found" || echo "❌ Examples missing"
+          
+          # Check word count
+          word_count=$(wc -w < README.md)
+          echo "📝 README word count: $word_count words"
+          
+          if [ $word_count -lt 500 ]; then
+            echo "⚠️  README might be too short for optimal SEO (< 500 words)"
+          elif [ $word_count -gt 3000 ]; then
+            echo "⚠️  README might be too long (> 3000 words)"
+          else
+            echo "✅ README length is good for SEO"
+          fi
+        fi
+
+    - name: Validate package.json keywords
+      run: |
+        echo "Checking npm package keywords..."
+        
+        if [ -f "nagari-runtime/package.json" ]; then
+          # Check if keywords array exists and has sufficient terms
+          keyword_count=$(jq -r '.keywords | length' nagari-runtime/package.json 2>/dev/null || echo "0")
+          echo "📦 npm package keywords count: $keyword_count"
+          
+          if [ $keyword_count -lt 5 ]; then
+            echo "⚠️  Consider adding more keywords to package.json (currently: $keyword_count)"
+          else
+            echo "✅ Good number of keywords in package.json"
+          fi
+          
+          # Check for important keywords
+          jq -r '.keywords[]' nagari-runtime/package.json 2>/dev/null | grep -q "programming-language" && echo "✅ 'programming-language' keyword found" || echo "❌ Consider adding 'programming-language' keyword"
+          jq -r '.keywords[]' nagari-runtime/package.json 2>/dev/null | grep -q "transpiler" && echo "✅ 'transpiler' keyword found" || echo "❌ Consider adding 'transpiler' keyword"
+        fi
+
+    - name: Check repository topics
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Checking repository topics..."
+        
+        # Get current topics
+        topics=$(gh api repos/${{ github.repository }}/topics | jq -r '.names[]' | tr '\n' ' ')
+        topic_count=$(echo $topics | wc -w)
+        
+        echo "📋 Current repository topics ($topic_count): $topics"
+        
+        if [ $topic_count -lt 10 ]; then
+          echo "⚠️  Consider adding more repository topics (current: $topic_count, recommended: 10-20)"
+        else
+          echo "✅ Good number of repository topics"
+        fi
+
+    - name: Generate SEO report
+      run: |
+        echo "## 🔍 SEO Optimization Report" > seo-report.md
+        echo "" >> seo-report.md
+        echo "Generated on: $(date)" >> seo-report.md
+        echo "" >> seo-report.md
+        
+        echo "### 📊 Repository Metrics" >> seo-report.md
+        echo "- **Stars**: $(gh api repos/${{ github.repository }} | jq -r '.stargazers_count')" >> seo-report.md
+        echo "- **Forks**: $(gh api repos/${{ github.repository }} | jq -r '.forks_count')" >> seo-report.md
+        echo "- **Issues**: $(gh api repos/${{ github.repository }} | jq -r '.open_issues_count')" >> seo-report.md
+        echo "- **Size**: $(gh api repos/${{ github.repository }} | jq -r '.size') KB" >> seo-report.md
+        echo "" >> seo-report.md
+        
+        echo "### 📝 Content Analysis" >> seo-report.md
+        if [ -f "README.md" ]; then
+          word_count=$(wc -w < README.md)
+          echo "- **README word count**: $word_count words" >> seo-report.md
+        fi
+        
+        if [ -f "CHANGELOG.md" ]; then
+          echo "- **Changelog**: ✅ Present" >> seo-report.md
+        else
+          echo "- **Changelog**: ❌ Missing" >> seo-report.md
+        fi
+        
+        echo "" >> seo-report.md
+        echo "### 🔗 Important Links" >> seo-report.md
+        echo "- [Repository](https://github.com/${{ github.repository }})" >> seo-report.md
+        echo "- [npm Package](https://www.npmjs.com/package/nagari-runtime)" >> seo-report.md
+        echo "- [Releases](https://github.com/${{ github.repository }}/releases)" >> seo-report.md
+        echo "- [Issues](https://github.com/${{ github.repository }}/issues)" >> seo-report.md
+        echo "- [Discussions](https://github.com/${{ github.repository }}/discussions)" >> seo-report.md
+        
+        echo "SEO report generated successfully!"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Update sitemap timestamp
+      run: |
+        if [ -f "sitemap.xml" ]; then
+          # Update lastmod dates to current date
+          current_date=$(date +%Y-%m-%d)
+          sed -i "s/<lastmod>.*<\/lastmod>/<lastmod>$current_date<\/lastmod>/g" sitemap.xml
+          echo "✅ Sitemap timestamps updated"
+        fi
+
+    - name: Commit updated SEO files
+      if: github.event_name == 'schedule'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        if [ -f "sitemap.xml" ]; then
+          git add sitemap.xml
+        fi
+        
+        if git diff --staged --quiet; then
+          echo "No SEO files to update"
+        else
+          git commit -m "chore: update SEO metadata and sitemap [skip ci]"
+          git push
+        fi
+
+  social-media-update:
+    name: Social Media Content Generation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Generate release announcement
+      run: |
+        echo "## 🚀 New Nagari Release: ${{ github.event.release.tag_name }}" > release-announcement.md
+        echo "" >> release-announcement.md
+        echo "${{ github.event.release.body }}" >> release-announcement.md
+        echo "" >> release-announcement.md
+        echo "### Social Media Templates" >> release-announcement.md
+        echo "" >> release-announcement.md
+        echo "#### Twitter/X" >> release-announcement.md
+        echo '```' >> release-announcement.md
+        echo "🚀 Nagari ${{ github.event.release.tag_name }} is now available!" >> release-announcement.md
+        echo "" >> release-announcement.md
+        echo "✨ What's new:" >> release-announcement.md
+        echo "• [Add key features from release notes]" >> release-announcement.md
+        echo "" >> release-announcement.md
+        echo "Download: ${{ github.event.release.html_url }}" >> release-announcement.md
+        echo "" >> release-announcement.md
+        echo "#NagariLang #ProgrammingLanguage #WebDev #OpenSource" >> release-announcement.md
+        echo '```' >> release-announcement.md
+        echo "" >> release-announcement.md
+        echo "#### LinkedIn" >> release-announcement.md
+        echo '```' >> release-announcement.md
+        echo "Excited to announce Nagari ${{ github.event.release.tag_name }}!" >> release-announcement.md
+        echo "" >> release-announcement.md
+        echo "Nagari combines Python's elegant syntax with JavaScript's ecosystem reach." >> release-announcement.md
+        echo "" >> release-announcement.md
+        echo "This release includes:" >> release-announcement.md
+        echo "[Add bullet points from release notes]" >> release-announcement.md
+        echo "" >> release-announcement.md
+        echo "Perfect for developers who want clean, readable code that runs everywhere JavaScript does." >> release-announcement.md
+        echo "" >> release-announcement.md
+        echo "Try it: ${{ github.event.release.html_url }}" >> release-announcement.md
+        echo "" >> release-announcement.md
+        echo "#Programming #WebDevelopment #JavaScript #Python #OpenSource" >> release-announcement.md
+        echo '```' >> release-announcement.md
+
+    - name: Create social media issue
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh issue create \
+          --title "📢 Social Media Promotion for Release ${{ github.event.release.tag_name }}" \
+          --body-file release-announcement.md \
+          --label "social-media,release" \
+          --assignee "${{ github.actor }}"
+
+  link-check:
+    name: Check External Links
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install link checker
+      run: npm install -g markdown-link-check
+
+    - name: Check README links
+      run: |
+        if [ -f "README.md" ]; then
+          markdown-link-check README.md --config .github/link-check-config.json || echo "Some links may be broken"
+        fi
+
+    - name: Check documentation links
+      run: |
+        if [ -d "docs" ]; then
+          find docs -name "*.md" -exec markdown-link-check {} \; || echo "Some documentation links may be broken"
+        fi
+
+    - name: Create issue for broken links
+      if: failure()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh issue create \
+          --title "🔗 Broken Links Detected" \
+          --body "The automated link check found broken links in the repository. Please review and fix them." \
+          --label "maintenance,links"

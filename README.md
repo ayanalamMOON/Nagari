@@ -7,10 +7,14 @@
 [![npm Runtime](https://img.shields.io/npm/v/nagari-runtime?label=runtime&color=red)](https://www.npmjs.com/package/nagari-runtime)
 [![Rust](https://img.shields.io/badge/built%20with-Rust-orange.svg)](https://www.rust-lang.org/)
 [![TypeScript](https://img.shields.io/badge/runtime-TypeScript-blue.svg)](https://www.typescriptlang.org/)
+[![GitHub stars](https://img.shields.io/github/stars/ayanalamMOON/Nagari?style=social)](https://github.com/ayanalamMOON/Nagari/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/ayanalamMOON/Nagari?style=social)](https://github.com/ayanalamMOON/Nagari/network/members)
 
-**A modern, production-ready programming language that combines Python's elegant syntax with JavaScript's ecosystem compatibility.**
+**🐍 Python Syntax + ⚡ JavaScript Performance = 🚀 Modern Web Development**
 
-Nagari transpiles to clean, readable JavaScript while providing advanced features like comprehensive type checking, intelligent tooling, and seamless interoperability. Built with Rust for performance and TypeScript for runtime compatibility.
+Nagari is a production-ready programming language that combines Python's elegant, readable syntax with JavaScript's ecosystem compatibility and performance. Built with Rust for speed and reliability, Nagari transpiles to clean, optimized JavaScript while providing a complete development toolchain for modern web applications.
+
+> **Perfect for:** Python developers entering web development, JavaScript teams wanting cleaner syntax, and full-stack developers seeking productivity without compromise.
 
 ## ✨ What Makes Nagari Special
 
@@ -50,7 +54,7 @@ export PATH=$PATH:$(pwd)/target/release
 
 ### Your First Nagari Program
 
-Create `hello.nag`:
+Create `hello.nag` (or use `samples/hello.nag`):
 ```nag
 def fibonacci(n):
     if n <= 1:
@@ -318,6 +322,8 @@ nag lsp --mode tcp      # Network-based editors
 ✅ **Ecosystem Integration** - Works with React, Express, Vue, and npm packages
 
 ## 🗂️ Project Structure
+
+> 📋 **Detailed Structure Guide**: See [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md) for comprehensive organization documentation.
 
 The Nagari project is organized into focused, production-ready components:
 
@@ -604,7 +610,7 @@ Nagari/                              # 🚀 Root project directory
 │       ├── package.json            # npm package configuration
 │       └── tsconfig.json           # TypeScript configuration
 ├── examples/                       # 📝 Comprehensive example projects
-│   ├── hello.nag                  # Simple hello world example
+│   ├── hello.nag                  # Hello world example
 │   ├── algorithms.nag             # Data structures and algorithms
 │   ├── async_demo.nag             # Async programming patterns
 │   ├── react_todo_app.nag         # React application with hooks
@@ -614,6 +620,18 @@ Nagari/                              # 🚀 Root project directory
 │   ├── math_demo.nag              # Mathematical computations
 │   ├── file_operations.nag        # File system operations
 │   └── cli_demo.nag               # Command-line applications
+├── samples/                        # 🧪 Simple test files and basic samples
+│   ├── hello.nag                  # Basic hello world sample
+│   ├── simple_test.nag            # Basic language feature tests
+│   ├── test_transpiler_todos.nag  # Advanced feature testing
+│   ├── hello_output.js            # Example transpiled JavaScript
+│   └── README.md                  # Sample file documentation
+├── web/                            # 🌐 SEO-optimized web assets
+│   ├── index.html                 # Landing page with structured data
+│   ├── sitemap.xml                # Search engine sitemap
+│   ├── robots.txt                 # Crawler instructions
+│   ├── docs.css                   # Documentation styling
+│   └── README.md                  # Web asset documentation
 ├── tests/                          # 🧪 Test files and utilities
 │   ├── fixtures/                  # Test Nagari source files
 │   ├── outputs/                   # Generated JavaScript files
@@ -652,8 +670,13 @@ Nagari/                              # 🚀 Root project directory
 │   ├── language-spec.md          # Comprehensive language reference
 │   └── bytecode-format.md        # VM bytecode specification
 ├── target/                         # 🏗️ Cargo build outputs (generated)
-├── .github/                        # 🔄 GitHub Actions and templates
-│   └── workflows/                 # CI/CD pipeline definitions
+├── .github/                        # 🔄 GitHub Actions, community docs & SEO
+│   ├── workflows/                 # CI/CD pipeline definitions
+│   ├── CODE_OF_CONDUCT.md         # Community code of conduct
+│   ├── CONTRIBUTING.md            # Contribution guidelines
+│   ├── FUNDING.yml                # Sponsor configuration
+│   ├── SEO_CONFIG.md              # SEO strategy documentation
+│   └── TOPICS.md                  # Repository topic strategy
 ├── .gitignore                      # 🚫 Git ignore patterns
 ├── Cargo.toml                      # 🦀 Workspace configuration
 ├── Cargo.lock                      # 🔒 Dependency lock file

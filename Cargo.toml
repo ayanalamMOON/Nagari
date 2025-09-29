@@ -12,11 +12,18 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.3.0"
 edition = "2021"
-authors = ["Nagari Team"]
+authors = ["Nagari Team <contact@nagari.dev>"]
 license = "MIT"
-repository = "https://github.com/nagari-lang/nagari"
+repository = "https://github.com/ayanalamMOON/Nagari"
+homepage = "https://github.com/ayanalamMOON/Nagari"
+documentation = "https://github.com/ayanalamMOON/Nagari/docs"
+description = "Modern programming language combining Python's elegant syntax with JavaScript's ecosystem compatibility. Rust-based transpiler for web development."
+readme = "README.md"
+keywords = ["nagari", "compiler", "transpiler", "python", "javascript"]
+categories = ["development-tools", "compilers", "web-programming"]
+exclude = ["target/", "*.tmp", ".github/workflows/"]
 
 [workspace.dependencies]
 clap = { version = "4.0", features = ["derive"] }

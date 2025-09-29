@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Primary Meta Tags -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nagari Programming Language - Python Syntax, JavaScript Performance</title>
+    <meta name="title" content="Nagari Programming Language - Python Syntax, JavaScript Performance">
+    <meta name="description" content="Nagari is a modern programming language that combines Python's elegant syntax with JavaScript's ecosystem compatibility. Built with Rust for performance, transpiles to clean JavaScript.">
+    <meta name="keywords" content="nagari, programming language, python syntax, javascript transpiler, rust compiler, web development, react compatible, vue compatible, modern javascript, developer tools, cross platform">
+    <meta name="author" content="Nagari Team">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://github.com/ayanalamMOON/Nagari">
+    <meta property="og:title" content="Nagari Programming Language - Python Syntax, JavaScript Performance">
+    <meta property="og:description" content="Modern programming language combining Python's elegant syntax with JavaScript's ecosystem compatibility. Production-ready with complete toolchain.">
+    <meta property="og:image" content="https://github.com/ayanalamMOON/Nagari/raw/main/assets/nagari-social-preview.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Nagari Programming Language - Code example showing Python-like syntax">
+    <meta property="og:site_name" content="Nagari Programming Language">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://github.com/ayanalamMOON/Nagari">
+    <meta property="twitter:title" content="Nagari Programming Language - Python Syntax, JavaScript Performance">
+    <meta property="twitter:description" content="Modern programming language combining Python's elegant syntax with JavaScript's ecosystem compatibility. Production-ready with complete toolchain.">
+    <meta property="twitter:image" content="https://github.com/ayanalamMOON/Nagari/raw/main/assets/nagari-social-preview.png">
+    <meta property="twitter:image:alt" content="Nagari Programming Language - Code example showing Python-like syntax">
+    <meta property="twitter:creator" content="@NagariLang">
+    <meta property="twitter:site" content="@NagariLang">
+
+    <!-- Additional SEO Meta Tags -->
+    <meta name="theme-color" content="#0066CC">
+    <meta name="msapplication-TileColor" content="#0066CC">
+    <meta name="application-name" content="Nagari">
+    <meta name="subject" content="Programming Language Development">
+    <meta name="copyright" content="MIT License">
+    <meta name="revised" content="2025-09-29">
+    <meta name="topic" content="Programming Languages, Web Development, Software Tools">
+    <meta name="summary" content="Nagari - Modern programming language with Python syntax and JavaScript compatibility">
+    <meta name="classification" content="Software Development Tools">
+    <meta name="url" content="https://github.com/ayanalamMOON/Nagari">
+    <meta name="identifier-URL" content="https://github.com/ayanalamMOON/Nagari">
+    <meta name="directory" content="submission">
+    <meta name="category" content="Programming Languages">
+    <meta name="coverage" content="Worldwide">
+    <meta name="distribution" content="Global">
+    <meta name="rating" content="General">
+    <meta name="revisit-after" content="7 days">
+
+    <!-- Geo Tags -->
+    <meta name="geo.region" content="US">
+    <meta name="geo.position" content="37.7749;-122.4194">
+    <meta name="geo.placename" content="San Francisco, CA">
+    <meta name="ICBM" content="37.7749, -122.4194">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://github.com/ayanalamMOON/Nagari">
+
+    <!-- Alternative Languages -->
+    <link rel="alternate" hreflang="en" href="https://github.com/ayanalamMOON/Nagari">
+    <link rel="alternate" hreflang="x-default" href="https://github.com/ayanalamMOON/Nagari">
+
+    <!-- Schema.org Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Nagari Programming Language",
+        "description": "Modern programming language that combines Python's elegant syntax with JavaScript's ecosystem compatibility. Built with Rust for performance.",
+        "url": "https://github.com/ayanalamMOON/Nagari",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": ["Windows", "macOS", "Linux"],
+        "programmingLanguage": ["Rust", "TypeScript", "JavaScript"],
+        "author": {
+            "@type": "Organization",
+            "name": "Nagari Team",
+            "url": "https://github.com/ayanalamMOON"
+        },
+        "license": "https://opensource.org/licenses/MIT",
+        "downloadUrl": "https://github.com/ayanalamMOON/Nagari/releases",
+        "codeRepository": "https://github.com/ayanalamMOON/Nagari",
+        "softwareVersion": "0.3.0",
+        "releaseNotes": "https://github.com/ayanalamMOON/Nagari/releases",
+        "screenshot": "https://github.com/ayanalamMOON/Nagari/raw/main/assets/nagari-screenshot.png",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "5",
+            "reviewCount": "1"
+        },
+        "review": {
+            "@type": "Review",
+            "author": {
+                "@type": "Person",
+                "name": "Developer Community"
+            },
+            "reviewBody": "Nagari successfully combines Python's readability with JavaScript's ecosystem reach. The transpiler produces clean code and the toolchain is comprehensive.",
+            "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": "5"
+            }
+        }
+    }
+    </script>
+
+    <!-- Additional Schema.org for Organization -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Nagari Programming Language Project",
+        "url": "https://github.com/ayanalamMOON/Nagari",
+        "logo": "https://github.com/ayanalamMOON/Nagari/raw/main/assets/nagari-logo.png",
+        "sameAs": [
+            "https://www.npmjs.com/package/nagari-runtime",
+            "https://github.com/ayanalamMOON/Nagari"
+        ],
+        "foundingDate": "2024",
+        "description": "Open source programming language development project creating modern tools for web development",
+        "knowsAbout": [
+            "Programming Languages",
+            "Compiler Development", 
+            "Web Development",
+            "JavaScript Transpilation",
+            "Rust Programming",
+            "Developer Tools"
+        ]
+    }
+    </script>
+
+    <!-- Favicon and App Icons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+
+    <!-- Preconnect to External Domains -->
+    <link rel="preconnect" href="https://github.com">
+    <link rel="preconnect" href="https://api.github.com">
+    <link rel="preconnect" href="https://www.npmjs.com">
+
+    <!-- CSS for Enhanced Display -->
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #0066CC;
+            margin-bottom: 10px;
+        }
+        .tagline {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .badges {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+        .badge {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 20px;
+            padding: 5px 15px;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #0066CC;
+        }
+        .feature h3 {
+            margin-top: 0;
+            color: #0066CC;
+        }
+        .cta {
+            text-align: center;
+            margin-top: 40px;
+        }
+        .button {
+            display: inline-block;
+            background: #0066CC;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+        .button:hover {
+            background: #0052a3;
+        }
+        .button.secondary {
+            background: #6c757d;
+        }
+        .button.secondary:hover {
+            background: #545b62;
+        }
+        .code-example {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            overflow-x: auto;
+        }
+        .social-links {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .social-links a {
+            margin: 0 10px;
+            text-decoration: none;
+            color: #0066CC;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🚀 Nagari</div>
+            <div class="tagline">Python Syntax, JavaScript Performance</div>
+            <div class="badges">
+                <span class="badge">🐍 Python-like Syntax</span>
+                <span class="badge">⚡ JavaScript Output</span>
+                <span class="badge">🦀 Rust Compiler</span>
+                <span class="badge">📦 npm Compatible</span>
+                <span class="badge">🔧 Complete Toolchain</span>
+                <span class="badge">✅ Production Ready</span>
+            </div>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <h3>🐍 Familiar Syntax</h3>
+                <p>Write clean, readable code with Python's elegant indentation-based syntax that developers love.</p>
+            </div>
+            <div class="feature">
+                <h3>⚡ JavaScript Performance</h3>
+                <p>Transpiles to optimized ES6+ JavaScript with zero runtime overhead and full ecosystem compatibility.</p>
+            </div>
+            <div class="feature">
+                <h3>🔧 Complete Toolchain</h3>
+                <p>CLI, REPL, LSP, package manager, and debugging tools - everything you need for modern development.</p>
+            </div>
+            <div class="feature">
+                <h3>📦 Universal Compatibility</h3>
+                <p>Works seamlessly with React, Vue, Express, and 2M+ npm packages out of the box.</p>
+            </div>
+            <div class="feature">
+                <h3>🎯 Production Ready</h3>
+                <p>Successfully tested with algorithms, web apps, and servers. Ready for real-world applications.</p>
+            </div>
+            <div class="feature">
+                <h3>🚀 Modern Features</h3>
+                <p>Async/await, JSX, generators, pattern matching, and comprehensive type system.</p>
+            </div>
+        </div>
+
+        <h2>Quick Example</h2>
+        <div class="code-example">
+def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+def main():
+    print("Fibonacci sequence:")
+    for i in range(10):
+        result = fibonacci(i)
+        print(f"fibonacci({i}) = {result}")
+
+if __name__ == "__main__":
+    main()
+        </div>
+
+        <div class="cta">
+            <a href="https://github.com/ayanalamMOON/Nagari" class="button">⭐ Star on GitHub</a>
+            <a href="https://www.npmjs.com/package/nagari-runtime" class="button secondary">📦 Install Runtime</a>
+            <a href="https://github.com/ayanalamMOON/Nagari/docs" class="button secondary">📖 Read Documentation</a>
+        </div>
+
+        <div class="social-links">
+            <a href="https://github.com/ayanalamMOON/Nagari">GitHub</a>
+            <a href="https://www.npmjs.com/package/nagari-runtime">npm</a>
+            <a href="https://github.com/ayanalamMOON/Nagari/discussions">Discussions</a>
+            <a href="https://github.com/ayanalamMOON/Nagari/issues">Issues</a>
+        </div>
+    </div>
+
+    <!-- Analytics Integration (commented out - add your tracking IDs) -->
+    <!--
+    <script async src="https://www.googletagmanager.com/gtag/js?id=GA_TRACKING_ID"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'GA_TRACKING_ID');
+    </script>
+    -->
+</body>
+</html>

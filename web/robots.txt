@@ -1,0 +1,45 @@
+# Robots.txt for Nagari Programming Language Repository
+# Optimized for search engine crawling and indexing
+
+User-agent: *
+Allow: /
+
+# Allow all major search engine bots
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+# Disallow temporary and build directories
+Disallow: /target/
+Disallow: /dist/
+Disallow: /.git/
+Disallow: /node_modules/
+Disallow: *.tmp
+Disallow: *.temp
+Disallow: /test-files/temp/
+
+# Allow important documentation and examples
+Allow: /docs/
+Allow: /examples/
+Allow: /stdlib/
+Allow: /specs/
+
+# Sitemap location (when deployed)
+Sitemap: https://github.com/ayanalamMOON/Nagari/sitemap.xml
+
+# Crawl delay for respectful crawling
+Crawl-delay: 1

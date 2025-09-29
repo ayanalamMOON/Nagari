@@ -7,6 +7,7 @@ pub enum NagariError {
     TypeError(String),
     BytecodeError(String),
     IoError(String),
+    SemanticError(String),
 }
 
 impl fmt::Display for NagariError {
@@ -17,6 +18,7 @@ impl fmt::Display for NagariError {
             NagariError::TypeError(msg) => write!(f, "Type error: {msg}"),
             NagariError::BytecodeError(msg) => write!(f, "Bytecode generation error: {msg}"),
             NagariError::IoError(msg) => write!(f, "IO error: {msg}"),
+            NagariError::SemanticError(msg) => write!(f, "Semantic error: {msg}"),
         }
     }
 }

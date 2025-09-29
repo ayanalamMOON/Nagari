@@ -81,6 +81,22 @@ impl JSTranspiler {
             helpers.push_str(&self.generate_center_string_helper());
         }
 
+        if self.used_helpers.contains("arrayStep") {
+            helpers.push_str(&self.generate_array_step_helper());
+        }
+
+        if self.used_helpers.contains("contextManager") {
+            helpers.push_str(&self.generate_context_manager_helper());
+        }
+
+        if self.used_helpers.contains("exceptionHandler") {
+            helpers.push_str(&self.generate_exception_handler_helper());
+        }
+
+        if self.used_helpers.contains("decoratorApply") {
+            helpers.push_str(&self.generate_decorator_helper());
+        }
+
         self.output.push_str(&helpers);
 
         Ok(self.output.clone())
@@ -159,12 +175,26 @@ impl JSTranspiler {
                 self.output.push(';');
                 Ok(())
             }
-            // TODO: Add implementations for remaining statement types
-            _ => {
-                self.add_indent();
-                self.output
-                    .push_str("// TODO: Implement transpilation for this statement type");
-                Ok(())
+            Statement::With(with_stmt) => self.transpile_with(with_stmt),
+            Statement::Try(try_stmt) => self.transpile_try(try_stmt),
+            Statement::Raise(raise_stmt) => self.transpile_raise(raise_stmt),
+            Statement::TypeAlias(type_alias) => self.transpile_type_alias(type_alias),
+            Statement::Yield(yield_stmt) => self.transpile_yield(yield_stmt),
+            Statement::YieldFrom(yield_from) => self.transpile_yield_from(yield_from),
+            Statement::ClassDef(class_def) => self.transpile_class_def(class_def),
+            Statement::DestructuringAssignment(destructuring) => {
+                self.transpile_destructuring_assignment(destructuring)
+            }
+            Statement::ArrayDestructuringAssignment(array_destructuring) => {
+                self.transpile_array_destructuring_assignment(array_destructuring)
+            }
+            Statement::ExportDefault(export_default) => {
+                self.transpile_export_default(export_default)
+            }
+            Statement::ExportNamed(export_named) => self.transpile_export_named(export_named),
+            Statement::ExportAll(export_all) => self.transpile_export_all(export_all),
+            Statement::ExportDeclaration(export_decl) => {
+                self.transpile_export_declaration(export_decl)
             }
         }
     }
@@ -549,9 +579,52 @@ impl JSTranspiler {
                 self.output.push_str("})()");
                 Ok(())
             }
-            Expression::Generator(_) => {
-                // TODO: Implement generator expression transpilation
-                self.output.push_str("/* TODO: Generator expression */");
+            Expression::Generator(gen) => {
+                // Generate JavaScript generator function
+                self.output.push_str("(function*() {\n");
+                self.indent_level += 1;
+
+                // Generate nested for loops for each generator
+                for generator in &gen.generators {
+                    self.add_indent();
+                    self.output.push_str("for (const ");
+                    self.output.push_str(&generator.target);
+                    self.output.push_str(" of ");
+                    self.transpile_expression(&generator.iter)?;
+                    self.output.push_str(") {\n");
+                    self.indent_level += 1;
+
+                    // Add conditions as if statements
+                    for condition in &generator.conditions {
+                        self.add_indent();
+                        self.output.push_str("if (");
+                        self.transpile_expression(condition)?;
+                        self.output.push_str(") {\n");
+                        self.indent_level += 1;
+                    }
+                }
+
+                // Yield the element
+                self.add_indent();
+                self.output.push_str("yield ");
+                self.transpile_expression(&gen.element)?;
+                self.output.push_str(";\n");
+
+                // Close all the loops and conditions
+                for generator in &gen.generators {
+                    for _ in &generator.conditions {
+                        self.indent_level -= 1;
+                        self.add_indent();
+                        self.output.push_str("}\n");
+                    }
+                    self.indent_level -= 1;
+                    self.add_indent();
+                    self.output.push_str("}\n");
+                }
+
+                self.indent_level -= 1;
+                self.add_indent();
+                self.output.push_str("})()");
                 Ok(())
             }
             Expression::Attribute(attr) => {
@@ -652,10 +725,105 @@ impl JSTranspiler {
                 self.transpile_expression(&unary.operand)?;
                 Ok(())
             }
-            // Add catch-all for any remaining expression types
-            _ => {
-                self.output
-                    .push_str("/* TODO: Implement this expression type */");
+            Expression::Ternary(ternary) => {
+                // Conditional (ternary) operator: condition ? true_expr : false_expr
+                self.output.push('(');
+                self.transpile_expression(&ternary.condition)?;
+                self.output.push_str(" ? ");
+                self.transpile_expression(&ternary.true_expr)?;
+                self.output.push_str(" : ");
+                self.transpile_expression(&ternary.false_expr)?;
+                self.output.push(')');
+                Ok(())
+            }
+            Expression::Slice(slice) => {
+                // Array slicing: arr.slice(start, end)
+                self.transpile_expression(&slice.object)?;
+                self.output.push_str(".slice(");
+
+                if let Some(start) = &slice.start {
+                    self.transpile_expression(start)?;
+                } else {
+                    self.output.push('0');
+                }
+
+                if slice.end.is_some() || slice.step.is_some() {
+                    self.output.push_str(", ");
+                    if let Some(end) = &slice.end {
+                        self.transpile_expression(end)?;
+                    }
+                }
+
+                self.output.push(')');
+
+                // Handle step separately with a helper function if needed
+                if let Some(step) = &slice.step {
+                    self.used_helpers.insert("arrayStep".to_string());
+                    self.output.push_str(".filter((_, i) => i % ");
+                    self.transpile_expression(step)?;
+                    self.output.push_str(" === 0)");
+                }
+
+                Ok(())
+            }
+            Expression::Set(elements) => {
+                // JavaScript Set constructor
+                self.output.push_str("new Set([");
+                for (i, element) in elements.iter().enumerate() {
+                    if i > 0 {
+                        self.output.push_str(", ");
+                    }
+                    self.transpile_expression(element)?;
+                }
+                self.output.push_str("])");
+                Ok(())
+            }
+            Expression::NamedExpr(named_expr) => {
+                // Walrus operator: (var := expr) - JavaScript assignment in expression
+                self.output.push('(');
+                self.output.push_str(&named_expr.target);
+                self.output.push_str(" = ");
+                self.transpile_expression(&named_expr.value)?;
+                self.output.push(')');
+
+                // Mark variable as declared
+                self.declared_variables.insert(named_expr.target.clone());
+                Ok(())
+            }
+            Expression::Async(expr) => {
+                // Async expression wrapper
+                self.output.push_str("(async () => ");
+                self.transpile_expression(expr)?;
+                self.output.push_str(")()");
+                Ok(())
+            }
+            Expression::Spread(expr) => {
+                // Spread operator: ...expr
+                self.output.push_str("...");
+                self.transpile_expression(expr)?;
+                Ok(())
+            }
+            Expression::TemplateLiteral(template) => {
+                // Template literal with interpolations
+                self.output.push('`');
+
+                for (i, part) in template.parts.iter().enumerate() {
+                    // Escape backticks and dollar signs in the string parts
+                    let escaped = part
+                        .replace('\\', "\\\\")
+                        .replace('`', "\\`")
+                        .replace('$', "\\$");
+                    self.output.push_str(&escaped);
+
+                    // Add interpolated expression if available
+                    if i < template.expressions.len() {
+                        self.output.push_str("${");
+                        self.transpile_expression(&template.expressions[i])?;
+                        self.output.push('}');
+                    }
+                }
+
+                self.output.push('`');
                 Ok(())
             }
         }
@@ -1012,28 +1180,153 @@ impl JSTranspiler {
 
     fn transpile_match(&mut self, match_stmt: &MatchStatement) -> Result<(), NagariError> {
         self.add_indent();
-        self.output.push_str("switch (");
-        self.transpile_expression(&match_stmt.expression)?;
-        self.output.push_str(") {\n");
+
+        // Store the match expression in a variable for complex pattern matching
+        self.output.push_str("(function(__match_value__) {\n");
         self.indent_level += 1;
+
+        // Generate if-else chain instead of switch for complex pattern matching
+        let mut first_case = true;
         for case in &match_stmt.cases {
             self.add_indent();
-            self.output.push_str("case ");
-            self.transpile_pattern(&case.pattern)?;
-            self.output.push_str(":\n");
+
+            if first_case {
+                first_case = false;
+            } else {
+                self.output.push_str("else ");
+            }
+
+            match &case.pattern {
+                Pattern::Wildcard => {
+                    // Default case - always matches
+                    self.output.push_str("{\n");
+                }
+                Pattern::Literal(lit) => {
+                    self.output.push_str("if (__match_value__ === ");
+                    self.transpile_literal(lit)?;
+                    self.output.push_str(") {\n");
+                }
+                Pattern::Identifier(name) => {
+                    // Bind the value to the identifier
+                    self.output.push_str("{\n");
+                    self.indent_level += 1;
+                    self.add_indent();
+                    self.output.push_str("const ");
+                    self.output.push_str(name);
+                    self.output.push_str(" = __match_value__;\n");
+                    // Mark variable as declared
+                    self.declared_variables.insert(name.clone());
+                }
+                _ => {
+                    // For complex patterns, use the pattern check
+                    self.output.push_str("if (");
+                    self.transpile_pattern_check(&case.pattern)?;
+                    self.output.push_str(") {\n");
+                }
+            }
+
             self.indent_level += 1;
+
+            // Add pattern destructuring for complex patterns
+            match &case.pattern {
+                Pattern::Tuple(patterns) => {
+                    for (i, pattern) in patterns.iter().enumerate() {
+                        if let Pattern::Identifier(name) = pattern {
+                            self.add_indent();
+                            self.output.push_str("const ");
+                            self.output.push_str(name);
+                            self.output.push_str(" = __match_value__[");
+                            self.output.push_str(&i.to_string());
+                            self.output.push_str("];\n");
+                            self.declared_variables.insert(name.clone());
+                        }
+                    }
+                }
+                Pattern::List(patterns) => {
+                    self.add_indent();
+                    self.output.push_str("const [");
+                    for (i, pattern) in patterns.iter().enumerate() {
+                        if i > 0 {
+                            self.output.push_str(", ");
+                        }
+                        if let Pattern::Identifier(name) = pattern {
+                            self.output.push_str(name);
+                            self.declared_variables.insert(name.clone());
+                        } else {
+                            self.output.push_str(&format!("__elem_{}", i));
+                        }
+                    }
+                    self.output.push_str("] = __match_value__;\n");
+                }
+                Pattern::Dict(pairs) => {
+                    for (key_pattern, value_pattern) in pairs {
+                        if let (Pattern::Literal(Literal::String(key)), Pattern::Identifier(name)) =
+                            (key_pattern, value_pattern)
+                        {
+                            self.add_indent();
+                            self.output.push_str("const ");
+                            self.output.push_str(name);
+                            self.output.push_str(" = __match_value__['");
+                            self.output.push_str(key);
+                            self.output.push_str("'];\n");
+                            self.declared_variables.insert(name.clone());
+                        }
+                    }
+                }
+                Pattern::Constructor(_class_name, field_patterns) => {
+                    for (i, field_pattern) in field_patterns.iter().enumerate() {
+                        if let Pattern::Identifier(name) = field_pattern {
+                            self.add_indent();
+                            self.output.push_str("const ");
+                            self.output.push_str(name);
+                            self.output.push_str(" = __match_value__.");
+                            self.output.push_str(&format!("field{}", i));
+                            self.output.push_str(" || __match_value__[");
+                            self.output.push_str(&i.to_string());
+                            self.output.push_str("];\n");
+                            self.declared_variables.insert(name.clone());
+                        }
+                    }
+                }
+                Pattern::Guard(pattern, condition) => {
+                    // Handle guard conditions
+                    if let Pattern::Identifier(name) = pattern.as_ref() {
+                        self.add_indent();
+                        self.output.push_str("const ");
+                        self.output.push_str(name);
+                        self.output.push_str(" = __match_value__;\n");
+                        self.declared_variables.insert(name.clone());
+                    }
+
+                    // Additional guard check
+                    self.add_indent();
+                    self.output.push_str("if (!(");
+                    self.transpile_expression(condition)?;
+                    self.output.push_str(")) continue;\n");
+                }
+                _ => {}
+            }
+
             for stmt in &case.body {
                 self.transpile_statement(stmt)?;
                 self.output.push('\n');
             }
+
+            // Add return to break out of the match
             self.add_indent();
-            self.output.push_str("break;\n");
+            self.output.push_str("return;\n");
+
             self.indent_level -= 1;
+            self.add_indent();
+            self.output.push_str("}\n");
         }
 
         self.indent_level -= 1;
         self.add_indent();
-        self.output.push('}');
+        self.output.push_str("})(");
+        self.transpile_expression(&match_stmt.expression)?;
+        self.output.push(')');
+
         Ok(())
     }
 
@@ -1048,29 +1341,50 @@ impl JSTranspiler {
         Ok(())
     }
 
-    fn transpile_pattern(&mut self, pattern: &Pattern) -> Result<(), NagariError> {
+    fn transpile_pattern_check(&mut self, pattern: &Pattern) -> Result<(), NagariError> {
         match pattern {
-            Pattern::Literal(lit) => self.transpile_literal(lit),
-            Pattern::Identifier(name) => {
-                self.output.push_str(name);
+            Pattern::Literal(lit) => {
+                self.output.push_str("__match_value__ === ");
+                self.transpile_literal(lit)
+            }
+            Pattern::Identifier(_name) => {
+                self.output.push_str("true"); // Identifiers always match
                 Ok(())
             }
             Pattern::Wildcard => {
-                self.output.push_str("default");
+                self.output.push_str("true"); // Wildcard always matches
                 Ok(())
             }
             Pattern::Tuple(patterns) => {
-                // For now, just use the first pattern or default
-                if let Some(first) = patterns.first() {
-                    self.transpile_pattern(first)
-                } else {
-                    self.output.push_str("default");
-                    Ok(())
-                }
+                self.output
+                    .push_str("Array.isArray(__match_value__) && __match_value__.length === ");
+                self.output.push_str(&patterns.len().to_string());
+                Ok(())
             }
-            _ => {
-                // For complex patterns, use default for now
-                self.output.push_str("default");
+            Pattern::List(_) => {
+                self.output.push_str("Array.isArray(__match_value__)");
+                Ok(())
+            }
+            Pattern::Dict(_) => {
+                self.output
+                    .push_str("typeof __match_value__ === 'object' && __match_value__ !== null");
+                Ok(())
+            }
+            Pattern::Guard(pattern, _condition) => {
+                // Check the base pattern, condition is checked separately
+                self.transpile_pattern_check(pattern)
+            }
+            Pattern::Constructor(class_name, _) => {
+                self.output.push_str("__match_value__ instanceof ");
+                self.output.push_str(class_name);
+                Ok(())
+            }
+            Pattern::Range(start, end) => {
+                self.output
+                    .push_str("typeof __match_value__ === 'number' && __match_value__ >= ");
+                self.transpile_expression(start)?;
+                self.output.push_str(" && __match_value__ <= ");
+                self.transpile_expression(end)?;
                 Ok(())
             }
         }
@@ -1301,6 +1615,654 @@ function centerString(str, width, fill = ' ') {
 
 "#
         .to_string()
+    }
+
+    fn generate_array_step_helper(&self) -> String {
+        r#"
+// Helper function for array stepping (slice with step)
+function arrayStep(arr, step) {
+    if (step === 1) return arr;
+    const result = [];
+    for (let i = 0; i < arr.length; i += step) {
+        result.push(arr[i]);
+    }
+    return result;
+}
+
+"#
+        .to_string()
+    }
+
+    fn generate_context_manager_helper(&self) -> String {
+        r#"
+// Helper functions for context management
+class ContextManager {
+    constructor(enter, exit) {
+        this.__enter__ = enter;
+        this.__exit__ = exit;
+    }
+
+    static async withContext(contextManagers, body) {
+        const entered = [];
+        try {
+            // Enter all contexts
+            for (const cm of contextManagers) {
+                const result = typeof cm.__enter__ === 'function'
+                    ? await cm.__enter__()
+                    : cm;
+                entered.push({ manager: cm, result });
+            }
+
+            // Execute body with entered contexts
+            return await body(...entered.map(e => e.result));
+        } finally {
+            // Exit all contexts in reverse order
+            for (let i = entered.length - 1; i >= 0; i--) {
+                const { manager } = entered[i];
+                if (typeof manager.__exit__ === 'function') {
+                    try {
+                        await manager.__exit__(null, null, null);
+                    } catch (e) {
+                        console.error('Error in context manager exit:', e);
+                    }
+                }
+            }
+        }
+    }
+}
+
+"#
+        .to_string()
+    }
+
+    fn generate_exception_handler_helper(&self) -> String {
+        r#"
+// Helper functions for exception handling
+class NagariError extends Error {
+    constructor(message, cause = null) {
+        super(message);
+        this.name = 'NagariError';
+        this.cause = cause;
+    }
+}
+
+class TypeError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'TypeError';
+    }
+}
+
+class ValueError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'ValueError';
+    }
+}
+
+class IndexError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'IndexError';
+    }
+}
+
+class KeyError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'KeyError';
+    }
+}
+
+function isinstance(obj, types) {
+    if (Array.isArray(types)) {
+        return types.some(t => checkType(obj, t));
+    }
+    return checkType(obj, types);
+}
+
+function checkType(obj, type) {
+    if (type === Array) return Array.isArray(obj);
+    if (type === Object) return typeof obj === 'object' && obj !== null && !Array.isArray(obj);
+    if (type === String) return typeof obj === 'string';
+    if (type === Number) return typeof obj === 'number';
+    if (type === Boolean) return typeof obj === 'boolean';
+    return obj instanceof type;
+}
+
+"#
+        .to_string()
+    }
+
+    fn generate_decorator_helper(&self) -> String {
+        r#"
+// Helper functions for decorators
+function applyDecorators(decorators, target) {
+    return decorators.reduce((acc, decorator) => {
+        if (typeof decorator === 'function') {
+            return decorator(acc);
+        } else if (decorator && typeof decorator.decorator === 'function') {
+            return decorator.decorator(acc, ...decorator.args);
+        }
+        return acc;
+    }, target);
+}
+
+function property(getter, setter = null) {
+    return function(target, propertyKey) {
+        Object.defineProperty(target.prototype, propertyKey, {
+            get: getter,
+            set: setter,
+            enumerable: true,
+            configurable: true
+        });
+    };
+}
+
+function staticmethod(target, propertyKey, descriptor) {
+    // Move method to constructor
+    target.constructor[propertyKey] = descriptor.value;
+    return descriptor;
+}
+
+function classmethod(target, propertyKey, descriptor) {
+    const originalMethod = descriptor.value;
+    descriptor.value = function(...args) {
+        return originalMethod.call(this.constructor, this.constructor, ...args);
+    };
+    return descriptor;
+}
+
+"#
+        .to_string()
+    }
+
+    fn transpile_with(&mut self, with_stmt: &WithStatement) -> Result<(), NagariError> {
+        self.add_indent();
+
+        // JavaScript doesn't have direct with statement equivalent, so we'll use IIFE pattern
+        // with (expr as var) { body } becomes:
+        // (function(var) { body }).call(this, expr.__enter__())
+        self.output.push_str("(async function() {\n");
+        self.indent_level += 1;
+
+        // Initialize context managers
+        for (i, item) in with_stmt.items.iter().enumerate() {
+            self.add_indent();
+            let var_name = item
+                .optional_vars
+                .as_ref()
+                .map(|s| s.clone())
+                .unwrap_or_else(|| format!("__ctx_{}", i));
+
+            self.output.push_str("const ");
+            self.output.push_str(&var_name);
+            self.output.push_str(" = ");
+            self.transpile_expression(&item.context_expr)?;
+            self.output.push_str(";\n");
+
+            self.add_indent();
+            self.output.push_str("const __entered_");
+            self.output.push_str(&i.to_string());
+            self.output.push_str(" = typeof ");
+            self.output.push_str(&var_name);
+            self.output.push_str(".__enter__ === 'function' ? await ");
+            self.output.push_str(&var_name);
+            self.output.push_str(".__enter__() : ");
+            self.output.push_str(&var_name);
+            self.output.push_str(";\n");
+
+            if item.optional_vars.is_some() {
+                self.add_indent();
+                self.output.push_str(&var_name);
+                self.output.push_str(" = __entered_");
+                self.output.push_str(&i.to_string());
+                self.output.push_str(";\n");
+            }
+        }
+
+        // Try block for the with body
+        self.add_indent();
+        self.output.push_str("try {\n");
+        self.indent_level += 1;
+
+        for stmt in &with_stmt.body {
+            self.transpile_statement(stmt)?;
+            self.output.push('\n');
+        }
+
+        self.indent_level -= 1;
+        self.add_indent();
+        self.output.push_str("} finally {\n");
+        self.indent_level += 1;
+
+        // Call __exit__ methods in reverse order
+        for (i, item) in with_stmt.items.iter().enumerate().rev() {
+            let var_name = item
+                .optional_vars
+                .as_ref()
+                .map(|s| s.clone())
+                .unwrap_or_else(|| format!("__ctx_{}", i));
+
+            self.add_indent();
+            self.output.push_str("if (typeof ");
+            self.output.push_str(&var_name);
+            self.output.push_str(".__exit__ === 'function') {\n");
+            self.indent_level += 1;
+            self.add_indent();
+            self.output.push_str("await ");
+            self.output.push_str(&var_name);
+            self.output.push_str(".__exit__(null, null, null);\n");
+            self.indent_level -= 1;
+            self.add_indent();
+            self.output.push_str("}\n");
+        }
+
+        self.indent_level -= 1;
+        self.add_indent();
+        self.output.push_str("}\n");
+        self.indent_level -= 1;
+        self.add_indent();
+        self.output.push_str("})();");
+
+        Ok(())
+    }
+
+    fn transpile_try(&mut self, try_stmt: &TryStatement) -> Result<(), NagariError> {
+        self.add_indent();
+        self.output.push_str("try {\n");
+        self.indent_level += 1;
+
+        // Try block body
+        for stmt in &try_stmt.body {
+            self.transpile_statement(stmt)?;
+            self.output.push('\n');
+        }
+
+        self.indent_level -= 1;
+
+        // Except handlers (catch blocks)
+        for handler in &try_stmt.except_handlers {
+            self.add_indent();
+            self.output.push_str("} catch (");
+
+            if let Some(name) = &handler.name {
+                self.output.push_str(name);
+            } else {
+                self.output.push_str("__error");
+            }
+
+            self.output.push_str(") {\n");
+            self.indent_level += 1;
+
+            // Type checking for specific exception types
+            if let Some(_exception_type) = &handler.exception_type {
+                self.add_indent();
+                self.output
+                    .push_str("// Exception type checking would go here\n");
+            }
+
+            for stmt in &handler.body {
+                self.transpile_statement(stmt)?;
+                self.output.push('\n');
+            }
+
+            self.indent_level -= 1;
+        }
+
+        // Else clause (executed if no exception occurred)
+        if let Some(else_body) = &try_stmt.else_clause {
+            self.add_indent();
+            self.output.push_str("} else {\n");
+            self.indent_level += 1;
+
+            for stmt in else_body {
+                self.transpile_statement(stmt)?;
+                self.output.push('\n');
+            }
+
+            self.indent_level -= 1;
+        }
+
+        self.add_indent();
+        self.output.push('}');
+
+        // Finally clause
+        if let Some(finally_body) = &try_stmt.finally_clause {
+            self.output.push_str(" finally {\n");
+            self.indent_level += 1;
+
+            for stmt in finally_body {
+                self.transpile_statement(stmt)?;
+                self.output.push('\n');
+            }
+
+            self.indent_level -= 1;
+            self.add_indent();
+            self.output.push('}');
+        }
+
+        Ok(())
+    }
+
+    fn transpile_raise(&mut self, raise_stmt: &RaiseStatement) -> Result<(), NagariError> {
+        self.add_indent();
+        self.output.push_str("throw ");
+
+        if let Some(exception) = &raise_stmt.exception {
+            // Check if it's a constructor call or just an expression
+            match exception {
+                Expression::Call(call) => {
+                    self.output.push_str("new ");
+                    self.transpile_expression(&call.function)?;
+                    self.output.push('(');
+                    for (i, arg) in call.arguments.iter().enumerate() {
+                        if i > 0 {
+                            self.output.push_str(", ");
+                        }
+                        self.transpile_expression(arg)?;
+                    }
+                    self.output.push(')');
+                }
+                _ => {
+                    self.transpile_expression(exception)?;
+                }
+            }
+        } else {
+            // Re-raise current exception
+            self.output.push_str("new Error('Re-raised exception')");
+        }
+
+        self.output.push(';');
+        Ok(())
+    }
+
+    fn transpile_type_alias(&mut self, type_alias: &TypeAliasStatement) -> Result<(), NagariError> {
+        self.add_indent();
+        // In JavaScript, we'll create a type constructor function
+        self.output.push_str("// Type alias: ");
+        self.output.push_str(&type_alias.name);
+        self.output.push_str(" = ");
+        // For now, just create a comment since JS doesn't have native type aliases
+        self.output.push_str(&format!("{:?}", type_alias.type_expr));
+        self.output.push('\n');
+
+        self.add_indent();
+        self.output.push_str("const ");
+        self.output.push_str(&type_alias.name);
+        self.output
+            .push_str(" = function(value) { return value; }; // Type alias");
+
+        Ok(())
+    }
+
+    fn transpile_yield(&mut self, yield_stmt: &YieldStatement) -> Result<(), NagariError> {
+        self.add_indent();
+        self.output.push_str("yield");
+
+        if let Some(value) = &yield_stmt.value {
+            self.output.push(' ');
+            self.transpile_expression(value)?;
+        }
+
+        self.output.push(';');
+        Ok(())
+    }
+
+    fn transpile_yield_from(&mut self, yield_from: &YieldFromStatement) -> Result<(), NagariError> {
+        self.add_indent();
+        self.output.push_str("yield* ");
+        self.transpile_expression(&yield_from.value)?;
+        self.output.push(';');
+        Ok(())
+    }
+
+    fn transpile_class_def(&mut self, class_def: &ClassDef) -> Result<(), NagariError> {
+        self.add_indent();
+        self.output.push_str("class ");
+        self.output.push_str(&class_def.name);
+
+        if let Some(superclass) = &class_def.superclass {
+            self.output.push_str(" extends ");
+            self.output.push_str(superclass);
+        }
+
+        self.output.push_str(" {\n");
+        self.indent_level += 1;
+
+        for stmt in &class_def.body {
+            self.transpile_statement(stmt)?;
+            self.output.push('\n');
+        }
+
+        self.indent_level -= 1;
+        self.add_indent();
+        self.output.push('}');
+
+        Ok(())
+    }
+
+    fn transpile_destructuring_assignment(
+        &mut self,
+        destructuring: &DestructuringAssignment,
+    ) -> Result<(), NagariError> {
+        self.add_indent();
+
+        // Convert Nagari destructuring to JavaScript destructuring
+        match &destructuring.target {
+            Expression::Dict(properties) => {
+                // Object destructuring: {a, b} = obj
+                self.output.push_str("const {");
+                for (i, (key, _value)) in properties.iter().enumerate() {
+                    if i > 0 {
+                        self.output.push_str(", ");
+                    }
+                    if let Expression::Identifier(key_name) = key {
+                        self.output.push_str(key_name);
+                    }
+                }
+                self.output.push_str("} = ");
+            }
+            Expression::List(elements) => {
+                // Array destructuring: [a, b] = arr
+                self.output.push_str("const [");
+                for (i, element) in elements.iter().enumerate() {
+                    if i > 0 {
+                        self.output.push_str(", ");
+                    }
+                    if let Expression::Identifier(var_name) = element {
+                        self.output.push_str(var_name);
+                    }
+                }
+                self.output.push_str("] = ");
+            }
+            _ => {
+                self.output.push_str("const ");
+                self.transpile_expression(&destructuring.target)?;
+                self.output.push_str(" = ");
+            }
+        }
+
+        self.transpile_expression(&destructuring.value)?;
+        self.output.push(';');
+
+        Ok(())
+    }
+
+    fn transpile_array_destructuring_assignment(
+        &mut self,
+        array_destructuring: &ArrayDestructuringAssignment,
+    ) -> Result<(), NagariError> {
+        self.add_indent();
+        self.output.push_str("const [");
+
+        for (i, target) in array_destructuring.targets.iter().enumerate() {
+            if i > 0 {
+                self.output.push_str(", ");
+            }
+            self.output.push_str(target);
+        }
+
+        self.output.push_str("] = ");
+        self.transpile_expression(&array_destructuring.value)?;
+        self.output.push(';');
+
+        Ok(())
+    }
+
+    fn transpile_export_default(
+        &mut self,
+        export_default: &ExportDefaultStatement,
+    ) -> Result<(), NagariError> {
+        self.add_indent();
+
+        if self.target == "esm" || self.target == "es6" {
+            self.output.push_str("export default ");
+            self.transpile_expression(&export_default.value)?;
+        } else {
+            // CommonJS style
+            self.output.push_str("module.exports = ");
+            self.transpile_expression(&export_default.value)?;
+        }
+
+        self.output.push(';');
+        Ok(())
+    }
+
+    fn transpile_export_named(
+        &mut self,
+        export_named: &ExportNamedStatement,
+    ) -> Result<(), NagariError> {
+        self.add_indent();
+
+        if self.target == "esm" || self.target == "es6" {
+            if let Some(module) = &export_named.module {
+                // Re-export from module: export { name1, name2 } from 'module'
+                self.output.push_str("export { ");
+                for (i, export_name) in export_named.exports.iter().enumerate() {
+                    if i > 0 {
+                        self.output.push_str(", ");
+                    }
+                    self.output.push_str(export_name);
+                }
+                self.output.push_str(" } from '");
+                self.output.push_str(module);
+                self.output.push_str("'");
+            } else {
+                // Named exports: export { name1, name2 }
+                self.output.push_str("export { ");
+                for (i, export_name) in export_named.exports.iter().enumerate() {
+                    if i > 0 {
+                        self.output.push_str(", ");
+                    }
+                    self.output.push_str(export_name);
+                }
+                self.output.push_str(" }");
+            }
+        } else {
+            // CommonJS style
+            for export_name in &export_named.exports {
+                self.output.push_str("module.exports.");
+                self.output.push_str(export_name);
+                self.output.push_str(" = ");
+                self.output.push_str(export_name);
+                self.output.push_str(";\n");
+                self.add_indent();
+            }
+            // Remove the last indentation since we added it in the loop
+            if !export_named.exports.is_empty() {
+                self.output.truncate(self.output.len() - 4);
+            }
+        }
+
+        if self.target == "esm" || self.target == "es6" {
+            self.output.push(';');
+        }
+
+        Ok(())
+    }
+
+    fn transpile_export_all(&mut self, export_all: &ExportAllStatement) -> Result<(), NagariError> {
+        self.add_indent();
+
+        if self.target == "esm" || self.target == "es6" {
+            self.output.push_str("export * from '");
+            self.output.push_str(&export_all.module);
+            self.output.push('\'');
+        } else {
+            // CommonJS style - require and re-export all properties
+            self.output.push_str("const __temp_exports = require('");
+            self.output.push_str(&export_all.module);
+            self.output.push_str("');\n");
+            self.add_indent();
+            self.output
+                .push_str("Object.keys(__temp_exports).forEach(key => {\n");
+            self.indent_level += 1;
+            self.add_indent();
+            self.output
+                .push_str("module.exports[key] = __temp_exports[key];\n");
+            self.indent_level -= 1;
+            self.add_indent();
+            self.output.push_str("});");
+        }
+
+        Ok(())
+    }
+
+    fn transpile_export_declaration(
+        &mut self,
+        export_decl: &ExportDeclarationStatement,
+    ) -> Result<(), NagariError> {
+        if self.target == "esm" || self.target == "es6" {
+            self.add_indent();
+            self.output.push_str("export ");
+
+            // Remove the indentation we just added since transpile_statement will add its own
+            self.output.truncate(self.output.len() - 4);
+            self.indent_level -= 1;
+        }
+
+        self.transpile_statement(&export_decl.declaration)?;
+
+        if self.target != "esm" && self.target != "es6" {
+            // For CommonJS, we need to add the export after the declaration
+            self.output.push('\n');
+
+            // Extract the name from function or class declarations
+            match export_decl.declaration.as_ref() {
+                Statement::FunctionDef(func) => {
+                    self.add_indent();
+                    self.output.push_str("module.exports.");
+                    self.output.push_str(&func.name);
+                    self.output.push_str(" = ");
+                    self.output.push_str(&func.name);
+                    self.output.push(';');
+                }
+                Statement::ClassDef(class) => {
+                    self.add_indent();
+                    self.output.push_str("module.exports.");
+                    self.output.push_str(&class.name);
+                    self.output.push_str(" = ");
+                    self.output.push_str(&class.name);
+                    self.output.push(';');
+                }
+                Statement::Assignment(assign) => {
+                    self.add_indent();
+                    self.output.push_str("module.exports.");
+                    self.output.push_str(&assign.name);
+                    self.output.push_str(" = ");
+                    self.output.push_str(&assign.name);
+                    self.output.push(';');
+                }
+                _ => {
+                    // For other types, just add a comment
+                    self.add_indent();
+                    self.output.push_str("// Export declaration");
+                }
+            }
+        }
+
+        Ok(())
     }
 
     // Add other transpilation methods (if, while, for, etc.) here...

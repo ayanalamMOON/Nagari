@@ -1,0 +1,14 @@
+# GitHub Sponsors configuration for Nagari
+# Enables funding through GitHub Sponsors for project sustainability
+
+github: ayanalamMOON  # Primary maintainer GitHub username
+
+# Additional funding platforms (uncomment as needed)
+# patreon: nagari-lang
+# open_collective: nagari
+# ko_fi: nagari
+# liberapay: nagari
+# issuehunt: ayanalamMOON
+# otechie: ayanalamMOON
+
+custom: ['https://buymeacoffee.com/nagari']  # Direct donation link

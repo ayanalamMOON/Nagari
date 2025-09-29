@@ -4,11 +4,15 @@
 //! including lexical analysis, parsing, type checking, and transpilation to JavaScript.
 
 pub mod ast;
+pub mod bytecode;
 pub mod error;
 pub mod lexer;
 pub mod parser;
 pub mod transpiler;
 pub mod types;
+
+#[cfg(test)]
+mod bytecode_tests;
 
 use std::fs;
 use std::path::Path;

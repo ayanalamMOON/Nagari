@@ -1,0 +1,31 @@
+# Simple test for TODO implementations
+
+# Test try-catch
+try:
+    result = risky_operation()
+except:
+    print("Error occurred")
+
+# Test class definition
+class Animal:
+    def speak(self):
+        return "generic sound"
+
+# Test generator expression
+squares = (x * x for x in [1, 2, 3, 4, 5])
+
+# Test ternary expression
+result = True if condition else False
+
+# Test set creation
+my_set = {1, 2, 3}
+
+# Test f-string
+name = "World"
+greeting = f"Hello {name}!"
+
+# Test async
+async def fetch_data():
+    return await get_data()
+
+print("Basic test file compiled successfully!")
