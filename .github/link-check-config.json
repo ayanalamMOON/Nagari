@@ -18,7 +18,10 @@
   ],
   "httpHeaders": [
     {
-      "urls": ["https://github.com", "https://api.github.com"],
+      "urls": [
+        "https://github.com",
+        "https://api.github.com"
+      ],
       "headers": {
         "Accept": "application/vnd.github.v3+json",
         "User-Agent": "Nagari-Link-Checker"
@@ -29,5 +32,12 @@
   "retryOn429": true,
   "retryCount": 3,
   "fallbackRetryDelay": "30s",
-  "aliveStatusCodes": [200, 206, 301, 302, 307, 308]
+  "aliveStatusCodes": [
+    200,
+    206,
+    301,
+    302,
+    307,
+    308
+  ]
 }

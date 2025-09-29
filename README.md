@@ -306,12 +306,12 @@ nag lsp --mode tcp      # Network-based editors
 
 ### Performance Benchmarks
 
-| Operation | Nagari Performance | Memory Usage |
-|-----------|-------------------|--------------|
-| Fibonacci(30) | 832,040 (accurate) | < 1MB |
-| Type Conversion | ~2.5M ops/sec | < 1KB per op |
-| Function Calls | ~1.8M ops/sec | < 512B per call |
-| Compilation | ~50K lines/sec | Linear scaling |
+| Operation       | Nagari Performance | Memory Usage    |
+| --------------- | ------------------ | --------------- |
+| Fibonacci(30)   | 832,040 (accurate) | < 1MB           |
+| Type Conversion | ~2.5M ops/sec      | < 1KB per op    |
+| Function Calls  | ~1.8M ops/sec      | < 512B per call |
+| Compilation     | ~50K lines/sec     | Linear scaling  |
 
 ### Production Readiness
 

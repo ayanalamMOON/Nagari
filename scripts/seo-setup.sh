@@ -49,7 +49,7 @@ echo -e "\n${BLUE}🏷️  Adding repository topics...${NC}"
 # Primary topics - core functionality
 PRIMARY_TOPICS=(
     "programming-language"
-    "nagari" 
+    "nagari"
     "transpiler"
     "python-syntax"
     "javascript-interop"
@@ -60,7 +60,7 @@ PRIMARY_TOPICS=(
 # Technology topics
 TECH_TOPICS=(
     "rust"
-    "typescript" 
+    "typescript"
     "javascript"
     "python"
     "webassembly"
@@ -69,7 +69,7 @@ TECH_TOPICS=(
     "es6"
 )
 
-# Development tools topics  
+# Development tools topics
 DEV_TOPICS=(
     "cli"
     "repl"
@@ -85,7 +85,7 @@ DEV_TOPICS=(
 USECASE_TOPICS=(
     "web-development"
     "react"
-    "vue" 
+    "vue"
     "express"
     "async-await"
     "type-checking"
@@ -170,7 +170,7 @@ echo -e "\n${BLUE}⚙️  Configuring repository features...${NC}"
 $GH_CMD repo edit $REPO_FULL --enable-issues=true
 echo -e "${GREEN}✅ Issues enabled${NC}"
 
-# Enable wiki if not already enabled  
+# Enable wiki if not already enabled
 $GH_CMD repo edit $REPO_FULL --enable-wiki=true
 echo -e "${GREEN}✅ Wiki enabled${NC}"
 
@@ -217,7 +217,7 @@ To complete SEO optimization, create a social preview image:
 
 ## Tools for Creation:
 - Canva (canva.com)
-- Figma (figma.com) 
+- Figma (figma.com)
 - Adobe Photoshop
 - GIMP (free alternative)
 
@@ -239,7 +239,7 @@ fi
 echo -e "\n${BLUE}📊 Current Repository Stats:${NC}"
 $GH_CMD repo view $REPO_FULL --json stargazerCount,forkCount,watcherCount,openIssuesCount,description,topics | jq '{
     stars: .stargazerCount,
-    forks: .forkCount, 
+    forks: .forkCount,
     watchers: .watcherCount,
     open_issues: .openIssuesCount,
     description: .description,
@@ -252,10 +252,10 @@ RELEASE_COUNT=$($GH_CMD release list -R $REPO_FULL --json tagName | jq '. | leng
 
 if [ "$RELEASE_COUNT" -eq "0" ]; then
     echo -e "${YELLOW}📦 No releases found. Creating initial release for SEO...${NC}"
-    
+
     # Get current version from Cargo.toml
     VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
-    
+
     if [ -n "$VERSION" ]; then
         TAG_NAME="v$VERSION"
         RELEASE_TITLE="Nagari Programming Language v$VERSION"
@@ -306,7 +306,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
             --notes "$RELEASE_NOTES" \
             --latest \
             --generate-notes
-        
+
         echo -e "${GREEN}✅ Initial release created: $TAG_NAME${NC}"
     else
         echo -e "${YELLOW}⚠️  Could not determine version from Cargo.toml${NC}"

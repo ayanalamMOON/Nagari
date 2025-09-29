@@ -38,15 +38,15 @@ jobs:
         run: |
           # Stars, forks, watchers
           gh api repos/${{ github.repository }} > repo-stats.json
-          
+
           # Traffic data (if available)
           gh api repos/${{ github.repository }}/traffic/views > traffic-views.json
           gh api repos/${{ github.repository }}/traffic/clones > traffic-clones.json
-          
+
           # Issues and PRs
           gh api repos/${{ github.repository }}/issues?state=all > issues.json
           gh api repos/${{ github.repository }}/pulls?state=all > pulls.json
-          
+
           # Contributors
           gh api repos/${{ github.repository }}/contributors > contributors.json
 ```
@@ -88,7 +88,7 @@ getNpmStats('nagari-runtime').then(stats => {
       'custom_parameter_2': 'content_group'
     }
   });
-  
+
   // Track documentation section engagement
   gtag('event', 'page_view', {
     'page_category': 'documentation',
@@ -117,7 +117,7 @@ google-site-verification: "your-verification-token"
 # Monitor these queries:
 primary_keywords:
   - "nagari programming language"
-  - "python javascript transpiler" 
+  - "python javascript transpiler"
   - "rust compiler web development"
   - "python syntax javascript output"
 
@@ -144,7 +144,7 @@ class SEOMonitor:
             "python syntax javascript",
             "modern transpiler 2025"
         ]
-    
+
     def check_rankings(self):
         results = {}
         for keyword in self.keywords:
@@ -156,7 +156,7 @@ class SEOMonitor:
                 'url': 'https://github.com/ayanalamMOON/Nagari'
             }
         return results
-    
+
     def get_search_position(self, keyword):
         # Implementation depends on chosen SEO API service
         # Return position (1-100) or None if not in top 100
@@ -166,7 +166,7 @@ class SEOMonitor:
 if __name__ == "__main__":
     monitor = SEOMonitor()
     rankings = monitor.check_rankings()
-    
+
     with open('seo-rankings.json', 'w') as f:
         json.dump(rankings, f, indent=2)
 ```
@@ -178,7 +178,7 @@ if __name__ == "__main__":
 // Track hashtag performance and mentions
 const twitterKeywords = [
     '#NagariLang',
-    '#ProgrammingLanguage', 
+    '#ProgrammingLanguage',
     'Nagari programming',
     '@NagariLang'
 ];
@@ -220,30 +220,30 @@ metrics_to_track:
 -- (Can be run against GitHub's GraphQL API)
 
 -- Contributor diversity
-SELECT 
+SELECT
     COUNT(DISTINCT author_email) as unique_contributors,
     COUNT(*) as total_commits,
     DATE_TRUNC('month', commit_date) as month
-FROM commits 
+FROM commits
 WHERE repo = 'ayanalamMOON/Nagari'
 GROUP BY month
 ORDER BY month;
 
 -- Issue resolution efficiency
-SELECT 
+SELECT
     AVG(EXTRACT(EPOCH FROM (closed_at - created_at))/3600) as avg_hours_to_close,
     COUNT(*) as total_issues,
     DATE_TRUNC('month', created_at) as month
-FROM issues 
+FROM issues
 WHERE repo = 'ayanalamMOON/Nagari' AND state = 'closed'
 GROUP BY month;
 
 -- Community engagement quality
-SELECT 
+SELECT
     AVG(comments) as avg_comments_per_issue,
     COUNT(DISTINCT user_login) as unique_participants,
     COUNT(*) as total_issues
-FROM issues 
+FROM issues
 WHERE repo = 'ayanalamMOON/Nagari'
 AND created_at >= NOW() - INTERVAL '30 days';
 ```
@@ -279,16 +279,16 @@ dashboards:
       - community_contributors
       - documentation_views
       - search_ranking_average
-    
+
   development_health:
-    refresh_interval: "30m"  
+    refresh_interval: "30m"
     metrics:
       - open_issues_count
       - pr_merge_time_avg
       - build_success_rate
       - test_coverage_percentage
       - dependency_security_score
-    
+
   community_engagement:
     refresh_interval: "2h"
     metrics:
@@ -310,54 +310,54 @@ class NagariAnalyticsReport:
     def __init__(self):
         self.start_date = datetime.now() - timedelta(days=30)
         self.end_date = datetime.now()
-    
+
     def generate_monthly_report(self):
         report = {
             'period': f"{self.start_date.strftime('%Y-%m-%d')} to {self.end_date.strftime('%Y-%m-%d')}",
             'github': self.get_github_metrics(),
-            'npm': self.get_npm_metrics(), 
+            'npm': self.get_npm_metrics(),
             'seo': self.get_seo_metrics(),
             'community': self.get_community_metrics(),
             'goals': self.check_goal_progress()
         }
-        
+
         # Generate visualizations
         self.create_charts(report)
-        
+
         # Save report
         with open(f'reports/nagari-report-{self.end_date.strftime("%Y-%m")}.json', 'w') as f:
             json.dump(report, f, indent=2)
-        
+
         return report
-    
+
     def create_charts(self, report_data):
         # Star growth over time
         plt.figure(figsize=(12, 8))
-        
+
         plt.subplot(2, 2, 1)
         # Plot GitHub stars growth
         plt.title('GitHub Stars Growth')
         plt.xlabel('Date')
         plt.ylabel('Stars')
-        
+
         plt.subplot(2, 2, 2)
         # Plot npm downloads
         plt.title('npm Downloads')
         plt.xlabel('Date')
         plt.ylabel('Downloads')
-        
+
         plt.subplot(2, 2, 3)
         # Plot contributor activity
         plt.title('Contributors Activity')
         plt.xlabel('Date')
         plt.ylabel('Active Contributors')
-        
+
         plt.subplot(2, 2, 4)
         # Plot search rankings
         plt.title('SEO Rankings')
         plt.xlabel('Keywords')
         plt.ylabel('Position')
-        
+
         plt.tight_layout()
         plt.savefig(f'reports/nagari-charts-{self.end_date.strftime("%Y-%m")}.png', dpi=300)
 ```
@@ -385,12 +385,12 @@ jobs:
           else
             echo "⚠️ Star goal progress: $current_stars/$weekly_goal"
           fi
-      
+
       - name: Check npm download goal
         run: |
           # Check npm download trends
           # Alert if downloads are declining
-          
+
       - name: Check community engagement
         run: |
           # Monitor issue response times
@@ -406,13 +406,13 @@ alerts:
     - npm_downloads_drop: "> 20% monthly decrease"
     - build_failure_rate: "> 10% of builds failing"
     - security_vulnerability: "Any high/critical CVE"
-  
+
   warning:
     - slow_issue_response: "> 72 hours average response time"
     - documentation_low_engagement: "< 1000 monthly views"
     - contributor_inactivity: "< 5 contributors per month"
     - search_ranking_drop: "> 10 position decrease for primary keywords"
-  
+
   notification_channels:
     - slack: "#nagari-alerts"
     - email: "team@nagari.dev"
@@ -427,7 +427,7 @@ alerts:
 
 ### Growth Metrics
 - [ ] GitHub stars: [current] vs [target] ([% of goal])
-- [ ] npm downloads: [current] vs [target] ([% of goal])  
+- [ ] npm downloads: [current] vs [target] ([% of goal])
 - [ ] Contributors: [current] vs [target] ([% of goal])
 - [ ] Documentation views: [current] vs [target] ([% of goal])
 

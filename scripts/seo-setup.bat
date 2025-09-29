@@ -14,7 +14,7 @@ if not exist "Cargo.toml" (
 )
 
 if not exist "README.md" (
-    echo ❌ Error: Must be run from Nagari repository root  
+    echo ❌ Error: Must be run from Nagari repository root
     exit /b 1
 )
 
@@ -91,7 +91,7 @@ echo ⚙️ Configuring repository features...
 gh repo edit %REPO_FULL% --enable-issues=true
 echo ✅ Issues enabled
 
-gh repo edit %REPO_FULL% --enable-wiki=true  
+gh repo edit %REPO_FULL% --enable-wiki=true
 echo ✅ Wiki enabled
 
 gh repo edit %REPO_FULL% --enable-projects=true
@@ -131,7 +131,7 @@ echo.
 echo 📋 SEO Setup Complete! Next Steps:
 echo =============================================
 echo ✅ Repository description updated
-echo ✅ Homepage URL set  
+echo ✅ Homepage URL set
 echo ✅ Repository topics added (20 topics)
 echo ✅ Repository features enabled
 echo ✅ Social preview setup guide created

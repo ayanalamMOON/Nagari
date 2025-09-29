@@ -9,7 +9,7 @@ The following topics are configured on the GitHub repository for maximum discove
 ### Primary Topics
 - `programming-language` - Core category
 - `nagari` - Brand/project name
-- `transpiler` - Core functionality  
+- `transpiler` - Core functionality
 - `python-syntax` - Syntax inspiration
 - `javascript-interop` - Target compatibility
 - `rust-compiler` - Implementation language
@@ -82,7 +82,7 @@ Keywords used in `nagari-runtime` package.json:
   "keywords": [
     "nagari",
     "runtime",
-    "transpiler", 
+    "transpiler",
     "javascript",
     "programming-language",
     "interop",
@@ -114,7 +114,7 @@ categories = ["development-tools", "compilers", "web-programming"]
 Tags used throughout documentation:
 
 - `#nagari-language`
-- `#python-syntax` 
+- `#python-syntax`
 - `#javascript-output`
 - `#rust-compiler`
 - `#web-development`
@@ -149,7 +149,7 @@ Key phrases for search engine optimization:
 - "Rust-based compiler"
 - "Modern web development language"
 
-### Long-tail Keywords  
+### Long-tail Keywords
 - "Python syntax JavaScript output"
 - "React compatible programming language"
 - "Cross-platform development tools"
@@ -173,7 +173,7 @@ Keywords targeting specific developer audiences:
 - `familiar-syntax`
 - `easy-transition`
 
-### JavaScript Developers  
+### JavaScript Developers
 - `javascript-ecosystem`
 - `npm-compatible`
 - `node-runtime`

@@ -9,7 +9,7 @@ This file contains ready-to-use templates for promoting Nagari across various pl
 🚀 Introducing Nagari - A programming language that brings Python's elegant syntax to the JavaScript ecosystem!
 
 🐍 Write Python-like code
-⚡ Get JavaScript performance  
+⚡ Get JavaScript performance
 🦀 Built with Rust for speed
 📦 npm package ecosystem ready
 
@@ -115,7 +115,7 @@ As developers, we often face the challenge of loving Python's syntax but needing
 
 **The Architecture:**
 🦀 Rust-based compiler for performance and safety
-📝 Python-inspired syntax with indentation-based structure  
+📝 Python-inspired syntax with indentation-based structure
 ⚡ Clean JavaScript output with zero runtime overhead
 🔧 Complete LSP implementation for IDE support
 
@@ -136,8 +136,8 @@ Our team has seen 40% faster development cycles when using Nagari for new projec
 ```python
 async def process_orders(orders):
     return await Promise.all([
-        validate_and_process(order) 
-        for order in orders 
+        validate_and_process(order)
+        for order in orders
         if order.status == 'pending'
     ])
 ```
@@ -322,7 +322,7 @@ Perfect for teams that love Python's readability but need JavaScript's ecosystem
 
 Features:
 🐍 Python-like indented syntax
-⚡ JavaScript performance and compatibility  
+⚡ JavaScript performance and compatibility
 🦀 Rust-based compiler
 🔧 Complete development toolchain
 

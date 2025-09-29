@@ -38,7 +38,7 @@ cat > topics.json << 'EOF'
   "names": [
     "programming-language",
     "nagari",
-    "transpiler", 
+    "transpiler",
     "python-syntax",
     "javascript-interop",
     "rust-compiler",
