@@ -1,0 +1,68 @@
+import fs
+import json
+
+def save_user_data(users: list[dict]):
+    json.save_file("users.json", users)
+    print("User data saved to users.json")
+
+def load_user_data() -> list[dict]:
+    if fs.exists("users.json"):
+        return json.load_file("users.json")
+    else:
+        return []
+
+def add_user(name: str, email: str, age: int):
+    users = load_user_data()
+
+    new_user = {
+        "id": len(users) + 1,
+        "name": name,
+        "email": email,
+        "age": age
+    }
+
+    users.append(new_user)
+    save_user_data(users)
+    print(f"Added user: {name}")
+
+def list_users():
+    users = load_user_data()
+
+    if len(users) == 0:
+        print("No users found.")
+        return
+
+    print("Users:")
+    for user in users:
+        print(f"  {user['id']}: {user['name']} ({user['email']}) - Age: {user['age']}")
+
+def main():
+    print("File System Demo")
+    print("================")
+
+    # Add some sample users
+    add_user("Alice", "alice@example.com", 25)
+    add_user("Bob", "bob@example.com", 30)
+    add_user("Charlie", "charlie@example.com", 35)
+
+    # List all users
+    list_users()
+
+    # File operations
+    print("\nFile operations:")
+
+    # Create a text file
+    content = "This is a sample text file created by Nagari!"
+    fs.write_file("sample.txt", content)
+    print("Created sample.txt")
+
+    # Read the file back
+    read_content = fs.read_file("sample.txt")
+    print("Read from sample.txt:", read_content)
+
+    # Check file info
+    print("File exists:", fs.exists("sample.txt"))
+    print("File size:", fs.get_size("sample.txt"), "bytes")
+
+if __name__ == "__main__":
+    main()

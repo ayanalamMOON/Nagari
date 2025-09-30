@@ -1,0 +1,845 @@
+# Simple Game Development Demo
+# 2D game with graphics, input handling, collision detection, and game state management
+
+import canvas from "canvas"
+from fs import read_file, write_file, exists
+from json import parse, stringify
+from time import now, sleep
+import keyboard
+import math
+
+# Game configuration
+GAME_CONFIG = {
+    "width": 800,
+    "height": 600,
+    "fps": 60,
+    "title": "Nagari Space Adventure",
+    "background_color": "#001122"
+}
+
+class Vector2D:
+    """2D vector for position and velocity"""
+
+    def __init__(self, x: float = 0, y: float = 0):
+        self.x = x
+        self.y = y
+
+    def add(self, other):
+        """Add two vectors"""
+        return Vector2D(self.x + other.x, self.y + other.y)
+
+    def subtract(self, other):
+        """Subtract two vectors"""
+        return Vector2D(self.x - other.x, self.y - other.y)
+
+    def multiply(self, scalar: float):
+        """Multiply vector by scalar"""
+        return Vector2D(self.x * scalar, self.y * scalar)
+
+    def magnitude(self) -> float:
+        """Calculate vector magnitude"""
+        return math.sqrt(self.x ** 2 + self.y ** 2)
+
+    def normalize(self):
+        """Normalize vector to unit length"""
+        mag = self.magnitude()
+        if mag > 0:
+            return Vector2D(self.x / mag, self.y / mag)
+        return Vector2D(0, 0)
+
+    def distance_to(self, other) -> float:
+        """Calculate distance to another vector"""
+        return self.subtract(other).magnitude()
+
+class GameObject:
+    """Base class for all game objects"""
+
+    def __init__(self, x: float, y: float, width: float, height: float):
+        self.position = Vector2D(x, y)
+        self.velocity = Vector2D(0, 0)
+        self.width = width
+        self.height = height
+        self.active = true
+        self.color = "#FFFFFF"
+
+    def update(self, delta_time: float):
+        """Update object state"""
+        # Update position based on velocity
+        self.position = self.position.add(self.velocity.multiply(delta_time))
+
+    def render(self, renderer):
+        """Render object (to be overridden)"""
+        renderer.fill_rect(self.position.x, self.position.y, self.width, self.height, self.color)
+
+    def get_bounds(self) -> dict:
+        """Get bounding box for collision detection"""
+        return {
+            "left": self.position.x,
+            "right": self.position.x + self.width,
+            "top": self.position.y,
+            "bottom": self.position.y + self.height
+        }
+
+    def collides_with(self, other) -> bool:
+        """Check collision with another object"""
+        bounds1 = self.get_bounds()
+        bounds2 = other.get_bounds()
+
+        return not (bounds1["right"] < bounds2["left"] or
+                   bounds1["left"] > bounds2["right"] or
+                   bounds1["bottom"] < bounds2["top"] or
+                   bounds1["top"] > bounds2["bottom"])
+
+class Player(GameObject):
+    """Player spaceship"""
+
+    def __init__(self, x: float, y: float):
+        super().__init__(x, y, 40, 30)
+        self.color = "#00FF00"
+        self.speed = 300
+        self.health = 100
+        self.max_health = 100
+        self.shoot_cooldown = 0
+        self.max_shoot_cooldown = 0.2
+
+    def update(self, delta_time: float, input_manager):
+        """Update player with input handling"""
+        # Handle movement
+        self.velocity = Vector2D(0, 0)
+
+        if input_manager.is_key_pressed("ArrowLeft") or input_manager.is_key_pressed("a"):
+            self.velocity.x = -self.speed
+        if input_manager.is_key_pressed("ArrowRight") or input_manager.is_key_pressed("d"):
+            self.velocity.x = self.speed
+        if input_manager.is_key_pressed("ArrowUp") or input_manager.is_key_pressed("w"):
+            self.velocity.y = -self.speed
+        if input_manager.is_key_pressed("ArrowDown") or input_manager.is_key_pressed("s"):
+            self.velocity.y = self.speed
+
+        # Keep player on screen
+        self.position.x = max(0, min(GAME_CONFIG["width"] - self.width, self.position.x + self.velocity.x * delta_time))
+        self.position.y = max(0, min(GAME_CONFIG["height"] - self.height, self.position.y + self.velocity.y * delta_time))
+
+        # Update shoot cooldown
+        if self.shoot_cooldown > 0:
+            self.shoot_cooldown -= delta_time
+
+    def can_shoot(self) -> bool:
+        """Check if player can shoot"""
+        return self.shoot_cooldown <= 0
+
+    def shoot(self) -> "Bullet":
+        """Create bullet"""
+        if self.can_shoot():
+            self.shoot_cooldown = self.max_shoot_cooldown
+            bullet_x = self.position.x + self.width / 2 - 2
+            bullet_y = self.position.y - 10
+            return Bullet(bullet_x, bullet_y, Vector2D(0, -500), "#FFFF00", is_player_bullet=true)
+        return none
+
+    def take_damage(self, damage: int):
+        """Take damage"""
+        self.health = max(0, self.health - damage)
+        return self.health <= 0
+
+    def render(self, renderer):
+        """Render player as a triangle"""
+        # Draw spaceship triangle
+        points = [
+            (self.position.x + self.width / 2, self.position.y),  # Top point
+            (self.position.x, self.position.y + self.height),     # Bottom left
+            (self.position.x + self.width, self.position.y + self.height)  # Bottom right
+        ]
+        renderer.fill_polygon(points, self.color)
+
+        # Draw health bar
+        bar_width = self.width
+        bar_height = 4
+        health_ratio = self.health / self.max_health
+
+        renderer.fill_rect(self.position.x, self.position.y - 10, bar_width, bar_height, "#FF0000")
+        renderer.fill_rect(self.position.x, self.position.y - 10, bar_width * health_ratio, bar_height, "#00FF00")
+
+class Enemy(GameObject):
+    """Enemy spacecraft"""
+
+    def __init__(self, x: float, y: float, enemy_type: str = "basic"):
+        super().__init__(x, y, 30, 30)
+        self.enemy_type = enemy_type
+        self.health = 30
+        self.shoot_timer = 0
+        self.shoot_interval = 2.0  # Shoot every 2 seconds
+
+        match enemy_type:
+            case "basic":
+                self.color = "#FF0000"
+                self.speed = 100
+                self.health = 30
+            case "fast":
+                self.color = "#FF8800"
+                self.speed = 200
+                self.health = 20
+            case "tank":
+                self.color = "#880000"
+                self.speed = 50
+                self.health = 60
+                self.width = 40
+                self.height = 40
+
+        self.velocity = Vector2D(0, self.speed)
+
+    def update(self, delta_time: float, player_pos: Vector2D):
+        """Update enemy behavior"""
+        super().update(delta_time)
+
+        # Simple AI: move toward player horizontally
+        if self.enemy_type == "fast":
+            direction_to_player = (player_pos.x - self.position.x)
+            if abs(direction_to_player) > 5:
+                self.velocity.x = 50 if direction_to_player > 0 else -50
+            else:
+                self.velocity.x = 0
+
+        # Update shoot timer
+        self.shoot_timer += delta_time
+
+        # Remove if off screen
+        if self.position.y > GAME_CONFIG["height"]:
+            self.active = false
+
+    def can_shoot(self) -> bool:
+        """Check if enemy can shoot"""
+        return self.shoot_timer >= self.shoot_interval
+
+    def shoot(self) -> "Bullet":
+        """Create enemy bullet"""
+        if self.can_shoot():
+            self.shoot_timer = 0
+            bullet_x = self.position.x + self.width / 2 - 2
+            bullet_y = self.position.y + self.height
+            return Bullet(bullet_x, bullet_y, Vector2D(0, 300), "#FF4444", is_player_bullet=false)
+        return none
+
+    def take_damage(self, damage: int) -> bool:
+        """Take damage and return if destroyed"""
+        self.health -= damage
+        if self.health <= 0:
+            self.active = false
+            return true
+        return false
+
+class Bullet(GameObject):
+    """Bullet projectile"""
+
+    def __init__(self, x: float, y: float, velocity: Vector2D, color: str, is_player_bullet: bool):
+        super().__init__(x, y, 4, 10)
+        self.velocity = velocity
+        self.color = color
+        self.is_player_bullet = is_player_bullet
+        self.damage = 25
+
+    def update(self, delta_time: float):
+        """Update bullet position"""
+        super().update(delta_time)
+
+        # Remove if off screen
+        if (self.position.y < -10 or self.position.y > GAME_CONFIG["height"] + 10 or
+            self.position.x < -10 or self.position.x > GAME_CONFIG["width"] + 10):
+            self.active = false
+
+class Powerup(GameObject):
+    """Power-up items"""
+
+    def __init__(self, x: float, y: float, powerup_type: str):
+        super().__init__(x, y, 20, 20)
+        self.powerup_type = powerup_type
+        self.velocity = Vector2D(0, 100)
+
+        match powerup_type:
+            case "health":
+                self.color = "#00FF00"
+            case "speed":
+                self.color = "#0088FF"
+            case "rapid_fire":
+                self.color = "#FFFF00"
+
+    def update(self, delta_time: float):
+        """Update powerup"""
+        super().update(delta_time)
+
+        # Remove if off screen
+        if self.position.y > GAME_CONFIG["height"]:
+            self.active = false
+
+    def apply_to_player(self, player: Player):
+        """Apply powerup effect to player"""
+        match self.powerup_type:
+            case "health":
+                player.health = min(player.max_health, player.health + 30)
+            case "speed":
+                player.speed = min(500, player.speed + 50)
+            case "rapid_fire":
+                player.max_shoot_cooldown = max(0.05, player.max_shoot_cooldown - 0.05)
+
+class ParticleSystem:
+    """Simple particle system for effects"""
+
+    def __init__(self):
+        self.particles = []
+
+    def add_explosion(self, position: Vector2D, color: str = "#FFAA00"):
+        """Add explosion particles"""
+        for _ in range(15):
+            velocity = Vector2D(
+                random.uniform(-200, 200),
+                random.uniform(-200, 200)
+            )
+            particle = {
+                "position": Vector2D(position.x, position.y),
+                "velocity": velocity,
+                "color": color,
+                "life": 1.0,
+                "max_life": 1.0,
+                "size": random.uniform(2, 6)
+            }
+            self.particles.append(particle)
+
+    def update(self, delta_time: float):
+        """Update all particles"""
+        for particle in self.particles[:]:  # Copy list to avoid modification issues
+            particle["position"] = particle["position"].add(particle["velocity"].multiply(delta_time))
+            particle["life"] -= delta_time
+            particle["velocity"] = particle["velocity"].multiply(0.98)  # Damping
+
+            if particle["life"] <= 0:
+                self.particles.remove(particle)
+
+    def render(self, renderer):
+        """Render all particles"""
+        for particle in self.particles:
+            alpha = particle["life"] / particle["max_life"]
+            size = particle["size"] * alpha
+            renderer.fill_circle(particle["position"].x, particle["position"].y, size, particle["color"])
+
+class GameState:
+    """Game state management"""
+
+    def __init__(self):
+        self.score = 0
+        self.level = 1
+        self.lives = 3
+        self.high_score = self.load_high_score()
+        self.game_over = false
+        self.paused = false
+        self.enemy_spawn_timer = 0
+        self.enemy_spawn_interval = 2.0
+        self.powerup_spawn_timer = 0
+        self.powerup_spawn_interval = 10.0
+
+    def load_high_score(self) -> int:
+        """Load high score from file"""
+        try:
+            if exists("high_score.json"):
+                data = parse(read_file("high_score.json"))
+                return data.get("high_score", 0)
+        except:
+            pass
+        return 0
+
+    def save_high_score(self):
+        """Save high score to file"""
+        if self.score > self.high_score:
+            self.high_score = self.score
+            data = {"high_score": self.high_score}
+            write_file("high_score.json", stringify(data))
+
+    def add_score(self, points: int):
+        """Add points to score"""
+        self.score += points
+
+        # Level up every 1000 points
+        new_level = (self.score // 1000) + 1
+        if new_level > self.level:
+            self.level = new_level
+            # Increase difficulty
+            self.enemy_spawn_interval = max(0.5, self.enemy_spawn_interval - 0.2)
+
+    def lose_life(self):
+        """Lose a life"""
+        self.lives -= 1
+        if self.lives <= 0:
+            self.game_over = true
+            self.save_high_score()
+
+class InputManager:
+    """Handle keyboard input"""
+
+    def __init__(self):
+        self.pressed_keys = set()
+        self.just_pressed = set()
+
+    def update(self):
+        """Update input state"""
+        self.just_pressed.clear()
+
+        # In a real implementation, this would check actual keyboard state
+        # For demo purposes, we'll simulate some input
+
+    def is_key_pressed(self, key: str) -> bool:
+        """Check if key is currently pressed"""
+        return key in self.pressed_keys
+
+    def is_key_just_pressed(self, key: str) -> bool:
+        """Check if key was just pressed this frame"""
+        return key in self.just_pressed
+
+    def press_key(self, key: str):
+        """Simulate key press"""
+        if key not in self.pressed_keys:
+            self.just_pressed.add(key)
+        self.pressed_keys.add(key)
+
+    def release_key(self, key: str):
+        """Simulate key release"""
+        self.pressed_keys.discard(key)
+
+class Renderer:
+    """Simple rendering system"""
+
+    def __init__(self, width: int, height: int):
+        self.width = width
+        self.height = height
+        self.canvas = canvas.createCanvas(width, height)
+        self.context = self.canvas.getContext("2d")
+
+    def clear(self, color: str = "#000000"):
+        """Clear screen"""
+        self.context.fillStyle = color
+        self.context.fillRect(0, 0, self.width, self.height)
+
+    def fill_rect(self, x: float, y: float, width: float, height: float, color: str):
+        """Draw filled rectangle"""
+        self.context.fillStyle = color
+        self.context.fillRect(x, y, width, height)
+
+    def fill_circle(self, x: float, y: float, radius: float, color: str):
+        """Draw filled circle"""
+        self.context.fillStyle = color
+        self.context.beginPath()
+        self.context.arc(x, y, radius, 0, 2 * math.pi)
+        self.context.fill()
+
+    def fill_polygon(self, points: list[tuple[float, float]], color: str):
+        """Draw filled polygon"""
+        if len(points) < 3:
+            return
+
+        self.context.fillStyle = color
+        self.context.beginPath()
+        self.context.moveTo(points[0][0], points[0][1])
+
+        for point in points[1:]:
+            self.context.lineTo(point[0], point[1])
+
+        self.context.closePath()
+        self.context.fill()
+
+    def draw_text(self, text: str, x: float, y: float, color: str = "#FFFFFF", size: int = 16):
+        """Draw text"""
+        self.context.fillStyle = color
+        self.context.font = f"{size}px Arial"
+        self.context.fillText(text, x, y)
+
+    def save_frame(self, filename: str):
+        """Save current frame as image"""
+        buffer = self.canvas.toBuffer("image/png")
+        # In a real implementation, save buffer to file
+        print(f"Frame saved to {filename}")
+
+class Game:
+    """Main game class"""
+
+    def __init__(self):
+        self.renderer = Renderer(GAME_CONFIG["width"], GAME_CONFIG["height"])
+        self.input_manager = InputManager()
+        self.game_state = GameState()
+        self.particle_system = ParticleSystem()
+
+        # Game objects
+        self.player = Player(GAME_CONFIG["width"] / 2 - 20, GAME_CONFIG["height"] - 50)
+        self.enemies = []
+        self.bullets = []
+        self.powerups = []
+
+        # Timing
+        self.last_time = now()
+        self.frame_count = 0
+
+    def update(self):
+        """Update game state"""
+        current_time = now()
+        delta_time = (current_time - self.last_time) / 1000.0  # Convert to seconds
+        self.last_time = current_time
+
+        if self.game_state.game_over or self.game_state.paused:
+            return
+
+        # Update input
+        self.input_manager.update()
+
+        # Update player
+        self.player.update(delta_time, self.input_manager)
+
+        # Player shooting
+        if (self.input_manager.is_key_pressed("Space") or
+            self.input_manager.is_key_pressed("x")):
+            bullet = self.player.shoot()
+            if bullet:
+                self.bullets.append(bullet)
+
+        # Spawn enemies
+        self.game_state.enemy_spawn_timer += delta_time
+        if self.game_state.enemy_spawn_timer >= self.game_state.enemy_spawn_interval:
+            self.spawn_enemy()
+            self.game_state.enemy_spawn_timer = 0
+
+        # Spawn powerups
+        self.game_state.powerup_spawn_timer += delta_time
+        if self.game_state.powerup_spawn_timer >= self.game_state.powerup_spawn_interval:
+            self.spawn_powerup()
+            self.game_state.powerup_spawn_timer = 0
+
+        # Update enemies
+        for enemy in self.enemies[:]:
+            enemy.update(delta_time, self.player.position)
+
+            # Enemy shooting
+            bullet = enemy.shoot()
+            if bullet:
+                self.bullets.append(bullet)
+
+            if not enemy.active:
+                self.enemies.remove(enemy)
+
+        # Update bullets
+        for bullet in self.bullets[:]:
+            bullet.update(delta_time)
+            if not bullet.active:
+                self.bullets.remove(bullet)
+
+        # Update powerups
+        for powerup in self.powerups[:]:
+            powerup.update(delta_time)
+            if not powerup.active:
+                self.powerups.remove(powerup)
+
+        # Update particles
+        self.particle_system.update(delta_time)
+
+        # Check collisions
+        self.check_collisions()
+
+    def spawn_enemy(self):
+        """Spawn a new enemy"""
+        x = random.uniform(0, GAME_CONFIG["width"] - 30)
+
+        # Choose enemy type based on level
+        if self.game_state.level >= 3 and random.uniform(0, 1) < 0.3:
+            enemy_type = "tank"
+        elif self.game_state.level >= 2 and random.uniform(0, 1) < 0.4:
+            enemy_type = "fast"
+        else:
+            enemy_type = "basic"
+
+        enemy = Enemy(x, -30, enemy_type)
+        self.enemies.append(enemy)
+
+    def spawn_powerup(self):
+        """Spawn a random powerup"""
+        x = random.uniform(0, GAME_CONFIG["width"] - 20)
+        powerup_types = ["health", "speed", "rapid_fire"]
+        powerup_type = random.choice(powerup_types)
+
+        powerup = Powerup(x, -20, powerup_type)
+        self.powerups.append(powerup)
+
+    def check_collisions(self):
+        """Check all collision interactions"""
+        # Bullet vs Enemy collisions
+        for bullet in self.bullets[:]:
+            if not bullet.is_player_bullet:
+                continue
+
+            for enemy in self.enemies[:]:
+                if bullet.collides_with(enemy):
+                    # Create explosion effect
+                    self.particle_system.add_explosion(enemy.position)
+
+                    # Damage enemy
+                    if enemy.take_damage(bullet.damage):
+                        self.game_state.add_score(100)
+
+                    bullet.active = false
+                    break
+
+        # Enemy bullet vs Player collisions
+        for bullet in self.bullets[:]:
+            if bullet.is_player_bullet:
+                continue
+
+            if bullet.collides_with(self.player):
+                self.particle_system.add_explosion(self.player.position, "#FF0000")
+
+                if self.player.take_damage(bullet.damage):
+                    self.game_state.lose_life()
+                    # Respawn player if still has lives
+                    if not self.game_state.game_over:
+                        self.player = Player(GAME_CONFIG["width"] / 2 - 20, GAME_CONFIG["height"] - 50)
+
+                bullet.active = false
+                break
+
+        # Enemy vs Player collisions
+        for enemy in self.enemies[:]:
+            if enemy.collides_with(self.player):
+                self.particle_system.add_explosion(enemy.position, "#FF8800")
+
+                if self.player.take_damage(50):
+                    self.game_state.lose_life()
+                    if not self.game_state.game_over:
+                        self.player = Player(GAME_CONFIG["width"] / 2 - 20, GAME_CONFIG["height"] - 50)
+
+                enemy.active = false
+                break
+
+        # Powerup vs Player collisions
+        for powerup in self.powerups[:]:
+            if powerup.collides_with(self.player):
+                powerup.apply_to_player(self.player)
+                powerup.active = false
+                self.game_state.add_score(50)
+
+    def render(self):
+        """Render game"""
+        # Clear screen
+        self.renderer.clear(GAME_CONFIG["background_color"])
+
+        # Render game objects
+        self.player.render(self.renderer)
+
+        for enemy in self.enemies:
+            enemy.render(self.renderer)
+
+        for bullet in self.bullets:
+            bullet.render(self.renderer)
+
+        for powerup in self.powerups:
+            powerup.render(self.renderer)
+
+        # Render particles
+        self.particle_system.render(self.renderer)
+
+        # Render UI
+        self.render_ui()
+
+        self.frame_count += 1
+
+    def render_ui(self):
+        """Render user interface"""
+        # Score
+        self.renderer.draw_text(f"Score: {self.game_state.score}", 10, 30, "#FFFFFF", 20)
+
+        # High score
+        self.renderer.draw_text(f"High: {self.game_state.high_score}", 10, 55, "#FFFF00", 16)
+
+        # Level
+        self.renderer.draw_text(f"Level: {self.game_state.level}", 200, 30, "#00FFFF", 20)
+
+        # Lives
+        self.renderer.draw_text(f"Lives: {self.game_state.lives}", 350, 30, "#FF00FF", 20)
+
+        # Game over screen
+        if self.game_state.game_over:
+            self.renderer.fill_rect(0, 0, GAME_CONFIG["width"], GAME_CONFIG["height"], "rgba(0,0,0,0.7)")
+
+            self.renderer.draw_text("GAME OVER", GAME_CONFIG["width"] / 2 - 80, GAME_CONFIG["height"] / 2 - 50, "#FF0000", 32)
+            self.renderer.draw_text(f"Final Score: {self.game_state.score}", GAME_CONFIG["width"] / 2 - 80, GAME_CONFIG["height"] / 2, "#FFFFFF", 20)
+
+            if self.game_state.score == self.game_state.high_score:
+                self.renderer.draw_text("NEW HIGH SCORE!", GAME_CONFIG["width"] / 2 - 100, GAME_CONFIG["height"] / 2 + 30, "#FFFF00", 20)
+
+            self.renderer.draw_text("Press R to restart", GAME_CONFIG["width"] / 2 - 80, GAME_CONFIG["height"] / 2 + 60, "#AAAAAA", 16)
+
+        # Pause screen
+        if self.game_state.paused:
+            self.renderer.fill_rect(0, 0, GAME_CONFIG["width"], GAME_CONFIG["height"], "rgba(0,0,0,0.5)")
+            self.renderer.draw_text("PAUSED", GAME_CONFIG["width"] / 2 - 50, GAME_CONFIG["height"] / 2, "#FFFFFF", 32)
+            self.renderer.draw_text("Press P to resume", GAME_CONFIG["width"] / 2 - 80, GAME_CONFIG["height"] / 2 + 40, "#AAAAAA", 16)
+
+    def handle_input(self, key: str, pressed: bool):
+        """Handle keyboard input"""
+        if pressed:
+            self.input_manager.press_key(key)
+
+            # Special keys
+            if key == "p":
+                self.game_state.paused = not self.game_state.paused
+            elif key == "r" and self.game_state.game_over:
+                self.restart_game()
+        else:
+            self.input_manager.release_key(key)
+
+    def restart_game(self):
+        """Restart the game"""
+        self.game_state = GameState()
+        self.player = Player(GAME_CONFIG["width"] / 2 - 20, GAME_CONFIG["height"] - 50)
+        self.enemies.clear()
+        self.bullets.clear()
+        self.powerups.clear()
+        self.particle_system = ParticleSystem()
+
+    def run_frame(self):
+        """Run one game frame"""
+        self.update()
+        self.render()
+
+    def get_frame_buffer(self):
+        """Get current frame as buffer"""
+        return self.renderer.canvas.toBuffer("image/png")
+
+def demo_game_simulation():
+    """Run a simulated game demo"""
+    print("🎮 Nagari Game Development Demo")
+    print("=" * 40)
+
+    game = Game()
+
+    # Simulate game input and frames
+    print("Simulating game frames...")
+
+    for frame in range(300):  # Simulate 5 seconds at 60fps
+        # Simulate some input
+        if frame == 60:  # Start moving right after 1 second
+            game.handle_input("ArrowRight", true)
+        elif frame == 120:  # Stop moving, start shooting
+            game.handle_input("ArrowRight", false)
+            game.handle_input("Space", true)
+        elif frame == 180:  # Stop shooting, pause
+            game.handle_input("Space", false)
+            game.handle_input("p", true)
+        elif frame == 240:  # Resume
+            game.handle_input("p", true)
+
+        # Run game frame
+        game.run_frame()
+
+        # Print status every 60 frames (1 second)
+        if frame % 60 == 0:
+            second = frame // 60
+            print(f"Second {second}: Score={game.game_state.score}, Enemies={len(game.enemies)}, Lives={game.game_state.lives}")
+
+        # Small delay to simulate frame rate
+        sleep(0.016)  # ~60 fps
+
+    print(f"\nGame simulation complete!")
+    print(f"Final Score: {game.game_state.score}")
+    print(f"Level Reached: {game.game_state.level}")
+    print(f"High Score: {game.game_state.high_score}")
+
+def create_game_assets():
+    """Create game asset files"""
+    print("\n=== Creating Game Assets ===")
+
+    # Game configuration file
+    config = {
+        "game": {
+            "title": "Nagari Space Adventure",
+            "version": "1.0.0",
+            "width": 800,
+            "height": 600,
+            "fps": 60
+        },
+        "graphics": {
+            "background_color": "#001122",
+            "player_color": "#00FF00",
+            "enemy_color": "#FF0000",
+            "bullet_color": "#FFFF00"
+        },
+        "gameplay": {
+            "player_speed": 300,
+            "player_health": 100,
+            "enemy_spawn_rate": 2.0,
+            "powerup_spawn_rate": 10.0
+        },
+        "controls": {
+            "move_left": ["ArrowLeft", "a"],
+            "move_right": ["ArrowRight", "d"],
+            "move_up": ["ArrowUp", "w"],
+            "move_down": ["ArrowDown", "s"],
+            "shoot": ["Space", "x"],
+            "pause": ["p"],
+            "restart": ["r"]
+        }
+    }
+
+    write_file("game_config.json", stringify(config, indent=2))
+
+    # High scores file structure
+    high_scores = {
+        "high_score": 0,
+        "scores": [],
+        "last_updated": now()
+    }
+
+    write_file("high_scores.json", stringify(high_scores, indent=2))
+
+    # Game statistics
+    stats = {
+        "games_played": 0,
+        "total_score": 0,
+        "enemies_defeated": 0,
+        "powerups_collected": 0,
+        "time_played": 0
+    }
+
+    write_file("game_stats.json", stringify(stats, indent=2))
+
+    print("Game assets created:")
+    print("- game_config.json (game configuration)")
+    print("- high_scores.json (score tracking)")
+    print("- game_stats.json (player statistics)")
+
+def main():
+    """Run game development demonstration"""
+    # Set random seed for consistent demo
+    random.seed(42)
+
+    # Create game assets
+    create_game_assets()
+
+    # Run game simulation
+    demo_game_simulation()
+
+    print("\n✅ Game development demo complete!")
+    print("\nImplemented features:")
+    print("- 2D vector mathematics")
+    print("- Game object hierarchy")
+    print("- Collision detection (AABB)")
+    print("- Input handling system")
+    print("- Particle effects")
+    print("- Game state management")
+    print("- Scoring and progression")
+    print("- Asset management")
+    print("- High score persistence")
+    print("- Multiple enemy types")
+    print("- Power-up system")
+    print("- Pause/resume functionality")
+    print("\nGame mechanics:")
+    print("- Player movement and shooting")
+    print("- Enemy AI and spawning")
+    print("- Progressive difficulty")
+    print("- Health and lives system")
+    print("- Visual effects and feedback")
+
+if __name__ == "__main__":
+    main()

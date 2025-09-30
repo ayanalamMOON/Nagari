@@ -1,0 +1,49 @@
+# Cryptographic functions for Nagari
+
+def hash_md5(data: str) -> str:
+    """Generate MD5 hash of the data."""
+    builtin
+
+def hash_sha1(data: str) -> str:
+    """Generate SHA1 hash of the data."""
+    builtin
+
+def hash_sha256(data: str) -> str:
+    """Generate SHA256 hash of the data."""
+    builtin
+
+def hash_sha512(data: str) -> str:
+    """Generate SHA512 hash of the data."""
+    builtin
+
+def random_bytes(length: int) -> list[int]:
+    """Generate random bytes."""
+    builtin
+
+def random_string(length: int, charset: str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") -> str:
+    """Generate a random string."""
+    builtin
+
+def encrypt_aes(data: str, key: str) -> str:
+    """Encrypt data using AES."""
+    builtin
+
+def decrypt_aes(encrypted_data: str, key: str) -> str:
+    """Decrypt data using AES."""
+    builtin
+
+def base64_encode(data: str) -> str:
+    """Encode data as base64."""
+    builtin
+
+def base64_decode(encoded_data: str) -> str:
+    """Decode base64 data."""
+    builtin
+
+def url_encode(data: str) -> str:
+    """URL encode data."""
+    builtin
+
+def url_decode(encoded_data: str) -> str:
+    """URL decode data."""
+    builtin

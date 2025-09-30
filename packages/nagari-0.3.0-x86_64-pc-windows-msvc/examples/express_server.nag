@@ -1,0 +1,53 @@
+import express from "express"
+
+app = express()
+
+@app.get("/")
+async def home(req, res):
+    return res.json({
+        "message": "Hello from Nagari!",
+        "timestamp": Date.now()
+    })
+
+@app.get("/users/:id")
+async def getUser(req, res):
+    userId = req.params.id
+
+    # Simulate database fetch
+    user = {
+        "id": userId,
+        "name": f"User {userId}",
+        "email": f"user{userId}@example.com"
+    }
+
+    return res.json(user)
+
+@app.post("/users")
+async def createUser(req, res):
+    userData = req.body
+
+    # Validate required fields
+    if not userData.name or not userData.email:
+        return res.status(400).json({
+            "error": "Name and email are required"
+        })
+
+    # Simulate user creation
+    newUser = {
+        "id": Math.floor(Math.random() * 1000),
+        "name": userData.name,
+        "email": userData.email,
+        "createdAt": new Date()
+    }
+
+    return res.status(201).json(newUser)
+
+def main():
+    port = process.env.PORT or 3000
+
+    app.listen(port, () => {
+        console.log(f"Server running on port {port}")
+    })
+
+if __name__ == "__main__":
+    main()

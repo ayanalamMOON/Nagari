@@ -1,0 +1,37 @@
+# Operating system utilities for Nagari
+
+def get_env(name: str, default: str = none) -> str:
+    """Get an environment variable."""
+    builtin
+
+def set_env(name: str, value: str):
+    """Set an environment variable."""
+    builtin
+
+def get_cwd() -> str:
+    """Get the current working directory."""
+    builtin
+
+def set_cwd(path: str):
+    """Set the current working directory."""
+    builtin
+
+def get_platform() -> str:
+    """Get the platform name (windows, linux, macos)."""
+    builtin
+
+def get_arch() -> str:
+    """Get the architecture (x86_64, arm64, etc.)."""
+    builtin
+
+def exit(code: int = 0):
+    """Exit the program with the given code."""
+    builtin
+
+def run_command(command: str, args: list[str] = none) -> dict:
+    """Run a system command and return result."""
+    builtin
+
+async def async_run_command(command: str, args: list[str] = none) -> dict:
+    """Asynchronously run a system command and return result."""
+    builtin

@@ -1,0 +1,123 @@
+# Core built-in functions and types for Nagari
+# These are implemented at the VM level
+
+def len(x: any) -> int:
+    """Return the length of an object."""
+    builtin
+
+def type(x: any) -> str:
+    """Return the type of an object."""
+    builtin
+
+def str(x: any) -> str:
+    """Convert an object to a string."""
+    builtin
+
+def int(x: any) -> int:
+    """Convert an object to an integer."""
+    builtin
+
+def float(x: any) -> float:
+    """Convert an object to a float."""
+    builtin
+
+def bool(x: any) -> bool:
+    """Convert an object to a boolean."""
+    builtin
+
+def print(*args):
+    """Print objects to stdout."""
+    builtin
+
+# String manipulation functions
+def str_capitalize(s: str) -> str:
+    """Capitalize the first character of a string."""
+    if len(s) == 0:
+        return s
+    return s[0].upper() + s[1:].lower()
+
+def str_title(s: str) -> str:
+    """Convert string to title case."""
+    words = s.split(" ")
+    result = []
+    for word in words:
+        if len(word) > 0:
+            result.append(word[0].upper() + word[1:].lower())
+        else:
+            result.append(word)
+    return " ".join(result)
+
+def str_reverse(s: str) -> str:
+    """Reverse a string."""
+    return s[::-1]
+
+def str_count(s: str, substring: str) -> int:
+    """Count occurrences of substring in string."""
+    if len(substring) == 0:
+        return len(s) + 1
+
+    count = 0
+    start = 0
+    while True:
+        pos = s.find(substring, start)
+        if pos == -1:
+            break
+        count += 1
+        start = pos + 1
+    return count
+
+def str_pad_left(s: str, width: int, fillchar: str = " ") -> str:
+    """Pad string on the left."""
+    if len(s) >= width:
+        return s
+
+    padding_needed = width - len(s)
+    if len(fillchar) == 0:
+        fillchar = " "
+
+    # Repeat fillchar to create padding
+    padding = ""
+    for _ in range(padding_needed):
+        padding += fillchar[0]  # Use first character if fillchar is longer
+
+    return padding + s
+
+def str_pad_right(s: str, width: int, fillchar: str = " ") -> str:
+    """Pad string on the right."""
+    if len(s) >= width:
+        return s
+
+    padding_needed = width - len(s)
+    if len(fillchar) == 0:
+        fillchar = " "
+
+    # Repeat fillchar to create padding
+    padding = ""
+    for _ in range(padding_needed):
+        padding += fillchar[0]  # Use first character if fillchar is longer
+
+    return s + padding
+
+def str_center(s: str, width: int, fillchar: str = " ") -> str:
+    """Center string within given width."""
+    if len(s) >= width:
+        return s
+
+    padding_needed = width - len(s)
+    if len(fillchar) == 0:
+        fillchar = " "
+
+    left_padding = padding_needed // 2
+    right_padding = padding_needed - left_padding
+
+    # Create left padding
+    left_pad = ""
+    for _ in range(left_padding):
+        left_pad += fillchar[0]
+
+    # Create right padding
+    right_pad = ""
+    for _ in range(right_padding):
+        right_pad += fillchar[0]
+
+    return left_pad + s + right_pad

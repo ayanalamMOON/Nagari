@@ -1,0 +1,38 @@
+# Database utilities for Nagari
+
+class Connection:
+    def __init__(self, connection_string: str):
+        self.connection_string = connection_string
+        self.is_open = false
+
+    def open(self):
+        """Open the database connection."""
+        builtin
+        self.is_open = true
+
+    def close(self):
+        """Close the database connection."""
+        builtin
+        self.is_open = false
+
+    def execute(self, query: str, params: list = none) -> dict:
+        """Execute a SQL query."""
+        builtin
+
+    async def async_execute(self, query: str, params: list = none) -> dict:
+        """Asynchronously execute a SQL query."""
+        builtin
+
+    def query(self, sql: str, params: list = none) -> list[dict]:
+        """Execute a SELECT query and return results."""
+        result = self.execute(sql, params)
+        return result.get("rows", [])
+
+    async def async_query(self, sql: str, params: list = none) -> list[dict]:
+        """Asynchronously execute a SELECT query and return results."""
+        result = await self.async_execute(sql, params)
+        return result.get("rows", [])
+
+def connect(connection_string: str) -> Connection:
+    """Create a new database connection."""
+    return Connection(connection_string)

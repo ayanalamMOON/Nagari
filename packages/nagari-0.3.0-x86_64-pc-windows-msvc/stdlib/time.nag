@@ -1,0 +1,39 @@
+# Time and date utilities for Nagari
+
+def now() -> float:
+    """Return the current time as a Unix timestamp."""
+    builtin
+
+def sleep(seconds: float):
+    """Sleep for the given number of seconds."""
+    builtin
+
+async def async_sleep(seconds: float):
+    """Asynchronously sleep for the given number of seconds."""
+    builtin
+
+class DateTime:
+    def __init__(self, year: int, month: int, day: int,
+                 hour: int = 0, minute: int = 0, second: int = 0):
+        self.year = year
+        self.month = month
+        self.day = day
+        self.hour = hour
+        self.minute = minute
+        self.second = second
+
+    def timestamp(self) -> float:
+        """Convert to Unix timestamp."""
+        builtin
+
+    def format(self, fmt: str) -> str:
+        """Format the datetime as a string."""
+        builtin
+
+def from_timestamp(timestamp: float) -> DateTime:
+    """Create a DateTime from a Unix timestamp."""
+    builtin
+
+def parse_datetime(date_str: str, fmt: str) -> DateTime:
+    """Parse a datetime string with the given format."""
+    builtin

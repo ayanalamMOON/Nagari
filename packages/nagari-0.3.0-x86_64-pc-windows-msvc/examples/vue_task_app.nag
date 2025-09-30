@@ -1,0 +1,248 @@
+# Vue.js Integration Demo
+# This example demonstrates building Vue components with Nagari
+
+from "vue" import { createApp, ref, computed, onMounted, watch }
+from "console" import { log }
+
+def TaskComponent():
+    """Individual task component"""
+    props = ["task", "onToggle", "onDelete"]
+
+    def handleToggle():
+        onToggle(task.id)
+
+    def handleDelete():
+        onDelete(task.id)
+
+    return {
+        "template": """
+            <div class="task-item" :class="{ completed: task.completed }">
+                <input
+                    type="checkbox"
+                    :checked="task.completed"
+                    @change="handleToggle"
+                />
+                <span class="task-text">{{ task.text }}</span>
+                <button @click="handleDelete" class="delete-btn">
+                    Delete
+                </button>
+            </div>
+        """,
+        "props": props,
+        "methods": {
+            "handleToggle": handleToggle,
+            "handleDelete": handleDelete
+        }
+    }
+
+def TaskApp():
+    """Main Vue application"""
+
+    # Reactive data
+    tasks = ref([
+        {"id": 1, "text": "Learn Nagari with Vue", "completed": false},
+        {"id": 2, "text": "Build a Vue app", "completed": false},
+        {"id": 3, "text": "Deploy to production", "completed": false}
+    ])
+
+    newTaskText = ref("")
+    filter = ref("all")
+    nextId = ref(4)
+
+    # Computed properties
+    filteredTasks = computed(() => {
+        if filter.value == "active":
+            return tasks.value.filter(task => not task.completed)
+        elif filter.value == "completed":
+            return tasks.value.filter(task => task.completed)
+        else:
+            return tasks.value
+    })
+
+    totalTasks = computed(() => len(tasks.value))
+    completedTasks = computed(() => len([t for t in tasks.value if t.completed]))
+    remainingTasks = computed(() => totalTasks.value - completedTasks.value)
+
+    # Methods
+    def addTask():
+        if newTaskText.value.strip():
+            newTask = {
+                "id": nextId.value,
+                "text": newTaskText.value.strip(),
+                "completed": false
+            }
+            tasks.value.append(newTask)
+            nextId.value += 1
+            newTaskText.value = ""
+
+    def toggleTask(id):
+        for task in tasks.value:
+            if task.id == id:
+                task.completed = not task.completed
+                break
+
+    def deleteTask(id):
+        tasks.value = [t for t in tasks.value if t.id != id]
+
+    def clearCompleted():
+        tasks.value = [t for t in tasks.value if not t.completed]
+
+    def setFilter(newFilter):
+        filter.value = newFilter
+
+    # Lifecycle hooks
+    def onMountedHook():
+        log("Vue Task App mounted!")
+
+        # Load from localStorage
+        saved = localStorage.getItem("vue-tasks")
+        if saved:
+            try:
+                parsed = JSON.parse(saved)
+                tasks.value = parsed
+                if len(parsed) > 0:
+                    maxId = max(t.id for t in parsed)
+                    nextId.value = maxId + 1
+            except Exception:
+                log("Failed to load saved tasks")
+
+    # Watchers
+    def watchTasks():
+        localStorage.setItem("vue-tasks", JSON.stringify(tasks.value))
+
+    # Component definition
+    return {
+        "template": """
+            <div class="task-app">
+                <header class="app-header">
+                    <h1>Nagari Vue Task App</h1>
+                    <p>Built with Vue.js and Nagari!</p>
+                </header>
+
+                <main class="app-main">
+                    <form @submit.prevent="addTask" class="task-form">
+                        <input
+                            v-model="newTaskText"
+                            type="text"
+                            placeholder="Enter a new task..."
+                            class="task-input"
+                        />
+                        <button type="submit" class="add-btn">
+                            Add Task
+                        </button>
+                    </form>
+
+                    <div class="filter-controls">
+                        <button
+                            :class="{ active: filter === 'all' }"
+                            @click="setFilter('all')"
+                        >
+                            All
+                        </button>
+                        <button
+                            :class="{ active: filter === 'active' }"
+                            @click="setFilter('active')"
+                        >
+                            Active
+                        </button>
+                        <button
+                            :class="{ active: filter === 'completed' }"
+                            @click="setFilter('completed')"
+                        >
+                            Completed
+                        </button>
+                    </div>
+
+                    <div class="task-list">
+                        <div v-if="filteredTasks.length === 0" class="empty-state">
+                            <span v-if="filter === 'all'">No tasks yet. Add one above!</span>
+                            <span v-else-if="filter === 'active'">No active tasks!</span>
+                            <span v-else>No completed tasks!</span>
+                        </div>
+
+                        <TaskComponent
+                            v-for="task in filteredTasks"
+                            :key="task.id"
+                            :task="task"
+                            :onToggle="toggleTask"
+                            :onDelete="deleteTask"
+                        />
+                    </div>
+
+                    <div class="task-stats">
+                        <div class="stat">
+                            <span class="label">Total:</span>
+                            <span class="value">{{ totalTasks }}</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">Completed:</span>
+                            <span class="value">{{ completedTasks }}</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">Remaining:</span>
+                            <span class="value">{{ remainingTasks }}</span>
+                        </div>
+                    </div>
+
+                    <button
+                        v-if="completedTasks > 0"
+                        @click="clearCompleted"
+                        class="clear-completed"
+                    >
+                        Clear Completed
+                    </button>
+                </main>
+            </div>
+        """,
+        "components": {
+            "TaskComponent": TaskComponent()
+        },
+        "setup": () => {
+            # Watch tasks for localStorage persistence
+            watch(tasks, watchTasks, {"deep": true})
+
+            # Mount lifecycle
+            onMounted(onMountedHook)
+
+            return {
+                "tasks": tasks,
+                "newTaskText": newTaskText,
+                "filter": filter,
+                "filteredTasks": filteredTasks,
+                "totalTasks": totalTasks,
+                "completedTasks": completedTasks,
+                "remainingTasks": remainingTasks,
+                "addTask": addTask,
+                "toggleTask": toggleTask,
+                "deleteTask": deleteTask,
+                "clearCompleted": clearCompleted,
+                "setFilter": setFilter
+            }
+        }
+    }
+
+# Initialize Vue app
+def initializeApp():
+    """Initialize and mount the Vue application"""
+    app = createApp(TaskApp())
+
+    # Global error handler
+    app.config.errorHandler = (err, instance, info) => {
+        log(f"Vue error: {err}")
+        log(f"Info: {info}")
+    }
+
+    # Mount to DOM
+    app.mount("#app")
+
+    log("Vue app initialized and mounted!")
+
+# Auto-initialize if DOM is ready
+if typeof document !== "undefined":
+    if document.readyState == "loading":
+        document.addEventListener("DOMContentLoaded", initializeApp)
+    else:
+        initializeApp()
+
+export default TaskApp
+export { TaskComponent, initializeApp }

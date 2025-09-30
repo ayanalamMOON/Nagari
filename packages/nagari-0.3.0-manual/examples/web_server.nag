@@ -1,0 +1,148 @@
+# Web Server Demo with Express
+# This example demonstrates building a REST API with Express
+
+from "express" import express
+from "cors" import cors
+from "fs/promises" import { readFile, writeFile }
+from "path" import { join }
+from "console" import { log, error }
+
+# In-memory database for demo
+users = [
+    {"id": 1, "name": "Alice", "email": "alice@example.com"},
+    {"id": 2, "name": "Bob", "email": "bob@example.com"}
+]
+
+def createServer():
+    """Create and configure Express server"""
+    app = express()
+
+    # Middleware
+    app.use(cors())
+    app.use(express.json())
+
+    # Logging middleware
+    def logRequest(req, res, next):
+        log(f"{req.method} {req.url}")
+        next()
+
+    app.use(logRequest)
+
+    # Routes
+    def getUsers(req, res):
+        """Get all users"""
+        res.json({"users": users, "count": len(users)})
+
+    def getUserById(req, res):
+        """Get user by ID"""
+        userId = int(req.params.id)
+        user = next((u for u in users if u["id"] == userId), None)
+
+        if user:
+            res.json(user)
+        else:
+            res.status(404).json({"error": "User not found"})
+
+    def createUser(req, res):
+        """Create new user"""
+        userData = req.body
+
+        # Validation
+        if not userData.get("name") or not userData.get("email"):
+            res.status(400).json({"error": "Name and email are required"})
+            return
+
+        # Create user
+        newUser = {
+            "id": max(u["id"] for u in users) + 1 if users else 1,
+            "name": userData["name"],
+            "email": userData["email"]
+        }
+
+        users.append(newUser)
+        res.status(201).json(newUser)
+
+    def updateUser(req, res):
+        """Update user"""
+        userId = int(req.params.id)
+        userData = req.body
+
+        for user in users:
+            if user["id"] == userId:
+                user.update(userData)
+                res.json(user)
+                return
+
+        res.status(404).json({"error": "User not found"})
+
+    def deleteUser(req, res):
+        """Delete user"""
+        userId = int(req.params.id)
+
+        for i, user in enumerate(users):
+            if user["id"] == userId:
+                users.pop(i)
+                res.json({"message": "User deleted"})
+                return
+
+        res.status(404).json({"error": "User not found"})
+
+    def getHealth(req, res):
+        """Health check endpoint"""
+        res.json({
+            "status": "healthy",
+            "timestamp": Date.now(),
+            "uptime": process.uptime()
+        })
+
+    async def backupUsers(req, res):
+        """Backup users to file"""
+        try:
+            backupData = {
+                "timestamp": Date.now(),
+                "users": users
+            }
+
+            await writeFile("users_backup.json", JSON.stringify(backupData, None, 2))
+            res.json({"message": "Backup created successfully"})
+
+        except Exception as e:
+            error(f"Backup failed: {e}")
+            res.status(500).json({"error": "Backup failed"})
+
+    # Register routes
+    app.get("/", (req, res) => res.json({"message": "Nagari Express Server"}))
+    app.get("/health", getHealth)
+    app.get("/users", getUsers)
+    app.get("/users/:id", getUserById)
+    app.post("/users", createUser)
+    app.put("/users/:id", updateUser)
+    app.delete("/users/:id", deleteUser)
+    app.post("/backup", backupUsers)
+
+    # Error handling middleware
+    def errorHandler(err, req, res, next):
+        error(f"Unhandled error: {err}")
+        res.status(500).json({"error": "Internal server error"})
+
+    app.use(errorHandler)
+
+    return app
+
+def main():
+    """Start the server"""
+    PORT = process.env.PORT or 3000
+
+    server = createServer()
+
+    server.listen(PORT, () => {
+        log(f"🚀 Nagari Express server running on port {PORT}")
+        log(f"📡 Health check: http://localhost:{PORT}/health")
+        log(f"👥 Users API: http://localhost:{PORT}/users")
+    })
+
+if __name__ == "__main__":
+    main()
+
+export default createServer
+export { createServer, main }

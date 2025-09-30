@@ -1,0 +1,61 @@
+# Basic CLI Demo
+# This example demonstrates basic file operations and CLI usage
+
+from "fs/promises" import { readFile, writeFile, mkdir }
+from "path" import { join, dirname }
+from "os" import { platform, arch }
+from "console" import { log, error }
+
+async def processFiles(inputDir: str, outputDir: str):
+    """Process text files by converting them to uppercase"""
+    try:
+        # Create output directory
+        await mkdir(outputDir, {"recursive": true})
+
+        # Read all files in input directory
+        files = await fs.readdir(inputDir)
+
+        for filename in files:
+            if filename.endswith(".txt"):
+                log(f"Processing: {filename}")
+
+                # Read file content
+                inputPath = join(inputDir, filename)
+                content = await readFile(inputPath, "utf8")
+
+                # Transform content
+                transformed = content.upper()
+
+                # Write to output
+                outputPath = join(outputDir, f"processed_{filename}")
+                await writeFile(outputPath, transformed)
+
+                log(f"✅ Processed: {filename}")
+
+        log(f"🎉 All files processed successfully!")
+
+    except Exception as e:
+        error(f"❌ Error processing files: {e}")
+
+def main():
+    log("🚀 Nagari CLI Demo")
+    log(f"Platform: {platform()}")
+    log(f"Architecture: {arch()}")
+
+    # Get command line arguments
+    args = process.argv[2:]  # Skip node and script path
+
+    if len(args) < 2:
+        log("Usage: nagc cli_demo.nag --out cli_demo.js && node cli_demo.js <input_dir> <output_dir>")
+        process.exit(1)
+
+    inputDir = args[0]
+    outputDir = args[1]
+
+    # Process files asynchronously
+    processFiles(inputDir, outputDir)
+
+if __name__ == "__main__":
+    main()
+
+export { processFiles, main }

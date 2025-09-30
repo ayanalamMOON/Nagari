@@ -1,0 +1,500 @@
+++# Data Analysis and Visualization Demo
+# Statistical analysis, data processing, and visualization using Nagari
+
+from math import sqrt, abs, sum, max, min, mean, median
+from fs import read_file, write_file
+from json import parse, stringify
+from time import now, format_date
+import csv
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+
+# Sample dataset: Sales data
+sales_data = [
+    {"date": "2025-01-01", "product": "Laptop", "category": "Electronics", "sales": 1200, "quantity": 3, "region": "North"},
+    {"date": "2025-01-01", "product": "Phone", "category": "Electronics", "sales": 800, "quantity": 2, "region": "South"},
+    {"date": "2025-01-02", "product": "Laptop", "category": "Electronics", "sales": 1600, "quantity": 4, "region": "North"},
+    {"date": "2025-01-02", "product": "Book", "category": "Media", "sales": 150, "quantity": 10, "region": "East"},
+    {"date": "2025-01-03", "product": "Phone", "category": "Electronics", "sales": 1200, "quantity": 3, "region": "West"},
+    {"date": "2025-01-03", "product": "Tablet", "category": "Electronics", "sales": 600, "quantity": 2, "region": "North"},
+    {"date": "2025-01-04", "product": "Book", "category": "Media", "sales": 300, "quantity": 20, "region": "South"},
+    {"date": "2025-01-04", "product": "Laptop", "category": "Electronics", "sales": 2000, "quantity": 5, "region": "East"},
+    {"date": "2025-01-05", "product": "Phone", "category": "Electronics", "sales": 1600, "quantity": 4, "region": "West"},
+    {"date": "2025-01-05", "product": "Headphones", "category": "Electronics", "sales": 400, "quantity": 8, "region": "North"},
+]
+
+class DataAnalyzer:
+    """Comprehensive data analysis class"""
+
+    def __init__(self, data: list[dict]):
+        self.data = data
+        self.df = pd.DataFrame(data)
+
+    def basic_statistics(self) -> dict:
+        """Calculate basic statistical measures"""
+        sales_values = [item["sales"] for item in self.data]
+        quantity_values = [item["quantity"] for item in self.data]
+
+        return {
+            "sales": {
+                "mean": mean(sales_values),
+                "median": median(sales_values),
+                "min": min(sales_values),
+                "max": max(sales_values),
+                "std_dev": self.standard_deviation(sales_values),
+                "total": sum(sales_values)
+            },
+            "quantity": {
+                "mean": mean(quantity_values),
+                "median": median(quantity_values),
+                "min": min(quantity_values),
+                "max": max(quantity_values),
+                "std_dev": self.standard_deviation(quantity_values),
+                "total": sum(quantity_values)
+            }
+        }
+
+    def standard_deviation(self, values: list[float]) -> float:
+        """Calculate standard deviation"""
+        avg = mean(values)
+        variance = mean([(x - avg) ** 2 for x in values])
+        return sqrt(variance)
+
+    def group_by_analysis(self, group_field: str, value_field: str) -> dict:
+        """Group data and analyze by field"""
+        groups = {}
+
+        for item in self.data:
+            key = item[group_field]
+            if key not in groups:
+                groups[key] = []
+            groups[key].append(item[value_field])
+
+        # Calculate statistics for each group
+        result = {}
+        for key, values in groups.items():
+            result[key] = {
+                "count": len(values),
+                "total": sum(values),
+                "mean": mean(values),
+                "min": min(values),
+                "max": max(values)
+            }
+
+        return result
+
+    def time_series_analysis(self) -> dict:
+        """Analyze data over time"""
+        # Group by date
+        daily_sales = {}
+        for item in self.data:
+            date = item["date"]
+            if date not in daily_sales:
+                daily_sales[date] = {"sales": 0, "quantity": 0}
+            daily_sales[date]["sales"] += item["sales"]
+            daily_sales[date]["quantity"] += item["quantity"]
+
+        # Calculate trends
+        dates = sorted(daily_sales.keys())
+        sales_trend = [daily_sales[date]["sales"] for date in dates]
+
+        return {
+            "daily_totals": daily_sales,
+            "growth_rate": self.calculate_growth_rate(sales_trend),
+            "trend_direction": self.detect_trend(sales_trend)
+        }
+
+    def calculate_growth_rate(self, values: list[float]) -> float:
+        """Calculate average growth rate"""
+        if len(values) < 2:
+            return 0.0
+
+        growth_rates = []
+        for i in range(1, len(values)):
+            if values[i-1] != 0:
+                rate = (values[i] - values[i-1]) / values[i-1]
+                growth_rates.append(rate)
+
+        return mean(growth_rates) if growth_rates else 0.0
+
+    def detect_trend(self, values: list[float]) -> str:
+        """Detect overall trend direction"""
+        if len(values) < 2:
+            return "insufficient_data"
+
+        increases = 0
+        decreases = 0
+
+        for i in range(1, len(values)):
+            if values[i] > values[i-1]:
+                increases += 1
+            elif values[i] < values[i-1]:
+                decreases += 1
+
+        if increases > decreases:
+            return "increasing"
+        elif decreases > increases:
+            return "decreasing"
+        else:
+            return "stable"
+
+    def correlation_analysis(self, field1: str, field2: str) -> float:
+        """Calculate correlation between two fields"""
+        values1 = [item[field1] for item in self.data]
+        values2 = [item[field2] for item in self.data]
+
+        return self.pearson_correlation(values1, values2)
+
+    def pearson_correlation(self, x: list[float], y: list[float]) -> float:
+        """Calculate Pearson correlation coefficient"""
+        if len(x) != len(y) or len(x) == 0:
+            return 0.0
+
+        mean_x = mean(x)
+        mean_y = mean(y)
+
+        numerator = sum((x[i] - mean_x) * (y[i] - mean_y) for i in range(len(x)))
+
+        sum_sq_x = sum((x[i] - mean_x) ** 2 for i in range(len(x)))
+        sum_sq_y = sum((y[i] - mean_y) ** 2 for i in range(len(y)))
+
+        denominator = sqrt(sum_sq_x * sum_sq_y)
+
+        return numerator / denominator if denominator != 0 else 0.0
+
+    def outlier_detection(self, field: str) -> dict:
+        """Detect outliers using IQR method"""
+        values = [item[field] for item in self.data]
+        values.sort()
+
+        n = len(values)
+        q1_index = n // 4
+        q3_index = 3 * n // 4
+
+        q1 = values[q1_index]
+        q3 = values[q3_index]
+        iqr = q3 - q1
+
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+
+        outliers = [item for item in self.data if item[field] < lower_bound or item[field] > upper_bound]
+
+        return {
+            "q1": q1,
+            "q3": q3,
+            "iqr": iqr,
+            "lower_bound": lower_bound,
+            "upper_bound": upper_bound,
+            "outliers": outliers,
+            "outlier_count": len(outliers)
+        }
+
+def create_visualizations(analyzer: DataAnalyzer):
+    """Create various data visualizations"""
+    print("Creating visualizations...")
+
+    # Sales by category (bar chart)
+    category_analysis = analyzer.group_by_analysis("category", "sales")
+    categories = list(category_analysis.keys())
+    sales_totals = [category_analysis[cat]["total"] for cat in categories]
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(categories, sales_totals, color=['#FF6B6B', '#4ECDC4', '#45B7D1'])
+    plt.title('Total Sales by Category')
+    plt.xlabel('Category')
+    plt.ylabel('Sales ($)')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig('sales_by_category.png')
+    plt.close()
+
+    # Daily sales trend (line chart)
+    time_analysis = analyzer.time_series_analysis()
+    daily_data = time_analysis["daily_totals"]
+    dates = sorted(daily_data.keys())
+    daily_sales = [daily_data[date]["sales"] for date in dates]
+
+    plt.figure(figsize=(12, 6))
+    plt.plot(dates, daily_sales, marker='o', linewidth=2, markersize=6)
+    plt.title('Daily Sales Trend')
+    plt.xlabel('Date')
+    plt.ylabel('Sales ($)')
+    plt.xticks(rotation=45)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig('daily_sales_trend.png')
+    plt.close()
+
+    # Sales by region (pie chart)
+    region_analysis = analyzer.group_by_analysis("region", "sales")
+    regions = list(region_analysis.keys())
+    region_sales = [region_analysis[region]["total"] for region in regions]
+
+    plt.figure(figsize=(8, 8))
+    plt.pie(region_sales, labels=regions, autopct='%1.1f%%', startangle=90)
+    plt.title('Sales Distribution by Region')
+    plt.axis('equal')
+    plt.savefig('sales_by_region.png')
+    plt.close()
+
+    print("Visualizations saved: sales_by_category.png, daily_sales_trend.png, sales_by_region.png")
+
+def export_analysis_report(analyzer: DataAnalyzer, filename: str):
+    """Export comprehensive analysis report"""
+
+    # Perform all analyses
+    basic_stats = analyzer.basic_statistics()
+    category_analysis = analyzer.group_by_analysis("category", "sales")
+    product_analysis = analyzer.group_by_analysis("product", "sales")
+    region_analysis = analyzer.group_by_analysis("region", "sales")
+    time_analysis = analyzer.time_series_analysis()
+    outliers = analyzer.outlier_detection("sales")
+    correlation = analyzer.correlation_analysis("sales", "quantity")
+
+    # Create comprehensive report
+    report = {
+        "analysis_date": format_date(now()),
+        "dataset_info": {
+            "total_records": len(analyzer.data),
+            "date_range": {
+                "start": min(item["date"] for item in analyzer.data),
+                "end": max(item["date"] for item in analyzer.data)
+            }
+        },
+        "basic_statistics": basic_stats,
+        "analysis_by_category": category_analysis,
+        "analysis_by_product": product_analysis,
+        "analysis_by_region": region_analysis,
+        "time_series_analysis": time_analysis,
+        "outlier_analysis": outliers,
+        "correlations": {
+            "sales_quantity_correlation": correlation
+        },
+        "insights": generate_insights(basic_stats, category_analysis, time_analysis, correlation)
+    }
+
+    # Export to JSON
+    write_file(filename, stringify(report, indent=2))
+    print(f"Analysis report exported to: {filename}")
+
+def generate_insights(basic_stats: dict, category_analysis: dict, time_analysis: dict, correlation: float) -> list[str]:
+    """Generate business insights from analysis"""
+    insights = []
+
+    # Sales insights
+    total_sales = basic_stats["sales"]["total"]
+    avg_daily_sales = total_sales / len(time_analysis["daily_totals"])
+    insights.append(f"Total sales: ${total_sales:,.2f} with average daily sales of ${avg_daily_sales:,.2f}")
+
+    # Category insights
+    top_category = max(category_analysis.items(), key=lambda x: x[1]["total"])
+    insights.append(f"Top performing category: {top_category[0]} with ${top_category[1]['total']:,.2f} in sales")
+
+    # Trend insights
+    trend = time_analysis["trend_direction"]
+    growth_rate = time_analysis["growth_rate"]
+    if trend == "increasing":
+        insights.append(f"Sales trend is positive with {growth_rate:.1%} average growth rate")
+    elif trend == "decreasing":
+        insights.append(f"Sales trend is declining with {growth_rate:.1%} average change rate")
+    else:
+        insights.append("Sales trend is stable with minimal fluctuation")
+
+    # Correlation insights
+    if abs(correlation) > 0.7:
+        relationship = "strong positive" if correlation > 0 else "strong negative"
+        insights.append(f"There is a {relationship} correlation ({correlation:.2f}) between sales and quantity")
+    elif abs(correlation) > 0.3:
+        relationship = "moderate positive" if correlation > 0 else "moderate negative"
+        insights.append(f"There is a {relationship} correlation ({correlation:.2f}) between sales and quantity")
+    else:
+        insights.append(f"Weak correlation ({correlation:.2f}) between sales and quantity")
+
+    return insights
+
+def advanced_analytics():
+    """Demonstrate advanced analytics techniques"""
+    print("=== Advanced Analytics ===")
+
+    # Moving averages
+    def calculate_moving_average(data: list[float], window: int) -> list[float]:
+        """Calculate moving average with specified window"""
+        if len(data) < window:
+            return data[:]
+
+        moving_avg = []
+        for i in range(len(data)):
+            if i < window - 1:
+                moving_avg.append(data[i])
+            else:
+                window_data = data[i-window+1:i+1]
+                moving_avg.append(mean(window_data))
+
+        return moving_avg
+
+    # Example with daily sales
+    analyzer = DataAnalyzer(sales_data)
+    time_analysis = analyzer.time_series_analysis()
+    daily_data = time_analysis["daily_totals"]
+    dates = sorted(daily_data.keys())
+    daily_sales = [daily_data[date]["sales"] for date in dates]
+
+    ma_3day = calculate_moving_average(daily_sales, 3)
+
+    print("Daily Sales with 3-day Moving Average:")
+    for i, date in enumerate(dates):
+        print(f"{date}: ${daily_sales[i]:,} (3-day MA: ${ma_3day[i]:,.0f})")
+
+    # Forecasting (simple linear regression)
+    def simple_forecast(values: list[float], periods: int) -> list[float]:
+        """Simple linear forecast"""
+        n = len(values)
+        if n < 2:
+            return [values[-1]] * periods if values else [0] * periods
+
+        # Calculate slope
+        x_values = list(range(n))
+        sum_x = sum(x_values)
+        sum_y = sum(values)
+        sum_xy = sum(x_values[i] * values[i] for i in range(n))
+        sum_x2 = sum(x * x for x in x_values)
+
+        slope = (n * sum_xy - sum_x * sum_y) / (n * sum_x2 - sum_x * sum_x)
+        intercept = (sum_y - slope * sum_x) / n
+
+        # Forecast future values
+        forecasts = []
+        for i in range(periods):
+            forecast_value = intercept + slope * (n + i)
+            forecasts.append(max(0, forecast_value))  # Ensure non-negative
+
+        return forecasts
+
+    forecast = simple_forecast(daily_sales, 3)
+    print(f"\n3-day Sales Forecast: {[f'${f:,.0f}' for f in forecast]}")
+
+def customer_segmentation_demo():
+    """Demonstrate customer segmentation analysis"""
+    print("\n=== Customer Segmentation Demo ===")
+
+    # Extended customer data
+    customer_data = [
+        {"customer_id": 1, "total_sales": 5000, "frequency": 12, "last_purchase_days": 5},
+        {"customer_id": 2, "total_sales": 1500, "frequency": 3, "last_purchase_days": 45},
+        {"customer_id": 3, "total_sales": 8000, "frequency": 20, "last_purchase_days": 2},
+        {"customer_id": 4, "total_sales": 500, "frequency": 1, "last_purchase_days": 120},
+        {"customer_id": 5, "total_sales": 3000, "frequency": 8, "last_purchase_days": 15},
+        {"customer_id": 6, "total_sales": 12000, "frequency": 25, "last_purchase_days": 1},
+        {"customer_id": 7, "total_sales": 800, "frequency": 2, "last_purchase_days": 90},
+        {"customer_id": 8, "total_sales": 6500, "frequency": 15, "last_purchase_days": 8},
+    ]
+
+    def segment_customers(customers: list[dict]) -> dict:
+        """Segment customers based on RFM analysis (Recency, Frequency, Monetary)"""
+
+        # Calculate percentiles for scoring
+        sales_values = [c["total_sales"] for c in customers]
+        frequency_values = [c["frequency"] for c in customers]
+        recency_values = [c["last_purchase_days"] for c in customers]
+
+        sales_75th = sorted(sales_values)[int(len(sales_values) * 0.75)]
+        freq_75th = sorted(frequency_values)[int(len(frequency_values) * 0.75)]
+        recency_25th = sorted(recency_values)[int(len(recency_values) * 0.25)]
+
+        segments = {"champions": [], "loyal": [], "at_risk": [], "lost": []}
+
+        for customer in customers:
+            # Score each dimension (higher is better)
+            monetary_score = 2 if customer["total_sales"] >= sales_75th else 1
+            frequency_score = 2 if customer["frequency"] >= freq_75th else 1
+            recency_score = 2 if customer["last_purchase_days"] <= recency_25th else 1
+
+            total_score = monetary_score + frequency_score + recency_score
+            customer["rfm_score"] = total_score
+
+            # Segment based on scores
+            if total_score >= 5:
+                segments["champions"].append(customer)
+            elif total_score >= 4:
+                segments["loyal"].append(customer)
+            elif total_score >= 3:
+                segments["at_risk"].append(customer)
+            else:
+                segments["lost"].append(customer)
+
+        return segments
+
+    segments = segment_customers(customer_data)
+
+    for segment_name, customers in segments.items():
+        if customers:
+            avg_sales = mean([c["total_sales"] for c in customers])
+            print(f"{segment_name.title()} ({len(customers)} customers): Avg Sales ${avg_sales:,.0f}")
+            for customer in customers:
+                print(f"  Customer {customer['customer_id']}: ${customer['total_sales']:,} (Score: {customer['rfm_score']})")
+
+def main():
+    """Run comprehensive data analysis demo"""
+    print("📊 Nagari Data Analysis & Visualization Demo")
+    print("=" * 50)
+
+    # Initialize analyzer
+    analyzer = DataAnalyzer(sales_data)
+
+    # Basic statistics
+    print("\n=== Basic Statistics ===")
+    stats = analyzer.basic_statistics()
+    print(f"Sales - Mean: ${stats['sales']['mean']:,.2f}, Total: ${stats['sales']['total']:,.2f}")
+    print(f"Quantity - Mean: {stats['quantity']['mean']:.1f}, Total: {stats['quantity']['total']}")
+
+    # Group analysis
+    print("\n=== Analysis by Category ===")
+    category_analysis = analyzer.group_by_analysis("category", "sales")
+    for category, data in category_analysis.items():
+        print(f"{category}: ${data['total']:,} total, ${data['mean']:,.0f} average")
+
+    # Time series
+    print("\n=== Time Series Analysis ===")
+    time_analysis = analyzer.time_series_analysis()
+    print(f"Trend Direction: {time_analysis['trend_direction']}")
+    print(f"Growth Rate: {time_analysis['growth_rate']:.1%}")
+
+    # Outliers
+    print("\n=== Outlier Detection ===")
+    outliers = analyzer.outlier_detection("sales")
+    print(f"Found {outliers['outlier_count']} outliers in sales data")
+    if outliers["outliers"]:
+        for outlier in outliers["outliers"]:
+            print(f"  Outlier: {outlier['product']} - ${outlier['sales']}")
+
+    # Correlation
+    print("\n=== Correlation Analysis ===")
+    correlation = analyzer.correlation_analysis("sales", "quantity")
+    print(f"Sales-Quantity Correlation: {correlation:.3f}")
+
+    # Export report
+    export_analysis_report(analyzer, "sales_analysis_report.json")
+
+    # Advanced analytics
+    advanced_analytics()
+
+    # Customer segmentation
+    customer_segmentation_demo()
+
+    # Create visualizations (if matplotlib available)
+    try:
+        create_visualizations(analyzer)
+    except ImportError:
+        print("\nNote: Install matplotlib for visualization features")
+
+    print("\n✅ Data analysis complete!")
+    print("\nGenerated files:")
+    print("- sales_analysis_report.json (comprehensive analysis)")
+    print("- sales_by_category.png (if matplotlib available)")
+    print("- daily_sales_trend.png (if matplotlib available)")
+    print("- sales_by_region.png (if matplotlib available)")
+
+if __name__ == "__main__":
+    main()

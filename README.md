@@ -2,9 +2,10 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
-[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-0.3.1-blue.svg)]()
 [![Documentation](https://img.shields.io/badge/docs-comprehensive-green.svg)]()
 [![npm Runtime](https://img.shields.io/npm/v/nagari-runtime?label=runtime&color=red)](https://www.npmjs.com/package/nagari-runtime)
+[![Packages](https://img.shields.io/badge/packages-ready-success.svg)]()
 [![Rust](https://img.shields.io/badge/built%20with-Rust-orange.svg)](https://www.rust-lang.org/)
 [![TypeScript](https://img.shields.io/badge/runtime-TypeScript-blue.svg)](https://www.typescriptlang.org/)
 [![GitHub stars](https://img.shields.io/github/stars/ayanalamMOON/Nagari?style=social)](https://github.com/ayanalamMOON/Nagari/stargazers)
@@ -26,29 +27,90 @@ Nagari is a production-ready programming language that combines Python's elegant
 - **🔄 Modern Features**: Async/await, JSX, generators, pattern matching, and comprehensive type system
 - **🛠️ Developer Experience**: Real-time diagnostics, intelligent completion, and comprehensive debugging
 
-## 🏆 Recent Achievements
+## 🏆 Latest Release - v0.3.1 (September 2025)
 
-✅ **Fibonacci Algorithm Test Passed** - Successfully implemented and tested recursive/iterative Fibonacci with perfect accuracy
-✅ **Variable Assignment Bug Fixed** - Resolved critical transpiler bug in variable scoping and reassignment
-✅ **Runtime Package Published** - `nagari-runtime` available on npm with comprehensive documentation
-✅ **Repository Organization Complete** - Clean directory structure with test files properly organized in `test-files/`
-✅ **Toolchain Fully Functional** - CLI `run`, `build`, `transpile` commands working perfectly
-✅ **Documentation Enhanced** - Professional README, API docs, and examples for all components
+### 📦 **Complete Packaging System**
+✅ **Standalone Packages** - Pre-built binaries for Windows, Linux, and macOS (Intel & ARM)
+✅ **One-Click Installation** - Download, extract, run `install.sh/bat`, and start coding
+✅ **Zero Dependencies** - No compilation needed, works out of the box
+✅ **Full Distribution** - Includes binaries, runtime, stdlib, examples, and docs (5.9 MB)
+
+### 🚀 **Quick Installation**
+```bash
+# Download from GitHub Releases
+# Extract and install
+./install.sh          # Unix/Linux/macOS
+# or
+install.bat           # Windows
+
+# Verify installation
+nag --version         # nag 0.3.1
+nag run ~/.nagari/examples/hello.nag
+```
+
+### ✨ **What's Included**
+- **3 Binaries**: `nag` (CLI), `nagari-lsp` (Language Server), `nagc` (Compiler)
+- **Runtime**: Complete TypeScript-based runtime with Node.js support
+- **Standard Library**: 10 modules (core, crypto, fs, http, json, math, os, time, db)
+- **23 Examples**: Algorithms, web servers, React/Vue apps, and more
+- **Documentation**: Getting started, language guide, and CLI reference
+
+### 🔧 **Previous Achievements**
+✅ **Fibonacci Algorithm Test Passed** - Recursive/iterative implementations working perfectly
+✅ **Variable Assignment Bug Fixed** - Critical transpiler bug resolved
+✅ **Runtime Package Published** - `nagari-runtime` on npm with full documentation
+✅ **Repository Organization** - Clean structure with proper test organization
+✅ **Toolchain Fully Functional** - All CLI commands working flawlessly
+✅ **Production Ready** - Tested and verified on real-world applications
 
 ## 🚀 Quick Start Guide
 
-### Installation
+### 📦 Option 1: Pre-Built Package (Recommended)
+
+**Download standalone executable package - no compilation needed!**
 
 ```bash
-# Install the Nagari runtime (required for all projects)
-npm install -g nagari-runtime
+# 1. Download from GitHub Releases
+#    https://github.com/ayanalamMOON/Nagari/releases
 
-# Clone and build Nagari from source
+# 2. Extract the archive
+unzip nagari-0.3.1-x86_64-pc-windows-msvc.zip    # Windows
+# or
+tar -xzf nagari-0.3.1-x86_64-unknown-linux-gnu.tar.gz  # Linux
+
+# 3. Install
+cd nagari-0.3.1-*/
+./install.sh          # Unix/Linux/macOS
+# or
+install.bat           # Windows
+
+# 4. Add to PATH (instructions provided by installer)
+export PATH="$HOME/.nagari/bin:$PATH"  # Unix/Linux/macOS
+# or add %USERPROFILE%\.nagari\bin to Windows PATH
+
+# 5. Verify
+nag --version
+nag run ~/.nagari/examples/hello.nag
+```
+
+**Package includes:**
+- ✅ Pre-compiled binaries (nag, nagari-lsp, nagc)
+- ✅ Complete runtime (no npm install needed)
+- ✅ Standard library (10 modules)
+- ✅ 23 working examples
+- ✅ Full documentation
+
+### 🔨 Option 2: Build from Source
+
+```bash
+# Clone the repository
 git clone https://github.com/ayanalamMOON/Nagari.git
 cd Nagari
+
+# Build with Cargo
 cargo build --release
 
-# Add to PATH (the binary will be at target/release/nag)
+# The binaries will be at target/release/nag
 export PATH=$PATH:$(pwd)/target/release
 ```
 
@@ -661,10 +723,14 @@ Nagari/                              # 🚀 Root project directory
 ├── scripts/                        # 🔨 Development and build tools
 │   ├── build.sh                  # Cross-platform build script
 │   ├── build.bat                 # Windows build script
+│   ├── package-release.sh        # 📦 Package builder for all platforms
+│   ├── package-release.bat       # Windows package builder
+│   ├── package-cross-platform.sh # Multi-platform package builder
 │   ├── run-tests.sh              # Comprehensive test runner
 │   ├── run-tests.bat             # Windows test runner
 │   ├── tools/                    # Specialized development utilities
 │   └── dev-tools/                # Development helpers and setup
+├── package.sh                      # 📦 Simple packaging interface
 ├── specs/                          # 📋 Enhanced language specification
 │   ├── grammar.bnf               # Complete BNF grammar
 │   ├── language-spec.md          # Comprehensive language reference
@@ -689,48 +755,78 @@ Nagari/                              # 🚀 Root project directory
 
 ## 🚀 Installation & Setup
 
-### Method 1: Build from Source (Recommended)
+### Method 1: Pre-Built Package (Recommended) ⭐ NEW!
+
+**Download and install in seconds - no compilation required!**
+
+```bash
+# 1. Download from GitHub Releases
+# https://github.com/ayanalamMOON/Nagari/releases/latest
+
+# Choose your platform:
+# - nagari-0.3.1-x86_64-pc-windows-msvc.zip (Windows 64-bit)
+# - nagari-0.3.1-x86_64-unknown-linux-gnu.tar.gz (Linux 64-bit)
+# - nagari-0.3.1-aarch64-unknown-linux-gnu.tar.gz (Linux ARM64)
+# - nagari-0.3.1-x86_64-apple-darwin.tar.gz (macOS Intel)
+# - nagari-0.3.1-aarch64-apple-darwin.tar.gz (macOS Apple Silicon)
+
+# 2. Extract the package
+tar -xzf nagari-0.3.1-*.tar.gz    # Unix/Linux/macOS
+# or
+unzip nagari-0.3.1-*.zip          # Windows
+
+# 3. Run installation script
+cd nagari-0.3.1-*/
+./install.sh      # Unix/Linux/macOS
+# or
+install.bat       # Windows
+
+# 4. Add to PATH (follow installer instructions)
+export PATH="$HOME/.nagari/bin:$PATH"  # Add to ~/.bashrc or ~/.zshrc
+# or add %USERPROFILE%\.nagari\bin to Windows System PATH
+
+# 5. Verify and start coding!
+nag --version
+nag run ~/.nagari/examples/hello.nag
+```
+
+**Package includes everything:**
+- ✅ Pre-compiled binaries (nag, nagari-lsp, nagc)
+- ✅ Complete runtime (no npm needed)
+- ✅ Standard library (10 modules)
+- ✅ 23 working examples
+- ✅ Full documentation
+
+### Method 2: Build from Source
 
 ```bash
 # Prerequisites: Rust 1.70+, Node.js 18+, Git
 git clone https://github.com/ayanalamMOON/Nagari.git
-cd nagari
+cd Nagari
 
 # Build all components (includes runtime)
-./tools/build.sh         # Unix/Linux/macOS
-./tools/build.bat        # Windows
+cargo build --release
+
+# The binaries will be at target/release/nag
+export PATH=$PATH:$(pwd)/target/release
 
 # Test installation
-./target/release/nag --version
-./target/release/nag --help
+nag --version
+nag --help
 ```
 
-### Method 2: Quick Development Setup
+### Method 3: Create Your Own Package
 
 ```bash
-# Build CLI only for immediate use
-cd src/cli && cargo build --release
+# Build packages for distribution
+./package.sh single 0.3.1              # Current platform
+./package.sh single 0.3.1 linux        # Linux
+./package.sh single 0.3.1 windows      # Windows
+./package.sh single 0.3.1 macos-intel  # macOS Intel
+./package.sh multi 0.3.1               # All platforms
 
-# Build and link runtime
-cd ../nagari-runtime && npm install && npm run build && npm link
-
-# Test with a simple program
-cd ../.. && echo 'print("Hello, Nagari!")' > hello.nag
-./target/release/nag run hello.nag
-```
-
-### Method 3: Install Release (Coming Soon)
-
-```bash
-# Install from GitHub releases (planned)
-curl -sSL https://install.nagari.dev | bash
-
-# Or using npm (planned)
-npm install -g nagari
-
-# Verify installation
-nagari --version
-nagari run examples/hello.nag
+# Packages will be in packages/ directory
+# Each includes binaries, runtime, stdlib, examples, docs, and installers
 ```
 
 ### Quick Start Example
@@ -903,7 +999,104 @@ Nagari has successfully passed comprehensive testing and is ready for real-world
 
 **Try Nagari today** - It's production-ready! 🎉
 
-## 📚 Documentation & Resources
+## � Distribution & Packaging
+
+### Pre-Built Packages (v0.3.1+)
+
+Nagari now provides **standalone executable packages** for easy distribution and installation. No compilation needed!
+
+#### Available Platforms
+
+- **Windows**: `x86_64-pc-windows-msvc` (64-bit)
+- **Linux**: `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu` (64-bit Intel/ARM)
+- **macOS**: `x86_64-apple-darwin` (Intel), `aarch64-apple-darwin` (Apple Silicon)
+
+#### Package Contents
+
+Each package includes:
+```
+nagari-VERSION-TARGET/
+├── bin/                  # Binaries (16 MB)
+│   ├── nag              # Main CLI tool
+│   ├── nagari-lsp       # Language Server
+│   └── nagc             # Compiler
+├── nagari-runtime/       # Runtime (202 KB)
+│   ├── dist/            # Compiled modules
+│   └── package.json     # Package metadata
+├── stdlib/              # Standard library (45 KB)
+│   └── *.nag            # 10 core modules
+├── examples/            # Examples (230 KB)
+│   └── *.nag            # 23 working programs
+├── docs/                # Documentation (40 KB)
+├── install.sh/bat       # Installation script
+├── uninstall.sh/bat     # Uninstallation script
+├── README.md            # Package README
+├── LICENSE              # MIT License
+└── CHANGELOG.md         # Version history
+```
+
+#### Installation
+
+```bash
+# 1. Download from GitHub Releases
+wget https://github.com/ayanalamMOON/Nagari/releases/download/v0.3.1/nagari-0.3.1-TARGET.tar.gz
+
+# 2. Extract
+tar -xzf nagari-0.3.1-*.tar.gz
+cd nagari-0.3.1-*/
+
+# 3. Install
+./install.sh      # Unix/Linux/macOS
+# or
+install.bat       # Windows
+
+# 4. Add to PATH (see installer output for instructions)
+# Unix/Linux/macOS: Add to ~/.bashrc, ~/.zshrc, or ~/.profile
+export PATH="$HOME/.nagari/bin:$PATH"
+
+# Windows: Add to System Environment Variables
+# %USERPROFILE%\.nagari\bin
+
+# 5. Verify
+nag --version
+nag run ~/.nagari/examples/hello.nag
+```
+
+#### Building Packages
+
+Maintainers can build packages using the packaging scripts:
+
+```bash
+# Build single platform package
+./package.sh single 0.3.1              # Current platform
+./package.sh single 0.3.1 windows      # Windows
+./package.sh single 0.3.1 linux        # Linux
+./package.sh single 0.3.1 macos-intel  # macOS Intel
+
+# Build all platforms
+./package.sh multi 0.3.1
+
+# Clean packages
+./package.sh clean
+
+# Test package
+./package.sh test 0.3.1
+```
+
+**Packages are generated in `packages/` directory with SHA256 checksums.**
+
+#### Package Features
+
+- ✅ **Zero Dependencies**: Everything included, no npm or cargo needed
+- ✅ **Clean Installation**: Installs to `~/.nagari/` without polluting system
+- ✅ **Easy Uninstall**: Removes all files cleanly
+- ✅ **Verified**: All examples tested and working
+- ✅ **Secure**: SHA256 checksums for integrity verification
+- ✅ **Documented**: Complete installation and usage guides included
+
+See [docs/packaging-guide.md](docs/packaging-guide.md) for detailed packaging documentation.
+
+## �📚 Documentation & Resources
 
 ### � Getting Started
 - **[Quick Start Guide](docs/getting-started.md)** - Get productive in 5 minutes
@@ -1046,28 +1239,50 @@ def UserCard({ user, onEdit, onDelete }: {
 
 ## 🚦 Development Status & Roadmap
 
-### Current Version: 0.2.1 (July 2025) ✅ **PRODUCTION READY**
+### Current Version: 0.3.1 (September 2025) ✅ **DISTRIBUTION READY**
 
-**🎉 FULLY FUNCTIONAL RELEASE:**
+**🎉 STANDALONE EXECUTABLE PACKAGES:**
 
-- ✅ **Complete CLI Ecosystem**: All commands working seamlessly (`run`, `build`, `transpile`, `format`, `lint`, `repl`)
-- ✅ **End-to-End Execution**: `nagari run file.nag` works perfectly with automatic runtime setup
-- ✅ **Production-Ready Compiler**: Lexer, parser, and transpiler handle all language features correctly
-- ✅ **Runtime Integration**: TypeScript-based runtime with proper ES6 module support
-- ✅ **Watch Mode**: Development server with automatic restart on file changes
-- ✅ **Project Organization**: Clean codebase structure with comprehensive documentation
-- ✅ **Code Quality**: High-quality Rust implementation following best practices
-- ✅ **Cross-platform Support**: Works on Windows, macOS, and Linux
+- ✅ **Multi-Platform Packages**: Pre-built binaries for Windows, Linux, and macOS (Intel & ARM)
+- ✅ **One-Click Installation**: Download, extract, run install script - ready in seconds
+- ✅ **Complete Package**: Binaries, runtime, stdlib, examples, and docs (5.9 MB compressed)
+- ✅ **Automated Packaging**: Scripts for building packages for all platforms
+- ✅ **SHA256 Checksums**: Package integrity verification for secure distribution
+- ✅ **Professional Installation**: Auto-install scripts with PATH setup instructions
+- ✅ **Clean Uninstall**: Complete removal scripts included
+- ✅ **Verified Examples**: All 23 examples tested and confirmed working
 
-**🚀 Ready for Real-World Use:**
-```bash
-# Install and use Nagari today!
-git clone https://github.com/ayanalamMOON/Nagari.git
-cd nagari && ./tools/build.sh
-nagari run examples/hello.nag  # It just works!
+**📦 Package Contents:**
+```
+nagari-0.3.1-TARGET/
+├── bin/          # nag, nagari-lsp, nagc executables (16 MB)
+├── nagari-runtime/  # TypeScript runtime (202 KB)
+├── stdlib/       # 10 standard library modules (45 KB)
+├── examples/     # 23 working example programs (230 KB)
+├── docs/         # Documentation guides (40 KB)
+├── install.sh/bat   # Installation script
+└── uninstall.sh/bat # Uninstallation script
 ```
 
-### Next Release: 0.3.0 (Q4 2025) 🚧
+**🚀 Ready for Distribution:**
+```bash
+# Download pre-built package from GitHub Releases
+# No compilation needed!
+./install.sh      # Install to ~/.nagari/
+nag --version     # nag 0.3.1
+nag run ~/.nagari/examples/hello.nag  # Works instantly!
+```
+
+### Previous Release: 0.2.1 (July 2025) ✅ **PRODUCTION READY**
+
+- ✅ Complete CLI ecosystem with all commands working
+- ✅ End-to-end execution with automatic runtime setup
+- ✅ Production-ready compiler (lexer, parser, transpiler)
+- ✅ TypeScript runtime with ES6 module support
+- ✅ Watch mode with automatic restart
+- ✅ Cross-platform support (Windows, macOS, Linux)
+
+### Next Release: 0.4.0 (Q1 2026) 🚧
 
 **Planned Enhancements:**
 

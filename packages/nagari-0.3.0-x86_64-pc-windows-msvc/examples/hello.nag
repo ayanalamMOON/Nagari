@@ -1,0 +1,5 @@
+def greet(name: str = "world") -> str:
+    return "Hello, " + name + "!"
+
+print(greet())
+print(greet("Nagari"))

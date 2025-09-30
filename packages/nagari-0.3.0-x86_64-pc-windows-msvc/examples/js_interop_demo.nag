@@ -1,0 +1,177 @@
+# JavaScript ↔ Nagari Interop Demo
+# This demonstrates bidirectional interop between JavaScript and Nagari
+
+from "console" import { log, error }
+
+# Nagari functions that can be called from JavaScript
+def calculateFibonacci(n: int) -> int:
+    """Calculate Fibonacci number (recursive)"""
+    if n <= 1:
+        return n
+    return calculateFibonacci(n - 1) + calculateFibonacci(n - 2)
+
+def processArray(arr: list, operation: str) -> list:
+    """Process array with different operations"""
+    if operation == "double":
+        return [x * 2 for x in arr]
+    elif operation == "square":
+        return [x ** 2 for x in arr]
+    elif operation == "filter_even":
+        return [x for x in arr if x % 2 == 0]
+    elif operation == "sum":
+        return [sum(arr)]
+    else:
+        return arr
+
+def validateEmail(email: str) -> dict:
+    """Validate email address"""
+    import re
+
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+
+    result = {
+        "email": email,
+        "isValid": bool(re.match(pattern, email)),
+        "domain": email.split("@")[1] if "@" in email else None,
+        "local": email.split("@")[0] if "@" in email else None
+    }
+
+    return result
+
+async def fetchUserProfile(userId: int) -> dict:
+    """Fetch user profile from API (simulated)"""
+    try:
+        # Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 1000))
+
+        # Simulate user data
+        users = {
+            1: {"id": 1, "name": "Alice", "role": "admin", "active": true},
+            2: {"id": 2, "name": "Bob", "role": "user", "active": true},
+            3: {"id": 3, "name": "Charlie", "role": "user", "active": false}
+        }
+
+        user = users.get(userId)
+        if user:
+            return {"success": true, "user": user}
+        else:
+            return {"success": false, "error": "User not found"}
+
+    except Exception as e:
+        return {"success": false, "error": str(e)}
+
+class NagariCalculator:
+    """A class that can be instantiated from JavaScript"""
+
+    def __init__(self, name: str = "Calculator"):
+        self.name = name
+        self.history = []
+
+    def add(self, a: float, b: float) -> float:
+        result = a + b
+        self.history.append(f"{a} + {b} = {result}")
+        return result
+
+    def multiply(self, a: float, b: float) -> float:
+        result = a * b
+        self.history.append(f"{a} * {b} = {result}")
+        return result
+
+    def getHistory(self) -> list:
+        return self.history
+
+    def clear(self):
+        self.history = []
+
+# Advanced interop: accepting JavaScript functions as callbacks
+def processWithCallback(data: list, jsCallback) -> list:
+    """Process data using a JavaScript callback function"""
+    results = []
+
+    for item in data:
+        try:
+            # Call the JavaScript function
+            result = jsCallback(item)
+            results.append(result)
+        except Exception as e:
+            error(f"Callback error for item {item}: {e}")
+            results.append(None)
+
+    return results
+
+# Export functions for JavaScript consumption
+export {
+    calculateFibonacci,
+    processArray,
+    validateEmail,
+    fetchUserProfile,
+    NagariCalculator,
+    processWithCallback
+}
+
+# JavaScript interop wrapper (transpiled output will include this)
+js_interop_wrapper = js"""
+// JavaScript wrapper for calling Nagari functions
+window.NagariAPI = {
+    // Direct function calls
+    fibonacci: (n) => nagariToJS(calculateFibonacci(jsToNagari(n))),
+
+    processArray: (arr, operation) =>
+        nagariToJS(processArray(jsToNagari(arr), jsToNagari(operation))),
+
+    validateEmail: (email) =>
+        nagariToJS(validateEmail(jsToNagari(email))),
+
+    fetchUserProfile: async (userId) =>
+        nagariToJS(await fetchUserProfile(jsToNagari(userId))),
+
+    // Class instantiation
+    createCalculator: (name) => {
+        const calc = new NagariCalculator(jsToNagari(name));
+        return {
+            add: (a, b) => nagariToJS(calc.add(jsToNagari(a), jsToNagari(b))),
+            multiply: (a, b) => nagariToJS(calc.multiply(jsToNagari(a), jsToNagari(b))),
+            getHistory: () => nagariToJS(calc.getHistory()),
+            clear: () => calc.clear()
+        };
+    },
+
+    // Callback processing
+    processWithCallback: (data, callback) => {
+        const nagariCallback = (...args) => jsToNagari(callback(...args.map(nagariToJS)));
+        return nagariToJS(processWithCallback(jsToNagari(data), nagariCallback));
+    }
+};
+
+console.log('Nagari API initialized and available on window.NagariAPI');
+"""
+
+# Demo usage examples (these would be called from JavaScript)
+def demo():
+    """Demo function showing Nagari capabilities"""
+    log("🚀 Nagari Interop Demo")
+
+    # Math operations
+    log(f"Fibonacci(10): {calculateFibonacci(10)}")
+
+    # Array processing
+    numbers = [1, 2, 3, 4, 5]
+    doubled = processArray(numbers, "double")
+    log(f"Doubled {numbers}: {doubled}")
+
+    # Email validation
+    emails = ["test@example.com", "invalid-email", "user@domain.org"]
+    for email in emails:
+        result = validateEmail(email)
+        log(f"Email {email}: {'✅' if result['isValid'] else '❌'}")
+
+    # Calculator class
+    calc = NagariCalculator("Demo Calculator")
+    calc.add(10, 5)
+    calc.multiply(3, 7)
+    log(f"Calculator history: {calc.getHistory()}")
+
+    log("✨ Demo completed!")
+
+if __name__ == "__main__":
+    demo()

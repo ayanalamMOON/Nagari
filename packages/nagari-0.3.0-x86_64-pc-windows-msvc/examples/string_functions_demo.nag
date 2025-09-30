@@ -1,0 +1,90 @@
+# String Manipulation Demo
+# This example demonstrates the new string manipulation functions in Nagari
+
+def demo_capitalization():
+    print("=== Capitalization Functions ===")
+
+    text = "hello world from nagari"
+    print("Original: '" + text + "'")
+    print("Capitalize: '" + str_capitalize(text) + "'")
+    print("Title case: '" + str_title(text) + "'")
+    print()
+
+def demo_transformation():
+    print("=== String Transformation ===")
+
+    text = "Nagari Programming Language"
+    print("Original: '" + text + "'")
+    print("Reversed: '" + str_reverse(text) + "'")
+    print(f"Count 'a': {str_count(text, 'a')}")
+    print(f"Count 'ing': {str_count(text, 'ing')}")
+    print()
+
+def demo_padding():
+    """Demonstrate padding functions"""
+    print("=== String Padding ===")
+
+    items = ["Item 1", "Long Item Name", "X"]
+
+    print("Left padding with spaces:")
+    for item in items:
+        print(f"'{str_pad_left(item, 20)}'")
+
+    print("\nRight padding with dots:")
+    for item in items:
+        print(f"'{str_pad_right(item, 20, '.')}'")
+
+    print("\nCentered with stars:")
+    for item in items:
+        print(f"'{str_center(item, 20, '*')}'")
+    print()
+
+def demo_practical_examples():
+    """Demonstrate practical usage examples"""
+    print("=== Practical Examples ===")
+
+    # Format a simple table
+    print("Formatted Table:")
+    headers = ["Name", "Score", "Grade"]
+    print(str_center(headers[0], 15) + str_center(headers[1], 10) + str_center(headers[2], 8))
+    print("-" * 33)
+
+    students = [
+        ("alice", 95, "A"),
+        ("bob", 87, "B"),
+        ("charlie", 92, "A-")
+    ]
+
+    for name, score, grade in students:
+        formatted_name = str_center(str_title(name), 15)
+        formatted_score = str_center(str(score), 10)
+        formatted_grade = str_center(grade, 8)
+        print(formatted_name + formatted_score + formatted_grade)
+
+    print()
+
+    # Word processing example
+    print("Text Processing:")
+    sentence = "the quick brown fox jumps over the lazy dog"
+    print(f"Original: {sentence}")
+    print(f"Word count: {len(sentence.split())}")
+    print(f"Character count: {len(sentence)}")
+    print(f"'the' appears: {str_count(sentence, 'the')} times")
+    print(f"Title case: {str_title(sentence)}")
+    print(f"Reversed: {str_reverse(sentence)}")
+
+def main():
+    """Run all demonstrations"""
+    print("🎯 Nagari String Functions Demo")
+    print("================================")
+    print()
+
+    demo_capitalization()
+    demo_transformation()
+    demo_padding()
+    demo_practical_examples()
+
+    print("✨ Demo completed! All string functions are working correctly.")
+
+# Run the demo
+main()

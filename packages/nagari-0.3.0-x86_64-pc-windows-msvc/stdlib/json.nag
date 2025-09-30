@@ -1,0 +1,21 @@
+# JSON encoding and decoding for Nagari
+
+def loads(json_str: str) -> any:
+    """Parse a JSON string into a Nagari value."""
+    builtin
+
+def dumps(obj: any, indent: int = none) -> str:
+    """Convert a Nagari value to a JSON string."""
+    builtin
+
+def load_file(path: str) -> any:
+    """Load JSON from a file."""
+    from fs import read_file
+    content = read_file(path)
+    return loads(content)
+
+def save_file(path: str, obj: any, indent: int = 2):
+    """Save a Nagari value to a JSON file."""
+    from fs import write_file
+    content = dumps(obj, indent)
+    write_file(path, content)
