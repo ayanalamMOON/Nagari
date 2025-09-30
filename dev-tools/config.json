@@ -1,0 +1,230 @@
+{
+  "name": "Nagari Development Tools",
+  "version": "1.0.0",
+  "description": "Comprehensive development toolkit for the Nagari programming language",
+  "environment": "development",
+  "tools": {
+    "setup": {
+      "command": "setup-dev-env",
+      "description": "Complete development environment setup",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "scripts": {
+        "unix": "setup-dev-env.sh",
+        "windows": "setup-dev-env.bat"
+      }
+    },
+    "server": {
+      "command": "dev-server",
+      "description": "Development server with hot reload",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "ports": {
+        "http": 3000,
+        "websocket": 3001
+      },
+      "scripts": {
+        "unix": "dev-server.sh",
+        "windows": "dev-server.bat"
+      }
+    },
+    "test": {
+      "command": "test-runner",
+      "description": "Comprehensive test suite runner",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "features": [
+        "unit",
+        "integration",
+        "doc",
+        "examples",
+        "coverage",
+        "benchmarks"
+      ],
+      "scripts": {
+        "unix": "test-runner.sh",
+        "windows": "test-runner.bat"
+      }
+    },
+    "lint": {
+      "command": "lint-check",
+      "description": "Code quality checking and formatting",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "features": [
+        "rust-fmt",
+        "clippy",
+        "nagari-validation",
+        "docs-check"
+      ],
+      "scripts": {
+        "unix": "lint-check.sh",
+        "windows": "lint-check.bat"
+      }
+    },
+    "version": {
+      "command": "version-bump",
+      "description": "Automated version management",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "bump_types": [
+        "major",
+        "minor",
+        "patch"
+      ],
+      "scripts": {
+        "unix": "version-bump.sh",
+        "windows": "version-bump.bat"
+      }
+    },
+    "release": {
+      "command": "release-prep",
+      "description": "Comprehensive release preparation",
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "features": [
+        "binaries",
+        "packages",
+        "docs",
+        "checksums"
+      ],
+      "scripts": {
+        "unix": "release-prep.sh",
+        "windows": "release-prep.bat"
+      }
+    }
+  },
+  "configurations": {
+    "compiler": {
+      "debug": true,
+      "optimize": false,
+      "emit_source_maps": true,
+      "target": "debug"
+    },
+    "runtime": {
+      "enable_debugging": true,
+      "verbose_logging": true,
+      "hot_reload": true
+    },
+    "testing": {
+      "parallel": true,
+      "coverage": false,
+      "watch_mode": false,
+      "timeout": 30
+    },
+    "linting": {
+      "strict_mode": false,
+      "auto_fix": true,
+      "check_docs": true,
+      "check_examples": true
+    },
+    "release": {
+      "run_tests": true,
+      "generate_docs": true,
+      "create_packages": true,
+      "platforms": [
+        "linux-x86_64",
+        "windows-x86_64",
+        "macos-x86_64"
+      ]
+    }
+  },
+  "dependencies": {
+    "required": {
+      "rust": ">=1.70.0",
+      "cargo": ">=1.70.0",
+      "git": ">=2.0.0"
+    },
+    "optional": {
+      "node": ">=18.0.0",
+      "npm": ">=8.0.0",
+      "python": ">=3.8.0"
+    },
+    "cargo_tools": {
+      "cargo-watch": "Watch for file changes",
+      "cargo-edit": "Edit Cargo.toml from command line",
+      "cargo-audit": "Security vulnerability checking",
+      "cargo-outdated": "Check for outdated dependencies",
+      "cargo-tarpaulin": "Code coverage reporting",
+      "cargo-criterion": "Performance benchmarking"
+    }
+  },
+  "directories": {
+    "output": {
+      "test_results": "test-results",
+      "lint_results": "lint-results",
+      "coverage": "coverage",
+      "benchmarks": "benchmarks",
+      "release": "release",
+      "dist": "dist"
+    },
+    "watch": [
+      "src",
+      "stdlib",
+      "examples",
+      "samples",
+      "tests",
+      "Cargo.toml"
+    ]
+  },
+  "scripts": {
+    "quick_commands": {
+      "build": "cargo build",
+      "test": "cargo test",
+      "run": "cargo run --",
+      "format": "cargo fmt",
+      "lint": "cargo clippy",
+      "clean": "cargo clean && rm -rf dist/",
+      "watch": "cargo watch -x check -x test"
+    }
+  },
+  "ide_settings": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "ms-vscode.vscode-typescript-next",
+        "ms-python.python",
+        "GitHub.copilot"
+      ],
+      "settings": {
+        "rust-analyzer.checkOnSave.command": "clippy",
+        "rust-analyzer.cargo.features": "all",
+        "editor.formatOnSave": true,
+        "files.associations": {
+          "*.nag": "python"
+        }
+      }
+    }
+  },
+  "documentation": {
+    "getting_started": "README.md",
+    "tool_docs": "dev-tools/README.md",
+    "api_reference": "docs/api-reference.md",
+    "development_guide": "docs/development-guide.md",
+    "architecture": "docs/architecture.md"
+  },
+  "support": {
+    "repository": "https://github.com/ayanalamMOON/Nagari",
+    "issues": "https://github.com/ayanalamMOON/Nagari/issues",
+    "discussions": "https://github.com/ayanalamMOON/Nagari/discussions",
+    "documentation": "https://github.com/ayanalamMOON/Nagari/tree/main/docs"
+  }
+}
