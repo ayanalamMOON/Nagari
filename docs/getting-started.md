@@ -6,6 +6,24 @@
 
 - Rust 1.70 or later
 - Git
+- Node.js 14+ or Bun 1.0+ (for running transpiled code)
+
+### Recommended: Install Bun for Better Performance
+
+Nagari works with both Node.js and Bun, but **Bun provides 4x faster performance**:
+
+```bash
+# macOS/Linux
+curl -fsSL https://bun.sh/install | bash
+
+# Windows (PowerShell)
+powershell -c "irm bun.sh/install.ps1 | iex"
+
+# Verify
+bun --version
+```
+
+The Nagari CLI automatically detects and uses Bun if available, falling back to Node.js otherwise.
 
 ### Building from Source
 

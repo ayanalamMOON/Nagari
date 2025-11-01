@@ -11,6 +11,48 @@ use std::sync::mpsc::channel;
 use std::time::Duration;
 use tokio::process::Command;
 
+/// JavaScript runtime information
+#[derive(Debug, Clone)]
+struct JavaScriptRuntime {
+    command: String,
+    is_bun: bool,
+    version: Option<String>,
+}
+
+/// Detect the best available JavaScript runtime (Bun > Node.js)
+fn detect_javascript_runtime() -> JavaScriptRuntime {
+    // Try Bun first (faster and has native TypeScript support)
+    if let Ok(output) = std::process::Command::new("bun").arg("--version").output() {
+        if output.status.success() {
+            let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            return JavaScriptRuntime {
+                command: "bun".to_string(),
+                is_bun: true,
+                version: Some(version),
+            };
+        }
+    }
+
+    // Fall back to Node.js
+    let version = std::process::Command::new("node")
+        .arg("--version")
+        .output()
+        .ok()
+        .and_then(|output| {
+            if output.status.success() {
+                Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+            } else {
+                None
+            }
+        });
+
+    JavaScriptRuntime {
+        command: "node".to_string(),
+        is_bun: false,
+        version,
+    }
+}
+
 pub async fn run_command(
     file: PathBuf,
     args: Vec<String>,
@@ -83,8 +125,16 @@ async fn run_file_once(file: &PathBuf, args: &[String], config: &NagConfig) -> R
     // Compile the file
     match compiler.compile_to_file(file, &output_file) {
         Ok(_) => {
-            // Run with Node.js
-            let mut cmd = Command::new("node");
+            // Detect and use the best available runtime (Bun > Node.js)
+            let runtime = detect_javascript_runtime();
+            let mut cmd = Command::new(&runtime.command);
+
+            // Add runtime-specific flags
+            if runtime.is_bun {
+                // Bun supports TypeScript natively and has built-in ES modules
+                cmd.arg("run");
+            }
+
             cmd.arg(&output_file);
             cmd.args(args);
 

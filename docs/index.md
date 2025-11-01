@@ -39,9 +39,18 @@ Welcome to the comprehensive documentation for the Nagari programming language. 
 - **[React Integration](interop-guide.md#react-jsx-support)** - Building React apps with Nagari
 - **[Node.js Development](tutorials.md#tutorial-8-server-side-development)** - Server-side Nagari
 
+### Runtime Support
+
+- **[Bun Integration Guide](bun-guide.md)** - 🚀 Blazing-fast Bun runtime support _(New!)_
+  - 4x faster performance
+  - Automatic runtime detection
+  - Installation and setup
+  - Performance benchmarks
+  - Best practices
+
 ### Development Tools
 
-- **[CLI Reference](../nagari-compiler/README.md)** - Compiler command-line interface
+- **[CLI Reference](cli-reference.md)** - Command-line interface documentation
 - **[VS Code Extension](../tools/vscode-extension/)** - IDE support and features
 - **[Build Tools](../tools/)** - Build scripts and automation
 

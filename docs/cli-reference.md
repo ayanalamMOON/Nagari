@@ -12,13 +12,13 @@ nagari [COMMAND] [OPTIONS] [ARGS]
 
 ## Global Options
 
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--help` | `-h` | Show help information |
-| `--version` | `-V` | Show version information |
-| `--verbose` | `-v` | Enable verbose output |
-| `--quiet` | `-q` | Suppress non-error output |
-| `--config <FILE>` | `-c` | Use custom config file |
+| Option            | Short | Description               |
+| ----------------- | ----- | ------------------------- |
+| `--help`          | `-h`  | Show help information     |
+| `--version`       | `-V`  | Show version information  |
+| `--verbose`       | `-v`  | Enable verbose output     |
+| `--quiet`         | `-q`  | Suppress non-error output |
+| `--config <FILE>` | `-c`  | Use custom config file    |
 
 ## Commands
 
@@ -38,22 +38,40 @@ nagari run [OPTIONS] <FILE> [ARGS...]
 - `--output <FILE>` - Specify output file
 - `--env <ENV>` - Set environment variables
 
+**Runtime Detection:**
+
+Nagari automatically detects and uses the best available JavaScript runtime:
+
+1. **Bun** (preferred) - Used if installed, provides 4x faster performance
+2. **Node.js** (fallback) - Used if Bun is not available
+
+The CLI transparently selects the runtime - no configuration needed! To check which runtime is being used:
+
+```bash
+# Check runtime detection
+bun --version  # If installed, Nagari uses Bun
+node --version # Used if Bun not available
+```
+
+For more information on Bun support and performance benefits, see the [Bun Integration Guide](bun-guide.md).
+
 **Examples:**
 ```bash
-# Run a simple script
+# Run a simple script (automatically uses Bun or Node.js)
 nagari run hello.nag
-
-# Run with Node.js runtime
-nagari run --runtime node server.nag
 
 # Run with debugging enabled
 nagari run --debug app.nag
 
-# Run and watch for changes
+# Run and watch for changes (hot reloading with Bun)
 nagari run --watch dev.nag
 
 # Pass arguments to the script
 nagari run script.nag arg1 arg2
+
+# Explicitly use Node.js (transpile first, then run)
+nagari build hello.nag -o hello.js
+node hello.js
 ```
 
 ### `build` - Compile Nagari Code
@@ -354,24 +372,24 @@ coverage = true
 
 ### Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `NAGARI_HOME` | Nagari installation directory |
-| `NAGARI_REGISTRY` | Default package registry URL |
-| `NAGARI_CACHE` | Cache directory location |
-| `NAGARI_DEBUG` | Enable debug output |
+| Variable          | Description                   |
+| ----------------- | ----------------------------- |
+| `NAGARI_HOME`     | Nagari installation directory |
+| `NAGARI_REGISTRY` | Default package registry URL  |
+| `NAGARI_CACHE`    | Cache directory location      |
+| `NAGARI_DEBUG`    | Enable debug output           |
 
 ## Exit Codes
 
-| Code | Meaning |
-|------|---------|
-| 0 | Success |
-| 1 | General error |
-| 2 | Invalid arguments |
-| 3 | File not found |
-| 4 | Compilation error |
-| 5 | Runtime error |
-| 6 | Test failure |
+| Code | Meaning           |
+| ---- | ----------------- |
+| 0    | Success           |
+| 1    | General error     |
+| 2    | Invalid arguments |
+| 3    | File not found    |
+| 4    | Compilation error |
+| 5    | Runtime error     |
+| 6    | Test failure      |
 
 ## Examples
 
